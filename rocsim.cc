@@ -49,6 +49,7 @@ public:
   int           fAdcIndex  [kNChannels];
   int           fInverseMap[kNChannels];
   TRocChannel   fChannel   [kNChannels];
+  double        fChOffset  [kNChannels];
 
   int           fF0;                    // run number-dependent
   int           fHb;
@@ -108,6 +109,25 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     46, 40, 34, 28, 22, 16, 10,  4,
     94, 88, 82, 76, 70, 64, 58, 52
   };
+//-----------------------------------------------------------------------------
+// offsets, in ns, wrt the first readout channel in a given FPGA
+// determined using run 105038
+// need to cross check their stability
+// an offsetfor a fiven 'i' is the offset of a given channel wrt the channel
+// read out first in the corresponding FPGA (first 48 channels - CAL, channels 48-95 - DIGI)
+//-----------------------------------------------------------------------------
+  double ch_offset[96] = {
+    -1.91142,  0.83799, -3.60547,  2.07482, -1.33494, -1.40625, -0.85195,  1.34135, -2.98527,  1.99266, 
+     1.09860,  0.70164, -1.91974,  1.16734, -4.06390,  2.50224, -0.00802, -0.24147,  0.25977,  0.46001, 
+    -2.18188,  0.52085,  0.03532, -0.49709, -2.23997, -0.29669, -2.40610,  2.24535, -0.49264, -0.33865, 
+    -0.88099,  3.30617, -2.13120,  1.84080,  0.87094, -0.29687, -2.52983,  1.70986, -3.77760,  0.73012, 
+     0.62384,  0.47639, -0.21883,  1.27542, -3.12222,  0.26359, -0.26839, -1.11142, -2.26955,  0.04862, 
+     0.06483,  2.21114, -1.47437, -4.15237, -0.45083,  2.03541,  1.28405,  1.54520, -0.11049, -2.22120, 
+    -3.48292,  1.72673, -0.28377,  2.06617, -0.09606, -4.40612, -2.03001,  2.13547, -0.53361,  2.34388, 
+    -0.43629, -2.55260, -1.43804,  0.27971, -0.91122,  2.65964, -1.91070, -3.50933, -0.34008,  3.26338, 
+     0.09934,  1.74737,  0.86814, -2.80922, -2.51025,  1.22813,  0.28790,  1.95993, -0.30327, -4.36486, 
+    -2.34925,  0.00000, -0.34988,  1.59718,  0.00000, -2.29823
+  };
 
   for (int i=0; i<kNChannels; i++) {
     fAdcIndex[i]              = adc_index[i];
@@ -116,6 +136,8 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     fChannel[i].fNHits           = 0;
     fChannel[i].fNReadoutHits    = 0;
     fChannel[i].fNReadoutHitsTot = 0;
+
+    fChOffset[i] = ch_offset[i]*1.0e-9; // all in seconds
   }
 
   fFreq0            = 31.29e6;
@@ -266,7 +288,7 @@ int TRocSim::SimulateEvent(int EventNumber) {
 //-----------------------------------------------------------------------------
 // now see how many pulses fit within the window
 //-----------------------------------------------------------------------------
-    double time = t0;
+    double time = t0 + fChOffset[i];
     if (i >= 48) time  = t1;
     
     if (time < 0) {
