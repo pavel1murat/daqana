@@ -1,0 +1,6 @@
+#
+* 
+* ------------------------------------------------------------------------------
+* DONE <2023-09-23 Sat> next step: move TrkFragmentAna.cc to here, make it build with muse 
+- would it be possible to build it with cmake as well ? - would muse and CMAKE interfere ? 
+* ------------------------------------------------------------------------------
