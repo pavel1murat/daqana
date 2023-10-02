@@ -200,6 +200,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   else if (rn == 105042) { _freq  = f0/(pow(2,9)+1); offset =  1128; } 
   else if (rn == 105043) { _freq  = f0/(pow(2,9)+1); offset =  1128; }
   else if (rn == 105044) { _freq  = f0/(pow(2,9)+1); offset =  1129; } // 60 kHz
+  else if (rn == 105060) { _freq  = f0/(pow(2,9)+1); offset = 11130; } // 60 kHz,1000x25 usec
   else if (rn == 105066) { _freq  = f0/(pow(2,9)+1); offset = 10580; } // 60 kHz, 700x25 usec
 
                                         // in nanoseconds
@@ -467,7 +468,7 @@ void TrkFragmentAna::analyze(const art::Event& event) {
           
           float dt1r   = (t1-t1r)*tdc_bin*1.e3;        // convert to ns
 
-          float dt1r_c = dt0r;
+          float dt1r_c = dt1r;
           if (dt1r >  dt_over_2/2) dt1r_c = dt1r + _gen_offset[i] - _dt;
           if (dt1r < -dt_over_2/2) dt1r_c = dt1r + _gen_offset[i];
           

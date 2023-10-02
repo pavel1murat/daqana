@@ -51,6 +51,8 @@ public:
   TRocChannel   fChannel   [kNChannels];
   double        fChOffset  [kNChannels];
 
+  int           fRunNumber;
+  int           fEventNumber;           // number of current event
   int           fF0;                    // run number-dependent
   int           fHb;
   
@@ -113,8 +115,9 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
 // offsets, in ns, wrt the first readout channel in a given FPGA
 // determined using run 105038
 // need to cross check their stability
-// an offsetfor a fiven 'i' is the offset of a given channel wrt the channel
-// read out first in the corresponding FPGA (first 48 channels - CAL, channels 48-95 - DIGI)
+//
+// ch_offset[i] : the offset of a given channel wrt the channel read out the first 
+//                in the corresponding FPGA (first 48 channels - CAL, channels 48-95 - DIGI)
 //-----------------------------------------------------------------------------
   double ch_offset[96] = {
     -1.91142,  0.83799, -3.60547,  2.07482, -1.33494, -1.40625, -0.85195,  1.34135, -2.98527,  1.99266, 
@@ -129,6 +132,8 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     -2.34925,  0.00000, -0.34988,  1.59718,  0.00000, -2.29823
   };
 
+  fRunNumber = RunNumber;
+
   for (int i=0; i<kNChannels; i++) {
     fAdcIndex[i]              = adc_index[i];
     fInverseMap[adc_index[i]] = i;
@@ -136,8 +141,11 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     fChannel[i].fNHits           = 0;
     fChannel[i].fNReadoutHits    = 0;
     fChannel[i].fNReadoutHitsTot = 0;
-
-    fChOffset[i] = ch_offset[i]*1.0e-9; // all in seconds
+//-----------------------------------------------------------------------------
+// runs <= 100: "perfect" runs, channel-to-channel timing offsets set to zero
+//-----------------------------------------------------------------------------
+    if (fRunNumber > 100) fChOffset[i] = ch_offset[i]*1.0e-9; // all in seconds
+    else                  fChOffset[i] = 0;
   }
 
   fFreq0            = 31.29e6;
@@ -164,6 +172,11 @@ TRocSim::~TRocSim() {
 //-----------------------------------------------------------------------------
 int TRocSim::InitRun(int RunNumber) {
 
+  if (RunNumber == 1) {
+    fF0         = 60;
+    fHb         = 2000;
+    fFpgaOffset = 0;
+  }
   if (RunNumber == 281) {
     fF0         = 60;
     fHb         = 2000;
@@ -203,6 +216,11 @@ int TRocSim::InitRun(int RunNumber) {
     fF0 = 60;
     fHb = 2200;
     fFpgaOffset = 1128.e-9;
+  }
+  else if (RunNumber  == 105060) {
+    fF0 = 60;
+    fHb = 1000;
+    fFpgaOffset = 11130.e-9;
   }
 
   return 0;
@@ -291,7 +309,9 @@ int TRocSim::SimulateEvent(int EventNumber) {
     double time = t0 + fChOffset[i];
     if (i >= 48) time  = t1;
     
-    if (time < 0) {
+    if (time < 0) time += fDeltaT ;
+
+    if (time > fEventWindow) {
       // no pulses in his channel for this event
       continue;
     }
@@ -335,6 +355,7 @@ int TRocSim::Run(int NEvents) {
   BookHistograms();
   
   for (int i=0; i<NEvents; i++) {
+    fEventNumber = i;
     SimulateEvent(i);
     FillHistograms();
   }
