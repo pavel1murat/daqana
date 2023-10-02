@@ -435,11 +435,6 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 
       ChData_t* rch = ref_ch[fpga];
 //-----------------------------------------------------------------------------
-// two times corresponding to two ends of the straw 
-//-----------------------------------------------------------------------------
-      int t0r = correctedTDC(rch->hit[0]->TDC0());
-      int t1r = correctedTDC(rch->hit[0]->TDC1());
-//-----------------------------------------------------------------------------
 // in most cases, the number of hits in the reference channel should be greater 
 // than the number of channels in any other channel of a given FPGA
 //-----------------------------------------------------------------------------
@@ -455,8 +450,13 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 //-----------------------------------------------------------------------------
 // at least one hit in both reference and test channels
 //-----------------------------------------------------------------------------
-          int t0 = correctedTDC(ch->hit[0]->TDC0());
-          int t1 = correctedTDC(ch->hit[0]->TDC1());
+//-----------------------------------------------------------------------------
+// two times corresponding to two ends of the straw 
+//-----------------------------------------------------------------------------
+          int t0r = correctedTDC(rch->hit[0]->TDC0());
+          int t1r = correctedTDC(rch->hit[0]->TDC1());
+          int t0  = correctedTDC(ch ->hit[0]->TDC0());
+          int t1  = correctedTDC(ch ->hit[0]->TDC1());
           
           float dt_over_2(_dt/2);
           
