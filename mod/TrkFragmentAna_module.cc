@@ -159,10 +159,18 @@ void TrkFragmentAna::book_histograms(int RunNumber) {
   for (int i=0; i<kNChannels; i++) {
     art::TFileDirectory chan_dir = tfs->mkdir(Form("trk/frag_0/ch_%02i",i));
     _Hist.channel[i].nhits   = chan_dir.make<TH1F>(Form("ch_%02i_nhits",i),Form("run %06i: ch %02i nhits"  ,RunNumber,i), 100, 0., 100.);
-    _Hist.channel[i].time[0] = chan_dir.make<TH1F>(Form("ch_%02i_time0",i),Form("run %06i: ch %02i time[0]",RunNumber,i),1000, 0., 100.);
-    _Hist.channel[i].time[1] = chan_dir.make<TH1F>(Form("ch_%02i_time1",i),Form("run %06i: ch %02i time[0]",RunNumber,i),1000, 0., 100.);
-    _Hist.channel[i].tot [0] = chan_dir.make<TH1F>(Form("ch_%02i_tot0" ,i),Form("run %06i: ch %02i time[0]",RunNumber,i), 100, 0., 100.);
-    _Hist.channel[i].tot [1] = chan_dir.make<TH1F>(Form("ch_%02i_tot1" ,i),Form("run %06i: ch %02i time[0]",RunNumber,i), 100, 0., 100.);
+
+    _Hist.channel[i].time[0] = chan_dir.make<TH1F>(Form("ch_%02i_time0",i),Form("run %06i: ch %02i time[0]",RunNumber,i),1000, 0., 100.);  // us
+    _Hist.channel[i].time[1] = chan_dir.make<TH1F>(Form("ch_%02i_time1",i),Form("run %06i: ch %02i time[0]",RunNumber,i),1000, 0., 100.);  // us
+
+    _Hist.channel[i].t0  [0] = chan_dir.make<TH1F>(Form("ch_%02i_t0_0" ,i),Form("run %06i: ch %02i t0[0]  ",RunNumber,i),1000,-20., 80.);  // ns
+    _Hist.channel[i].t0  [1] = chan_dir.make<TH1F>(Form("ch_%02i_t0_1" ,i),Form("run %06i: ch %02i t0[1]  ",RunNumber,i),1000,-20., 80.);  // ns
+
+    _Hist.channel[i].t1  [0] = chan_dir.make<TH1F>(Form("ch_%02i_t1_0" ,i),Form("run %06i: ch %02i t1[0]  ",RunNumber,i),1000,-20., 80.);  // ns
+    _Hist.channel[i].t1  [1] = chan_dir.make<TH1F>(Form("ch_%02i_t1_1" ,i),Form("run %06i: ch %02i t1[1]  ",RunNumber,i),1000,-20., 80.);  // ns
+
+    _Hist.channel[i].tot [0] = chan_dir.make<TH1F>(Form("ch_%02i_tot0" ,i),Form("run %06i: ch %02i tot[0]",RunNumber,i), 100, 0., 100.);
+    _Hist.channel[i].tot [1] = chan_dir.make<TH1F>(Form("ch_%02i_tot1" ,i),Form("run %06i: ch %02i tot[1]",RunNumber,i), 100, 0., 100.);
     _Hist.channel[i].pmp     = chan_dir.make<TH1F>(Form("ch_%02i_pmp"  ,i),Form("run %06i: ch %02i pmp"    ,RunNumber,i), 100, 0.,  10.);
     _Hist.channel[i].dt0     = chan_dir.make<TH1F>(Form("ch_%02i_dt0"  ,i),Form("run %06i: ch %02i T0(i+1)-T0(i)",RunNumber,i)      ,50000,  0.,50);
     _Hist.channel[i].dt1     = chan_dir.make<TH1F>(Form("ch_%02i_dt1"  ,i),Form("run %06i: ch %02i T1(i+1)-T1(i)",RunNumber,i)      ,50000,  0.,50);
@@ -192,16 +200,16 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   double f0(31.29e6);                   // 31.29 MHz
   double offset;
 
-  if      (rn ==    281) { _freq  = f0/(pow(2,9)+1); offset = 15030; } // 60 kHz
-  else if (rn == 105023) { _freq  = f0/(pow(2,7)+1); offset =     0; } // 250 kHz, undefined - no hits in lanes 2 and 3 (HV)
-  else if (rn == 105026) { _freq  = f0/(pow(2,9)+1); offset = 10400; } 
-  else if (rn == 105038) { _freq  = f0/(pow(2,9)+1); offset =  7964; } 
-  else if (rn == 105041) { _freq  = f0/(pow(2,9)+1); offset =  1128; } //  60 kHz
-  else if (rn == 105042) { _freq  = f0/(pow(2,9)+1); offset =  1128; } 
-  else if (rn == 105043) { _freq  = f0/(pow(2,9)+1); offset =  1128; }
-  else if (rn == 105044) { _freq  = f0/(pow(2,9)+1); offset =  1129; } // 60 kHz
-  else if (rn == 105060) { _freq  = f0/(pow(2,9)+1); offset = 11130; } // 60 kHz,1000x25 usec
-  else if (rn == 105066) { _freq  = f0/(pow(2,9)+1); offset = 10580; } // 60 kHz, 700x25 usec
+  if      (rn ==    281) { _freq  = f0/(pow(2,9)+1); _time_window = 50000. ; offset = 15030; } // 60 kHz
+  else if (rn == 105023) { _freq  = f0/(pow(2,7)+1); _time_window = 25000. ; offset =     0; } // 250 kHz, undefined - no hits in lanes 2 and 3 (HV)
+  else if (rn == 105026) { _freq  = f0/(pow(2,9)+1); _time_window = 50000. ; offset = 10400; } 
+  else if (rn == 105038) { _freq  = f0/(pow(2,9)+1); _time_window = 25000. ; offset =  7964; } 
+  else if (rn == 105041) { _freq  = f0/(pow(2,9)+1); _time_window = 35000. ; offset =  1128; } //  60 kHz
+  else if (rn == 105042) { _freq  = f0/(pow(2,9)+1); _time_window = 40000. ; offset =  1128; } 
+  else if (rn == 105043) { _freq  = f0/(pow(2,9)+1); _time_window = 60000. ; offset =  1128; }
+  else if (rn == 105044) { _freq  = f0/(pow(2,9)+1); _time_window = 55000. ; offset =  1129; } // 60 kHz
+  else if (rn == 105060) { _freq  = f0/(pow(2,9)+1); _time_window = 25000. ; offset = 11130; } // 60 kHz,1000x25 usec
+  else if (rn == 105066) { _freq  = f0/(pow(2,9)+1); _time_window = 17500. ; offset = 10580; } // 60 kHz, 700x25 usec
 
                                         // in nanoseconds
   _dt   = 1/_freq*1.e9;
@@ -363,6 +371,14 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 
       _Hist.channel[ich].time[0]->Fill(corr_tdc0*tdc_bin);
       _Hist.channel[ich].time[1]->Fill(corr_tdc1*tdc_bin);
+
+      double tdc_bin_ns = tdc_bin*1e3;                           // convert to ns
+
+      _Hist.channel[ich].t0[0]->Fill(corr_tdc0*tdc_bin_ns);
+      _Hist.channel[ich].t0[1]->Fill(corr_tdc1*tdc_bin_ns);
+
+      _Hist.channel[ich].t1[0]->Fill(_time_window-corr_tdc0*tdc_bin_ns);
+      _Hist.channel[ich].t1[1]->Fill(_time_window-corr_tdc1*tdc_bin_ns);
 
       _Hist.channel[ich].tot [0]->Fill(hit->TOT0);
       _Hist.channel[ich].tot [1]->Fill(hit->TOT1);

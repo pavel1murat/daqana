@@ -92,8 +92,9 @@ namespace mu2e {
     int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
     double           _gen_offset  [kNChannels];
 
-    double           _freq; // generator frequency, defined by the run number
-    double           _dt;   // expected distance between the two pulses
+    double           _freq;        // generator frequency, defined by the run number
+    double           _dt;          // expected distance between the two pulses
+    double           _time_window; // time window (tistance between the two EWMs for a given run
 
     struct EventHist_t {
       TH1F*         nbtot;
@@ -129,6 +130,8 @@ namespace mu2e {
     struct ChannelHist_t {
       TH1F*         nhits;
       TH1F*         time[2];
+      TH1F*         t0  [2];             // early times in ns
+      TH1F*         t1  [2];             // late  times in ns
       TH1F*         tot [2];
       TH1F*         pmp;
       TH1F*         dt0;                 // T0 distance between the two consequtive pulses

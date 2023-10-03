@@ -98,18 +98,18 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     91, 85, 79, 73, 67, 61, 55, 49,
     43, 37, 31, 25, 19, 13,  7,  1,
     90, 84, 78, 72, 66, 60, 54, 48,
-    
+      
     42, 36, 30, 24, 18, 12,  6,  0,
     93, 87, 81, 75, 69, 63, 57, 51,
     45, 39, 33, 27, 21, 15,  9,  3,
-    
+      
+    94, 88, 82, 76, 70, 64, 58, 52,
+    46, 40, 34, 28, 22, 16, 10,  4,
+    95, 89, 83, 77, 71, 65, 59, 53,
+      
     44, 38, 32, 26, 20, 14,  8,  2, 
     92, 86, 80, 74, 68, 62, 56, 50,
-    47, 41, 35, 29, 23, 17, 11,  5,
-      
-    95, 89, 83, 77, 71, 65, 59, 53,
-    46, 40, 34, 28, 22, 16, 10,  4,
-    94, 88, 82, 76, 70, 64, 58, 52
+    47, 41, 35, 29, 23, 17, 11,  5
   };
 //-----------------------------------------------------------------------------
 // offsets, in ns, wrt the first readout channel in a given FPGA
@@ -238,9 +238,9 @@ int TRocSim::BookHistograms() {
   fHistFolder->Add(fHist.fEvent.fNReadoutHitsTot);
   
   for (int i=0; i<kNChannels; i++) {
-    fHist.fChannel[i].fNHits = new TH1F(Form("nh_%02i"  ,i),Form("nhits ch # %02i",i),  20,0,20);
-    fHist.fChannel[i].fTime  = new TH1F(Form("time_%02i",i),Form("time  ch # %02i",i),1000,0,fEventWindow);
-    fHist.fChannel[i].fDt    = new TH1F(Form("dt_%02i"  ,i),Form("dt    ch # %02i",i),1000,-fEventWindow/2,fEventWindow/2);
+    fHist.fChannel[i].fNHits = new TH1F(Form("nh_%02i"  ,i),Form("nhits ch # %02i"      ,i),  20,0,20);
+    fHist.fChannel[i].fTime  = new TH1F(Form("time_%02i",i),Form("time  ch # %02i, [us]",i),1000,0,100);  // usec
+    fHist.fChannel[i].fDt    = new TH1F(Form("dt_%02i"  ,i),Form("dt    ch # %02i"      ,i),1000,-fEventWindow/2,fEventWindow/2);
 
     TFolder* f = fHistFolder->AddFolder(Form("ch_%02i",i),Form("ch_%02i_folder",i));
     f->Add(fHist.fChannel[i].fNHits);
@@ -269,7 +269,7 @@ int TRocSim::FillHistograms() {
 
     for (int ih=0;ih<nh; ih++) {
       double time = ch->fHit[ih].fTime;
-      fHist.fChannel[ich].fTime->Fill(time);
+      fHist.fChannel[ich].fTime->Fill(time*1.e6);
 
       if (ih == 0) {
         fHist.fChannel[ich].fDt->Fill(time-tref);
