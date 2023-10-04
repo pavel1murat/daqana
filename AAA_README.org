@@ -4,3 +4,10 @@
 * DONE <2023-09-23 Sat> next step: move TrkFragmentAna.cc to here, make it build with muse 
 - would it be possible to build it with cmake as well ? - would muse and CMAKE interfere ? 
 * ------------------------------------------------------------------------------
+* run duration 
+  produced by : otsdaq_mu2e_tracker/scripts/parse_run_duration.awk
+  file:parsed/run_duration.txt : use TTRee::ReadFile
+
+  ok = 0: failed, zero length reads
+     = 1: finished successfully
+     = 2: failed, timeouts
