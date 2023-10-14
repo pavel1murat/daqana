@@ -1,0 +1,102 @@
+# -*- mode:tcl -*-
+# debug only : dump events
+#-----------------------------------------------------------------------------
+BEGIN_PROLOG
+  STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+  STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+  GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+  PDG_ID              : 0                                    # 0: ignore PDG_ID
+END_PROLOG
+
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/TrkReco/fcl/prolog.fcl"
+
+#include "Stntuple/fcl/prolog.fcl"
+#include "daqana/fcl/prolog.fcl"
+
+process_name : TrkFragmentAna
+
+source : {
+   module_type : RootInput
+   fileNames   : @nil
+
+   # firstEvent  : 500
+   maxEvents   : -1
+#   inputCommands: ["keep *",
+#                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+services : @local::Services.Reco
+
+physics : {
+    
+    producers : { }
+    filters   : { }
+    
+    analyzers : {
+	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
+	    trkfCollTag         : "daq:TRK"   # 
+#	    diagLevel           : 2           # print one line per event
+#	    diagLevel           : 3           # print the whole event
+            minNBytes           : 4800
+            maxNBytes           : 6000
+	    
+	    interactiveMode     : 0
+	    maxFileSize         : 2000   # in MBytes
+#------------------------------------------------------------------------------
+# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
+# in interpreted mode in the art event loop
+# see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
+#------------------------------------------------------------------------------
+	    rootMacro           : ""
+	}
+    }
+
+# t1 : [ PrefetchDAQData, makeSD , CaloDigiMaker, CaloHitMaker, CaloClusterFast]
+    # t1 : [ PrefetchDAQData, makeSD , CaloHitMaker, CaloClusterFast]
+
+    t1 : [  ]
+    # t1 : [ makeSD , makeSH ]
+    # t1 : [ makeSD ]
+
+    e1 : [ TrkFragmentAna]
+    # e1 : []
+
+    trigger_paths  : [ t1 ]
+    end_paths      : [ e1 ]
+}
+
+# outputs:  {
+#     outfile :  {
+#         module_type   :   RootOutput
+#         fileName      :   "trk_fragment_ana.art"
+# 
+#         outputCommands: [
+#                          "drop *_*_*_*",
+#                          "keep *_*_*_*"
+#                         ]
+#     }
+# }
+
+# services.TimeTracker : {
+#     dbOutput : {
+#         filename  : "trk_fragment_ana.sqlite3"
+#         overwrite : true
+#     }
+# }
+#------------------------------------------------------------------------------
+services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
+services.scheduler.wantSummary                   : true
+
+# physics.analyzers.TrkFragmentAna.diagLevel       : 0 # no debug  printout
+physics.analyzers.TrkFragmentAna.diagLevel       : 2 # print one line per event
+# physics.analyzers.TrkFragmentAna.diagLevel        : 3 # event dump
+# physics.analyzers.TrkFragmentAna.dumpDTCRegisters : 1 # event dump
+
+# physics.analyzers.TrkFragmentAna.interactiveMode : 2  ## 1:stop on every event, 2:stop in the end
+# physics.analyzers.TrkFragmentAna.rootMacro       : "display_001.C"
+
+#physics.producers.makeSD.diagLevel        : 10
+#physics.producers.CaloDigiMaker.diagLevel : 10

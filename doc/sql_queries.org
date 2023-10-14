@@ -1,0 +1,18 @@
+#
+* ------------------------------------------------------------------------------
+* some useful queries of the online Postgresql DB
+* ------------------------------------------------------------------------------
+* extract run duration                                                       
+#+begin_src 
+SELECT run_number        as rn,
+       s.transition_time as start_time,
+       e.transition_time as end_time  ,
+       EXTRACT('epoch' FROM (e.transition_time - s.transition_time)) AS run_duration_in_sec 
+FROM  (SELECT * FROM test.run_transition WHERE transition_type = 1) e
+JOIN  (SELECT * FROM test.run_transition WHERE transition_type = 5) s
+USING (run_number)
+where run_number > 105060 ;
+#+end_src
+* ------------------------------------------------------------------------------
+* back to [[file:daqana.org]]
+* ------------------------------------------------------------------------------

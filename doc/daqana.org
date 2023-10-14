@@ -1,0 +1,10 @@
+#+startup:fold
+* ------------------------------------------------------------------------------
+* TrkFragmentAna event processing codes                                      
+- 0 : OK
+- 1 : wrong channel ID
+- 2 : too many hits in a channel
+- 3 : fragment nbytes > maxFragmentSize
+- 4 : unexpected link ID 
+* [[file:sql_queries.org][SQL queries]]
+* ------------------------------------------------------------------------------
