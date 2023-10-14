@@ -62,6 +62,7 @@ public:
   double        fDeltaT;                // time distance between the two generated pulses
   double        fTimeBin;
   double        fFpgaOffset;
+  double        fDtEmpty;               // empty gap
 
   int           fRefChannel;            // reference channel
 
@@ -157,6 +158,7 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
   
   fDeltaT           = 1./fGenFreq;         // distance between the pulses
   fEventWindow      = 25.e-9*fHb;          // 25 microseconds in seconds
+  fDtEmpty          = 4.e-9;               // 4ns not enough, 100 ns is also not enough
   fTimeBin          = (5./256)*1.e-9;      // TDC time bin, sec
   fMaxNHitsPerEvent = 255;
   fRefChannel       = 42;
@@ -311,14 +313,14 @@ int TRocSim::SimulateEvent(int EventNumber) {
     
     if (time < 0) time += fDeltaT ;
 
-    if (time > fEventWindow) {
-      // no pulses in his channel for this event
+    if (time > fEventWindow-fDtEmpty) {
+      // no pulses in the channel for this event
       continue;
     }
 //-----------------------------------------------------------------------------
 // calculate the number of pulses in this event
 //-----------------------------------------------------------------------------
-    while (time < fEventWindow) {
+    while (time < fEventWindow - fDtEmpty) {
       ch->fHit[ch->fNHits].fTime = time;
       ch->fNHits                += 1;
       time                      += fDeltaT;
