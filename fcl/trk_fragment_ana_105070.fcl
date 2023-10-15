@@ -53,6 +53,8 @@ physics : {
 # run-dependent parameters 
 #------------------------------------------------------------------------------
             maxFragmentSize     : 20000
+            timeWindow          :  2000
+            pulserFrequency     :    60
             activeLinks         : [ 0, 1 ]        ## links : 0x11
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 

@@ -42,8 +42,9 @@ physics : {
     analyzers : {
 	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
 	    trkfCollTag         : "daq:TRK"   # 
-#	    diagLevel           : 2           # print one line per event
-#	    diagLevel           : 3           # print the whole event
+            diagLevel           : 0           ## no printout
+#	    diagLevel           : 2           # print one line per wrong-size event
+#	    diagLevel           : 3           # hex dump of the whole event, all events
             minNBytes           : 4800
             maxNBytes           : 6000
 	    
@@ -53,48 +54,25 @@ physics : {
 # run-dependent parameters 
 #------------------------------------------------------------------------------
             maxFragmentSize     : 20000
+            timeWindow          :  2000
+            pulserFrequency     :    60
             activeLinks         : [ 0, 1 ]        ## links : 0x11
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
-	    rootMacro           : ""
+            interactiveMode     : 0              ## 1:stop on every event, 2:stop in the end
+	    rootMacro           : ""             ## "display_001.C"
 	}
     }
 
-# t1 : [ PrefetchDAQData, makeSD , CaloDigiMaker, CaloHitMaker, CaloClusterFast]
-    # t1 : [ PrefetchDAQData, makeSD , CaloHitMaker, CaloClusterFast]
-
     t1 : [  ]
-    # t1 : [ makeSD , makeSH ]
-    # t1 : [ makeSD ]
-
     e1 : [ TrkFragmentAna]
-    # e1 : []
 
     trigger_paths  : [ t1 ]
     end_paths      : [ e1 ]
 }
-
-# outputs:  {
-#     outfile :  {
-#         module_type   :   RootOutput
-#         fileName      :   "trk_fragment_ana.art"
-# 
-#         outputCommands: [
-#                          "drop *_*_*_*",
-#                          "keep *_*_*_*"
-#                         ]
-#     }
-# }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
@@ -103,13 +81,4 @@ source.fileNames : [
                     "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.105068_00000001.art"
                    ]
 
-physics.analyzers.TrkFragmentAna.diagLevel       : 0 # no debug  printout
-# physics.analyzers.TrkFragmentAna.diagLevel       : 2 # print one line per wrong size event
-# physics.analyzers.TrkFragmentAna.diagLevel        : 3 # event dump (all events)
 # physics.analyzers.TrkFragmentAna.dumpDTCRegisters : 1 # DTC register dump
-
-# physics.analyzers.TrkFragmentAna.interactiveMode : 2  ## 1:stop on every event, 2:stop in the end
-# physics.analyzers.TrkFragmentAna.rootMacro       : "display_001.C"
-
-#physics.producers.makeSD.diagLevel        : 10
-#physics.producers.CaloDigiMaker.diagLevel : 10

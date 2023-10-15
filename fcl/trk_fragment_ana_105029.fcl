@@ -55,7 +55,7 @@ physics : {
             maxFragmentSize     : 10000
             timeWindow          :  2000
             pulserFrequency     :    60
-            activeLinks         : [ 0 ]        ## links : 0x11
+            activeLinks         : [ 0 ]        ## links : 0x01
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop

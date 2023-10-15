@@ -54,7 +54,7 @@ physics : {
 #------------------------------------------------------------------------------
             maxFragmentSize     : 10000
             timeWindow          : 500          ## in 25 ns bins
-            frequency           : 60           ## kHz
+            pilserFrequency     : 60           ## kHz
             activeLinks         : [ 2 ]        ## 0x100
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
@@ -65,38 +65,12 @@ physics : {
 	}
     }
 
-# t1 : [ PrefetchDAQData, makeSD , CaloDigiMaker, CaloHitMaker, CaloClusterFast]
-    # t1 : [ PrefetchDAQData, makeSD , CaloHitMaker, CaloClusterFast]
-
     t1 : [  ]
-    # t1 : [ makeSD , makeSH ]
-    # t1 : [ makeSD ]
-
     e1 : [ TrkFragmentAna]
-    # e1 : []
 
     trigger_paths  : [ t1 ]
     end_paths      : [ e1 ]
 }
-
-# outputs:  {
-#     outfile :  {
-#         module_type   :   RootOutput
-#         fileName      :   "trk_fragment_ana.art"
-# 
-#         outputCommands: [
-#                          "drop *_*_*_*",
-#                          "keep *_*_*_*"
-#                         ]
-#     }
-# }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
