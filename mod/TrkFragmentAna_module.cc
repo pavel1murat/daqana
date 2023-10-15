@@ -69,8 +69,18 @@ unsigned int correctedTDC(unsigned int TDC) {
     _trkfCollTag     (PSet.get<std::string>     ("trkfCollTag"     )),
     _dumpDTCRegisters(PSet.get<int>             ("dumpDTCRegisters")),
     _analyzeFragments(PSet.get<int>             ("analyzeFragments")),
-    _maxFragmentSize (PSet.get<int>             ("maxFragmentSize" ))
+    _maxFragmentSize (PSet.get<int>             ("maxFragmentSize" )),
+    _pulserFrequency (PSet.get<int>             ("pulserFrequency" ))
   {
+
+    double f0(31.29e6);                   // 31.29 MHz
+
+    _timeWindow = PSet.get<int>("timeWindow")*25.;  // in ns
+
+    if      (_pulserFrequency ==  60) _freq = f0/(pow(2,9)+1);     // ~ 60 kHz
+    else if (_pulserFrequency == 250) _freq = f0/(pow(2,7)+1);     // ~250 kHz
+
+    _dt   = 1/_freq*1.e9;               // in ns
 //------------------------------------------------------------------------------
 // default map, Richie says TS1 may have an old firmware with some bugs
 //-----------------------------------------------------------------------------
@@ -134,6 +144,8 @@ unsigned int correctedTDC(unsigned int TDC) {
 
     _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
     _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
+
+    _initialized         = 0;
   }
 
 
@@ -237,9 +249,13 @@ unsigned int correctedTDC(unsigned int TDC) {
 //-----------------------------------------------------------------------------
 // for run<=285, wasn't saving the event header and subheader, 64 bytes in total
 // or 32 2-byte words
+// book histograms only once
 //-----------------------------------------------------------------------------
 void TrkFragmentAna::beginRun(const art::Run& aRun) {
   int rn  = aRun.run();
+
+  if (_initialized != 0) return;
+  _initialized = 1;
 
   if (rn <= 285) _dataHeaderOffset =  0;
   else           _dataHeaderOffset = 32;
@@ -247,37 +263,21 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // init timing offsets for known runs
 // 'offset' is defined from the analysis of the dt0r_vs_ch_0
 //-----------------------------------------------------------------------------
-  double f0(31.29e6);                   // 31.29 MHz
-  double offset;
+  double offset(0);
 
-  if      (rn ==    281) { 
-    _freq        = f0/(pow(2,9)+1);           // 60 kHz
-    _time_window = 50000. ; 
-    offset       = 15030; 
-    _activeLinks.clear();
-    _activeLinks.push_back(2);
-  }
-  else if (rn == 105023) { _freq  = f0/(pow(2,7)+1); _time_window = 25000. ; offset =     0; } // 250 kHz, undefined - no hits in lanes 2 and 3 (HV)
-  else if (rn == 105026) { _freq  = f0/(pow(2,9)+1); _time_window = 50000. ; offset = 10400; } 
-  else if (rn == 105038) { _freq  = f0/(pow(2,9)+1); _time_window = 25000. ; offset =  7964; } 
-  else if (rn == 105041) { _freq  = f0/(pow(2,9)+1); _time_window = 35000. ; offset =  1128; } //  60 kHz
-  else if (rn == 105042) { _freq  = f0/(pow(2,9)+1); _time_window = 40000. ; offset =  1128; } 
-  else if (rn == 105043) { _freq  = f0/(pow(2,9)+1); _time_window = 60000. ; offset =  1128; }
-  else if (rn == 105044) { _freq  = f0/(pow(2,9)+1); _time_window = 55000. ; offset =  1129; } // 60 kHz
-  else if (rn == 105060) { _freq  = f0/(pow(2,9)+1); _time_window = 25000. ; offset = 11130; } // 60 kHz,1000x25 usec
-  else if (rn == 105066) { _freq  = f0/(pow(2,9)+1); _time_window = 17500. ; offset = 10580; } // 60 kHz, 700x25 usec
-  else if ((rn >= 105066) and (rn <= 105070)) {
-    // four runs with the same settings, no data file for 105067 
-    // the offset to be updated - with two active ROCs, there will be more than one... 
-    _freq  = f0/(pow(2,9)+1); _time_window = 50000. ; offset = 0; 
-    _activeLinks.clear();
-    _activeLinks.push_back(0);
-    _activeLinks.push_back(1);
-  }
-
-  _nActiveLinks = _activeLinks.size();
-                                        // in nanoseconds
-  _dt   = 1/_freq*1.e9;
+  if      (rn ==    281) offset = 15030; 
+  else if (rn == 105023) offset =     0;
+  else if (rn == 105026) offset = 10400;
+  else if (rn == 105038) offset =  7964; 
+  else if (rn == 105041) offset =  1128;
+  else if (rn == 105042) offset =  1128;
+  else if (rn == 105043) offset =  1128;
+  else if (rn == 105044) offset =  1129;
+  else if (rn == 105059) offset =     0; 
+  else if (rn == 105060) offset = 11130; 
+  else if (rn == 105066) offset = 10580;
+  // 105067-1105070: four runs with the same settings, 2 ROCs, no data file for 105067 
+  else if ((rn >= 105067) and (rn <= 105070)) offset = 0;
 //-----------------------------------------------------------------------------
 // add 20 ns to have the HV lanes distinct on the plot
 //-----------------------------------------------------------------------------
@@ -354,8 +354,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         hch->t0  [0]->Fill(corr_tdc0*_tdc_bin_ns);
         hch->t0  [1]->Fill(corr_tdc1*_tdc_bin_ns);
 
-        hch->t1  [0]->Fill(_time_window-corr_tdc0*_tdc_bin_ns);
-        hch->t1  [1]->Fill(_time_window-corr_tdc1*_tdc_bin_ns);
+        hch->t1  [0]->Fill(_timeWindow-corr_tdc0*_tdc_bin_ns);
+        hch->t1  [1]->Fill(_timeWindow-corr_tdc1*_tdc_bin_ns);
 
         hch->tot [0]->Fill(hit->TOT0);
         hch->tot [1]->Fill(hit->TOT1);

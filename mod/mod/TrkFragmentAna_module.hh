@@ -75,31 +75,6 @@ namespace mu2e {
       uint16_t            hitData[10000];
     };
 
-    DtcDataBlock_t*  _trkFragment;
-
-    int              _diagLevel;
-    int              _minNBytes;
-    int              _maxNBytes;
-    int              _dataHeaderOffset;
-    std::vector<int> _activeLinks;            // active links - connected ROCs
-    int              _nActiveLinks;
-
-    art::InputTag    _trkfCollTag;
-    int              _dumpDTCRegisters;
-    int              _referenceChannel[kMaxNLinks][2];
-    int              _analyzeFragments;
-    int              _maxFragmentSize;
-    
-    int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
-    int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
-    double           _gen_offset  [kNChannels];
-
-    double           _freq;           // generator frequency, defined by the run number
-    double           _dt;             // expected distance between the two pulses
-    double           _time_window;    // time window (tistance between the two EWMs for a given run
-    double           _tdc_bin;        // 
-    double           _tdc_bin_ns;     // TDC bin, in nanoseconds
-
     struct ChannelHist_t {
       TH1F*         nhits;
       TH1F*         time[2];
@@ -151,13 +126,6 @@ namespace mu2e {
 
       ChannelHist_t channel[kNChannels];
     };
-//-----------------------------------------------------------------------------
-// forgetting, for now, about multiple DTC's
-//-----------------------------------------------------------------------------
-    struct Hist_t {
-      EventHist_t   event;
-      RocHist_t     roc[kMaxNLinks];
-    } _Hist;
 
     struct ChannelData_t {
       int      nhits;
@@ -186,7 +154,52 @@ namespace mu2e {
     struct FragmentData_t {
       int       nbytes;
     };
-                                        // in reality, this is fragment data, could be multiple fragments
+
+    // struct Config {
+    //   fhicl::Atom<int>               diagLevel{fhicl::Name("diagLevel"), fhicl::Comment("diagnostic level")};
+    //   fhicl::Atom<int>               parseTRK {fhicl::Name("parseTRK" ), fhicl::Comment("parseTRK"        )};
+    //   fhicl::Atom<art::InputTag>     trkTag   {fhicl::Name("trkTag"   ), fhicl::Comment("trkTag"          )};
+    //   fhicl::Table<TAnaDump::Config> tAnaDump {fhicl::Name("tAnaDump" ), fhichl::Comment("Diag plugin"    )};
+    // };
+//-----------------------------------------------------------------------------
+// data part
+//-----------------------------------------------------------------------------
+                                        // in reality, this is the fragment data, 
+                                        // an event can contain multiple fragments
+    DtcDataBlock_t*  _trkFragment;
+
+    int              _diagLevel;
+    int              _minNBytes;
+    int              _maxNBytes;
+    int              _dataHeaderOffset;
+    std::vector<int> _activeLinks;            // active links - connected ROCs
+    int              _nActiveLinks;
+
+    art::InputTag    _trkfCollTag;
+    int              _dumpDTCRegisters;
+    int              _referenceChannel[kMaxNLinks][2];
+    int              _analyzeFragments;
+    int              _maxFragmentSize;
+    int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
+    int              _pulserFrequency;          // in kHz, either 60 or 250
+    
+    int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
+    int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
+    double           _gen_offset  [kNChannels];
+
+    double           _freq;           // generator frequency, defined by the run number
+    double           _dt;             // expected distance between the two pulses
+    double           _tdc_bin;        // 
+    double           _tdc_bin_ns;     // TDC bin, in nanoseconds
+    int              _initialized;    // histograms are booked in beginRun, protect ...
+//-----------------------------------------------------------------------------
+// forgetting, for now, about multiple DTC's
+//-----------------------------------------------------------------------------
+    struct Hist_t {
+      EventHist_t   event;
+      RocHist_t     roc[kMaxNLinks];
+    } _Hist;
+
     struct EventData_t {
       int       nbtot;                  // total nbytes
       int       nhtot;
@@ -198,13 +211,6 @@ namespace mu2e {
       std::vector<FragmentData_t> fragments;
     } _event_data;
 
-    // struct Config {
-    //   fhicl::Atom<int>               diagLevel{fhicl::Name("diagLevel"), fhicl::Comment("diagnostic level")};
-    //   fhicl::Atom<int>               parseTRK {fhicl::Name("parseTRK" ), fhicl::Comment("parseTRK"        )};
-    //   fhicl::Atom<art::InputTag>     trkTag   {fhicl::Name("trkTag"   ), fhicl::Comment("trkTag"          )};
-    //   fhicl::Table<TAnaDump::Config> tAnaDump {fhicl::Name("tAnaDump" ), fhichl::Comment("Diag plugin"    )};
-    // };
-    
     explicit TrkFragmentAna(fhicl::ParameterSet const& pset);
     // explicit TrkFragmentAna(const art::EDAnalyzer::Table<Config>& config);
     virtual ~TrkFragmentAna() {}
