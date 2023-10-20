@@ -343,7 +343,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // there are hits in this channel
 //-----------------------------------------------------------------------------
       for (int ih=0; ih<chd->nhits; ih++) {
-        TrackerFragment::DataPacket* hit = chd->hit[ih];
+        TrackerFragment::TrackerDataPacket* hit = chd->hit[ih];
 
         uint32_t corr_tdc0 = correctedTDC(hit->TDC0());
         uint32_t corr_tdc1 = correctedTDC(hit->TDC1());
@@ -365,24 +365,24 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
         uint16_t adc[15];
 
-        adc[ 0] = reverseBits(hit->_ADC00);
-        adc[ 1] = reverseBits(hit->_ADC01A + (hit->_ADC01B << 6));
-        adc[ 2] = reverseBits(hit->_ADC02);
+        adc[ 0] = reverseBits(hit->ADC00);
+        adc[ 1] = reverseBits(hit->ADC01A + (hit->ADC01B << 6));
+        adc[ 2] = reverseBits(hit->ADC02);
 
-        TrackerFragment::ADCPacket* ahit = (TrackerFragment::ADCPacket*) ((uint16_t*)hit+6);
+        TrackerFragment::TrackerADCPacket* ahit = (TrackerFragment::TrackerADCPacket*) ((uint16_t*)hit+6);
 
-        adc[ 3] = reverseBits(ahit->_ADC0);
-        adc[ 4] = reverseBits(ahit->_ADC1A + (ahit->_ADC1B << 6));
-        adc[ 5] = reverseBits(ahit->_ADC2);
-        adc[ 6] = reverseBits(ahit->_ADC3);
-        adc[ 7] = reverseBits(ahit->_ADC4A + (ahit->_ADC4B << 6));
-        adc[ 8] = reverseBits(ahit->_ADC5);
-        adc[ 9] = reverseBits(ahit->_ADC6);
-        adc[10] = reverseBits(ahit->_ADC7A + (ahit->_ADC7B << 6));
-        adc[11] = reverseBits(ahit->_ADC5);
-        adc[12] = reverseBits(ahit->_ADC6);
-        adc[13] = reverseBits(ahit->_ADC10A + (ahit->_ADC10B << 6));
-        adc[14] = reverseBits(ahit->_ADC11);
+        adc[ 3] = reverseBits(ahit->ADC0);
+        adc[ 4] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
+        adc[ 5] = reverseBits(ahit->ADC2);
+        adc[ 6] = reverseBits(ahit->ADC3);
+        adc[ 7] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
+        adc[ 8] = reverseBits(ahit->ADC5);
+        adc[ 9] = reverseBits(ahit->ADC6);
+        adc[10] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
+        adc[11] = reverseBits(ahit->ADC5);
+        adc[12] = reverseBits(ahit->ADC6);
+        adc[13] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
+        adc[14] = reverseBits(ahit->ADC11);
         
         Hist->channel[ich].wf[ih]->Reset();
         for (int is=0; is<15; is++) {
@@ -536,8 +536,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
-        TrackerFragment::DataPacket* hit ;
-        hit     = (TrackerFragment::DataPacket*) (fdata+ihit*0x10+_dataHeaderOffset+0x08);
+        TrackerFragment::TrackerDataPacket* hit ;
+        hit     = (TrackerFragment::TrackerDataPacket*) (fdata+ihit*0x10+_dataHeaderOffset+0x08);
         int ich = hit->StrawIndex;
 
         if (ich > 128) ich = ich-128;
@@ -651,10 +651,17 @@ void TrkFragmentAna::analyze(const art::Event& event) {
     int nbytes  = buf[0];
     int fsize   = frag.sizeBytes();
 
+    if (nbytes < 2) {
+      _event_data.error = 5;
+      printf ("event %6i:%8i:%8i : ERROR:%i in %s: nbytes >= %i BAIL OUT\n",
+              event.run(),event.subRun(),event.event(),_event_data.error,
+              __func__,nbytes);
+    }
+
     _event_data.nfrag += 1;
     _event_data.nbtot += nbytes;        // including artdaq part
 
-    if (_analyzeFragments) analyze_fragment(event,&frag);
+    if ((_event_data.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
 
     if (_diagLevel > 2) {
       printf("%s: ---------- TRK fragment # %3i nbytes: %5i fsize: %5i\n",__func__,ifrag,nbytes,fsize);
@@ -681,7 +688,9 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 //-----------------------------------------------------------------------------
 // event data un(re)packed , fill histograms
 //-----------------------------------------------------------------------------
-  fill_histograms();
+  if (_analyzeFragments != 0) {
+    fill_histograms();
+  }
 //-----------------------------------------------------------------------------
 // DTC registers
 //-----------------------------------------------------------------------------

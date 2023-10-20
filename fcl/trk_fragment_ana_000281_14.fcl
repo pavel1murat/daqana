@@ -1,5 +1,9 @@
 # -*- mode:tcl -*-
-# debug only : dump events
+# Run StrawAndCaloDigisFromFragments module to convert artdaq::Fragment collections
+# into TRK and CAL digi collections.
+# Usage: mu2e -c DAQ/test/generateDigiFromFragment.fcl -s <input art files> -n '-1'
+#
+#
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
@@ -51,8 +55,7 @@ physics : {
             maxFragmentSize     : 10000
             timeWindow          : 2000         ## in 25 ns bins
             pulserFrequency     : 60           ## kHz
-            activeLinks         : [ 0, 1 ]     ## 0x100
-            analyzeFragments    : 0
+            activeLinks         : [ 2 ]        ## 0x100
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
@@ -62,47 +65,37 @@ physics : {
 	}
     }
 
-# t1 : [ PrefetchDAQData, makeSD , CaloDigiMaker, CaloHitMaker, CaloClusterFast]
-    # t1 : [ PrefetchDAQData, makeSD , CaloHitMaker, CaloClusterFast]
-
     t1 : [  ]
-    # t1 : [ makeSD , makeSH ]
-    # t1 : [ makeSD ]
-
     e1 : [ TrkFragmentAna]
-    # e1 : []
 
     trigger_paths  : [ t1 ]
     end_paths      : [ e1 ]
 }
-
-# outputs:  {
-#     outfile :  {
-#         module_type   :   RootOutput
-#         fileName      :   "trk_fragment_ana.art"
-# 
-#         outputCommands: [
-#                          "drop *_*_*_*",
-#                          "keep *_*_*_*"
-#                         ]
-#     }
-# }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
-# physics.analyzers.TrkFragmentAna.diagLevel       : 0 # no debug  printout
-# physics.analyzers.TrkFragmentAna.diagLevel       : 2 # print one line per event
-physics.analyzers.TrkFragmentAna.analyzeFragments : 0 #
-physics.analyzers.TrkFragmentAna.diagLevel        : 3 # event dump
-# physics.analyzers.TrkFragmentAna.dumpDTCRegisters : 1 # event dump
+source.fileNames : [ 
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000001.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000002.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000003.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000004.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000005.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000006.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000007.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000008.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000009.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000010.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000011.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000012.art",
+#                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000013.art",
+                    "/srv/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000281_00000014.art"
+                   ]
+
+physics.analyzers.TrkFragmentAna.diagLevel       : 0 # no debug  printout
+# physics.analyzers.TrkFragmentAna.diagLevel       : 2 # print one line per wrong size event
+# physics.analyzers.TrkFragmentAna.diagLevel        : 3 # event dump (all events)
+# physics.analyzers.TrkFragmentAna.dumpDTCRegisters : 1 # DTC register dump
 
 # physics.analyzers.TrkFragmentAna.interactiveMode : 2  ## 1:stop on every event, 2:stop in the end
 # physics.analyzers.TrkFragmentAna.rootMacro       : "display_001.C"

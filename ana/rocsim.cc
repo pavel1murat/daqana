@@ -1,106 +1,9 @@
-#include "TH1.h"
-#include "TH2.h"
-#include "TRandom3.h"
-#include "TFolder.h"
-#include "TFile.h"
-#include <TStyle.h>
+/////////////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////////////
+#include "Stntuple/loop/TStnAna.hh"
 
-//-----------------------------------------------------------------------------
-class THit : public TObject {
-public:
-  long int fTdc;
-  double   fTime;
-};
-
-//-----------------------------------------------------------------------------
-class TRocChannel : public TObject {
-public:
-  THit       fHit[20];                  // in a given event
-  int        fNHits;                    // in a given event
-  int        fNReadoutHits;             // in a given event
-  int        fNReadoutHits_fpga1;             // in a given event
-  int        fNReadoutHits_fpga2;             // in a given event
-  int        fNReadoutHitsTot_fpga1;            
-  int        fNReadoutHitsTot_fpga2;             
-  int        fNReadoutHitsTot;          // total number of hits readout in a channel
-};
-
-
-//-----------------------------------------------------------------------------
-class TRocSim: public TNamed {
-public:
-  enum { kNChannels = 96 } ;
-
-  struct ChannelHist_t {
-    TH1F* fNHits;
-    TH1F* fTime;
-    TH1F* fDt;                          // fTime - fTime(ref_channel)
-  };
-
-  struct EventHist_t {
-    TH1F* fNReadoutHitsTot;
-    TH1F* fNHits_fpga1;
-    TH1F* fNHits_fpga2;
-    TH1F* fNHitsTot_fpga1;
-    TH1F* fNHitsTot_fpga2;
-    TH1F* fNReadoutHitsTot_fpga1;
-    TH1F* fNReadoutHitsTot_fpga2;
-    TH1F* fNHitsTotVsIch;
-    TH1F* fNHitsTotVsAdc;
-  };
-
-  
-  struct Hist_t {
-    ChannelHist_t   fChannel[kNChannels] ;
-    EventHist_t     fEvent;
-  } fHist;
-  
-  int           fAdcIndex  [kNChannels];
-  int           fInverseMap[kNChannels];
-  TRocChannel   fChannel   [kNChannels];
-  double        fChOffset  [kNChannels];
-
-  int           fF0;                    // run number-dependent
-  int           fHb;
-  
-  double        fEventWindow;
-  double        fFreq0;                 // oscillator frequency
-  double        fGenFreq;               // generator frequency
-  double        fDeltaT;                // time distance between the two generated pulses
-  double        fTimeBin;
-  double        fFpgaOffset;
-
-  int           fRefChannel;            // reference channel
-
-  TRandom3      fRn3;
-
-  int           fMaxNHitsPerEvent;      // ROC buffer size
-  int           fNHitsEvent;
-  int           fNHitsEvent_fpga1;
-  int           fNHitsEvent_fpga2;
-  int           fEventNumber;
-  TFolder*      fHistFolder;
-
-//-----------------------------------------------------------------------------
-// functions
-//-----------------------------------------------------------------------------
-  TRocSim(const char* Name, int RunNumber);
-  ~TRocSim();
-
-  int  InitRun(int RunNumber);
-  
-  int Run(int NEvents = 100);
-
-  int BookHistograms();
-  int FillHistograms();
-  int SimulateEvent (int EventNumber);
-  int SaveHistograms(const char* Filename);
-  
-};
-
-
-
-
+#include "daqana/ana/rocsim.hh"
 //-----------------------------------------------------------------------------
 TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
   int adc_index[96] = {
@@ -139,11 +42,7 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
     0.270250,1.368577,0.024238,-2.378631,-3.113740,1.135546,-0.086879,1.400219,-0.417473,-4.387886,
     -2.371000,0.0000,-0.676306,0.663073,0.000,-2.170244
    };
-  /*  double ch_offset[96];
-  for(int i=0;i<96;i++){
-    ch_offset[i]=0.;
-    }*/
-  // gStyle->SetOptStat(0);
+
   for (int i=0; i<kNChannels; i++) {
     fAdcIndex[i]              = adc_index[i];
     fInverseMap[adc_index[i]] = i;
@@ -170,12 +69,13 @@ TRocSim::TRocSim(const char* Name, int RunNumber) : TNamed(Name,Name) {
   fMaxNHitsPerEvent = 255;
   fRefChannel       = 42;
 
-  fHistFolder       = new TFolder("Hist","Hist");
+  fFolder           = new TFolder("rocsim","rocsim");
+  fHistFolder       = fFolder->AddFolder("Hist","Hist");
 }
 
 //-----------------------------------------------------------------------------
 TRocSim::~TRocSim() {
-  delete fHistFolder;
+  delete fFolder;
 }
 
 //-----------------------------------------------------------------------------
@@ -232,15 +132,16 @@ int TRocSim::InitRun(int RunNumber) {
 //-----------------------------------------------------------------------------
 int TRocSim::BookHistograms() {
 
-  fHist.fEvent.fNHitsTotVsIch    = new TH1F(Form("nh_vs_ich"),"nhits vs ich",100,0,100);
-  fHist.fEvent.fNHitsTotVsAdc    = new TH1F(Form("nh_vs_adc"),"nhits vs adc",100,0,100);
-  fHist.fEvent.fNReadoutHitsTot  = new TH1F(Form("nrh_tot"  ),"nrhits tot"  ,500,0,500);
-  fHist.fEvent.fNHits_fpga1 = new TH1F("nhits_fpga1","nhitsfpga1",  20,0,20);
-  fHist.fEvent.fNHits_fpga2 = new TH1F("nhits_fpga2","nhitsfpga2",  20,0,20);
-  fHist.fEvent.fNHitsTot_fpga1 = new TH1F("nhits_fpga1_tot","nhitsfpga1_tot",  500,0,500);
-  fHist.fEvent.fNHitsTot_fpga2 = new TH1F("nhits_fpga2_tot","nhitsfpga2_tot",  500,0,500);
+  fHist.fEvent.fNHitsTotVsIch         = new TH1F(Form("nh_vs_ich"),"nhits vs ich",100,0,100);
+  fHist.fEvent.fNHitsTotVsAdc         = new TH1F(Form("nh_vs_adc"),"nhits vs adc",100,0,100);
+  fHist.fEvent.fNReadoutHitsTot       = new TH1F(Form("nrh_tot"  ),"nrhits tot"  ,500,0,500);
+  fHist.fEvent.fNHits_fpga1           = new TH1F("nhits_fpga1","nhitsfpga1",  20,0,20);
+  fHist.fEvent.fNHits_fpga2           = new TH1F("nhits_fpga2","nhitsfpga2",  20,0,20);
+  fHist.fEvent.fNHitsTot_fpga1        = new TH1F("nhits_fpga1_tot","nhitsfpga1_tot",  500,0,500);
+  fHist.fEvent.fNHitsTot_fpga2        = new TH1F("nhits_fpga2_tot","nhitsfpga2_tot",  500,0,500);
   fHist.fEvent.fNReadoutHitsTot_fpga1 = new TH1F("nhitsread_fpga1_tot","nhitsfpga1_tot",  500,0,500);
   fHist.fEvent.fNReadoutHitsTot_fpga2 = new TH1F("nhitsread_fpga2_tot","nhitsfpga2_tot",  500,0,500);
+
   fHistFolder->Add(fHist.fEvent.fNHitsTotVsIch);
   fHistFolder->Add(fHist.fEvent.fNHitsTotVsAdc);
   fHistFolder->Add(fHist.fEvent.fNReadoutHitsTot);
@@ -250,6 +151,7 @@ int TRocSim::BookHistograms() {
   fHistFolder->Add(fHist.fEvent.fNHitsTot_fpga2);
   fHistFolder->Add(fHist.fEvent.fNReadoutHitsTot_fpga1);
   fHistFolder->Add(fHist.fEvent.fNReadoutHitsTot_fpga2);
+
   for (int i=0; i<kNChannels; i++) {
     fHist.fChannel[i].fNHits = new TH1F(Form("nh_%02i"  ,i),Form("nhits ch # %02i",i),  20,0,20);
     fHist.fChannel[i].fTime  = new TH1F(Form("time_%02i",i),Form("time  ch # %02i",i),1000,0,fEventWindow);
@@ -355,8 +257,6 @@ int TRocSim::SimulateEvent(int EventNumber) {
     46, 40, 34, 28, 22, 16, 10,  4,
     94, 88, 82, 76, 70, 64, 58, 52
   };
-  // simulate hits in all channels, start from assuming that 
-
 //-----------------------------------------------------------------------------
 // the time of the first DIGI#0 pulse
 // if it is > fEventWindow, no pulses in this channel
@@ -369,7 +269,10 @@ int TRocSim::SimulateEvent(int EventNumber) {
 //-----------------------------------------------------------------------------
   double t1 = t0+fFpgaOffset;
   while (t1-fDeltaT > 0) t1 = t1-fDeltaT;
-  
+//-----------------------------------------------------------------------------
+// 'i' is the channel number in the readout order, the first channel to be 
+// readout is channel adc_index[0] = 91
+//-----------------------------------------------------------------------------
   for (int i=0; i<kNChannels; i++) {
     TRocChannel* ch   = &fChannel[adc_index[i]];
     ch->fNHits        = 0;
@@ -489,23 +392,12 @@ int TRocSim::Run(int NEvents) {
   return 0;
 }
 
-
 //-----------------------------------------------------------------------------
 int TRocSim::SaveHistograms(const char* Filename) {
+
   TFile* f = new TFile(Filename,"recreate");
-
-  // cd happens by default
-
-  fHistFolder->Write();
-
+  TStnAna::SaveFolder(fFolder,f);
   f->Close();
   
   return 0;
 }
-/*
-int main(){
-  TRocSim * rs=new TRocSim("a",281);
-  rs->Run(1000);
-  return 0;
-}
-*/

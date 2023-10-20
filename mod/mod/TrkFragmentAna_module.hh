@@ -134,7 +134,7 @@ namespace mu2e {
       float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
       float    dt1r_c;
       
-      TrackerFragment::DataPacket* hit[kMaxNHitsPerChannel];
+      TrackerFragment::TrackerDataPacket* hit[kMaxNHitsPerChannel];
     };
 
     struct RocData_t {

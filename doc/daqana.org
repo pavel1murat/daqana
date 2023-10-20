@@ -1,5 +1,12 @@
 #+startup:fold
 * ------------------------------------------------------------------------------
+* setup (in the working directory)
+#+begin_src
+opt=debug      # or "prof"
+source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
+export PRODUCTS=/mu2e/app/users/murat/artexternals/products:$PRODUCTS
+muse setup -q $opt
+#+end_src
 * TrkFragmentAna event processing codes                                      
 - 0 : OK
 - 1 : wrong channel ID
@@ -7,4 +14,14 @@
 - 3 : fragment nbytes > maxFragmentSize
 - 4 : unexpected link ID 
 * [[file:sql_queries.org][SQL queries]]
+* ROC simulation
+- add to rootlogon.C (needs libStntuple_loop.so)
+- can used gh1 and friends to plot:
+#+begin_src  
+gSystem->Load("$MUSE_BUILD_DIR/daqana/lib/libdaqana_ana.so");
+rs = new TRocSim("a",281)
+rs->Run(100000)
+rs->SaveHistograms("rocsim.000281.hist")
+gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
+#+end_src 
 * ------------------------------------------------------------------------------
