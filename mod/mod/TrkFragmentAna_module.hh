@@ -17,11 +17,11 @@
 #include "fhiclcpp/ParameterSet.h"
 
 // #ifndef __CLING__ 
-#include "artdaq-core-mu2e/Overlays/FragmentType.hh"
+// #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
 
-typedef artdaq::Fragment::type_t  type_t;
+// typedef artdaq::Fragment::type_t  type_t;
 
-#include "artdaq-core-mu2e/Data/TrackerFragment.hh"
+#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 #include "artdaq-core/Data/Fragment.hh"
 //  #else 
 //  namespace mu2e {
@@ -138,7 +138,7 @@ namespace mu2e {
       float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
       float    dt1r_c;
       
-      TrackerFragment::TrackerDataPacket* hit[kMaxNHitsPerChannel];
+      TrackerDataDecoder::TrackerDataPacket* hit[kMaxNHitsPerChannel];
     };
 
     struct RocData_t {
@@ -226,7 +226,7 @@ namespace mu2e {
     // explicit TrkFragmentAna(const art::EDAnalyzer::Table<Config>& config);
     virtual ~TrkFragmentAna() {}
     
-    virtual void beginRun(const art::Run& ARun);
+    virtual void beginRun(const art::Run& ARun) override;
 
     virtual void beginJob() override;
     virtual void endJob  () override;
@@ -248,7 +248,7 @@ namespace mu2e {
 
     // NWords: number of 2-byte words
     void         printFragment      (const artdaq::Fragment* Fragment, int NWords);
-    void         unpack_adc_waveform(TrackerFragment::TrackerDataPacket* Hit, uint16_t* Wf);
+    void         unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, uint16_t* Wf);
   };
 }
 #endif

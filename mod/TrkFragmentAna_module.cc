@@ -183,7 +183,7 @@ unsigned int correctedTDC(unsigned int TDC) {
 // waveform histograms, assume number of samples < 50
 //-----------------------------------------------------------------------------
     for (int j=0; j<kMaxNHitsPerChannel; j++) {
-      Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),50, 0.,50.);
+      Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),30, 0.,30.);
     }
   }
 
@@ -314,30 +314,30 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
 
 //-----------------------------------------------------------------------------
-  void TrkFragmentAna::unpack_adc_waveform(TrackerFragment::TrackerDataPacket* Hit, uint16_t* Awf) {
+  void TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, uint16_t* Wf) {
 
     int n_adc_packets = Hit->NumADCPackets;
 
-    Awf[ 0] = reverseBits(Hit->ADC00);
-    Awf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
-    Awf[ 2] = reverseBits(Hit->ADC02);
+    Wf[ 0] = reverseBits(Hit->ADC00);
+    Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
+    Wf[ 2] = reverseBits(Hit->ADC02);
 
-    for (int i=0; i<n_adc_packets-1; i++) {
-      TrackerFragment::TrackerADCPacket* ahit = (TrackerFragment::TrackerADCPacket*) ((uint16_t*) (Hit+6+8*i));
+    for (int i=0; i<n_adc_packets; i++) {
+      TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+6+8*i);
       int loc = 12*i+2;
 
-      Awf[loc+ 1] = reverseBits(ahit->ADC0);
-      Awf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-      Awf[loc+ 3] = reverseBits(ahit->ADC2);
-      Awf[loc+ 4] = reverseBits(ahit->ADC3);
-      Awf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-      Awf[loc+ 6] = reverseBits(ahit->ADC5);
-      Awf[loc+ 7] = reverseBits(ahit->ADC6);
-      Awf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      Awf[loc+ 9] = reverseBits(ahit->ADC5);
-      Awf[loc+10] = reverseBits(ahit->ADC6);
-      Awf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-      Awf[loc+12] = reverseBits(ahit->ADC11);
+      Wf[loc+ 1] = reverseBits(ahit->ADC0);
+      Wf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
+      Wf[loc+ 3] = reverseBits(ahit->ADC2);
+      Wf[loc+ 4] = reverseBits(ahit->ADC3);
+      Wf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
+      Wf[loc+ 6] = reverseBits(ahit->ADC5);
+      Wf[loc+ 7] = reverseBits(ahit->ADC6);
+      Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
+      Wf[loc+ 9] = reverseBits(ahit->ADC5);
+      Wf[loc+10] = reverseBits(ahit->ADC6);
+      Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
+      Wf[loc+12] = reverseBits(ahit->ADC11);
     }
   }
 //-----------------------------------------------------------------------------
@@ -378,7 +378,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // there are hits in this channel
 //-----------------------------------------------------------------------------
       for (int ih=0; ih<chd->nhits; ih++) {
-        TrackerFragment::TrackerDataPacket* hit = chd->hit[ih];
+        TrackerDataDecoder::TrackerDataPacket* hit = chd->hit[ih];
 
         uint32_t corr_tdc0 = correctedTDC(hit->TDC0());
         uint32_t corr_tdc1 = correctedTDC(hit->TDC1());
@@ -540,7 +540,16 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         
       rd->nbytes    = dh->byteCount;
       rd->npackets  = dh->nPackets;
-      rd->nhits     = dh->nPackets/2;         //  printf("nhits : %3i\n",nhits);
+
+//-----------------------------------------------------------------------------
+// for now, assume that all hits in the run have the same number of packets per hit
+// take taht from the first hit
+//-----------------------------------------------------------------------------
+      TrackerDataDecoder::TrackerDataPacket* hit0 ;
+      hit0     = (TrackerDataDecoder::TrackerDataPacket*) (fdata+_dataHeaderOffset+0x08);
+      int n_adc_packets = hit0->NumADCPackets;
+
+      rd->nhits     = dh->nPackets/(n_adc_packets+1);         //  printf("nhits : %3i\n",nhits);
       rd->valid     = dh->valid;
       rd->dt0r01    = -1.e12;
       rd->dt1r01    = -1.e12;
@@ -556,8 +565,9 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
-        TrackerFragment::TrackerDataPacket* hit ;
-        hit     = (TrackerFragment::TrackerDataPacket*) (fdata+ihit*0x10+_dataHeaderOffset+0x08);
+        TrackerDataDecoder::TrackerDataPacket* hit ;
+        int offset = ihit*(8+8*n_adc_packets);
+        hit     = (TrackerDataDecoder::TrackerDataPacket*) (fdata+offset+_dataHeaderOffset+0x08);
         int ich = hit->StrawIndex;
 
         if (ich > 128) ich = ich-128;
@@ -699,13 +709,6 @@ void TrkFragmentAna::analyze(const art::Event& event) {
     }
   }
 //-----------------------------------------------------------------------------
-// go into interactive mode, 
-// fInteractiveMode = 0 : do not stop
-// fInteractiveMode = 1 : stop after each event (event display mode)
-// fInteractiveMode = 2 : stop only in the end of run, till '.q' is pressed
-//-----------------------------------------------------------------------------
-  TModule::analyze(event);
-//-----------------------------------------------------------------------------
 // event data un(re)packed , fill histograms
 //-----------------------------------------------------------------------------
   if (_analyzeFragments != 0) {
@@ -725,6 +728,13 @@ void TrkFragmentAna::analyze(const art::Event& event) {
       printFragment(&frag,2+4*nreg);
     }
   }
+//-----------------------------------------------------------------------------
+// finally, if requested, go into interactive mode, 
+// fInteractiveMode = 0 : do not stop
+// fInteractiveMode = 1 : stop after each event (event display mode)
+// fInteractiveMode = 2 : stop only in the end of run, till '.q' is pressed
+//-----------------------------------------------------------------------------
+  TModule::analyze(event);
 }
 
 } // end namespace mu2e
