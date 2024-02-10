@@ -9,7 +9,6 @@
 #include "daqana/mod/TrkFragmentAna_module.hh"
 
 namespace mu2e {
-
 //-----------------------------------------------------------------------------
 unsigned int reverseBits(unsigned int num) {
   unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
@@ -64,8 +63,11 @@ unsigned int correctedTDC(unsigned int TDC) {
     _diagLevel       (PSet.get<int>             ("diagLevel"       )), 
     _minNBytes       (PSet.get<int>             ("minNBytes"       )), 
     _maxNBytes       (PSet.get<int>             ("maxNBytes"       )), 
-    _dataHeaderOffset(PSet.get<int>             ("dataHeaderOffset")), 
+    _dataHeaderOffset(PSet.get<int>             ("dataHeaderOffset")),
+    //    _nAdcPackets     (PSet.get<int>             ("nAdcPackets"     )),
     _activeLinks     (PSet.get<std::vector<int>>("activeLinks"     )),
+    _refChCal        (PSet.get<std::vector<int>>("refChCal"        )),
+    _refChHV         (PSet.get<std::vector<int>>("refChHV"         )),
     _trkfCollTag     (PSet.get<std::string>     ("trkfCollTag"     )),
     _dumpDTCRegisters(PSet.get<int>             ("dumpDTCRegisters")),
     _analyzeFragments(PSet.get<int>             ("analyzeFragments")),
@@ -132,15 +134,19 @@ unsigned int correctedTDC(unsigned int TDC) {
 // initialize reference channels, at this point use channels 91 and 94 for all 
 // ROC's (the readout order is defined in firmware and is the same for all channels)
 //-----------------------------------------------------------------------------
+    _nActiveLinks        = _activeLinks.size();
+
     for (int roc=0; roc<kMaxNLinks; roc++) {
       _referenceChannel[roc][0] = 91;
       _referenceChannel[roc][1] = 94;
+      if (roc < _nActiveLinks) {
+        _referenceChannel[roc][0] = _refChCal[roc];
+        _referenceChannel[roc][1] = _refChHV [roc];
+      }
 
       _event_data.rdata[roc].ref_ch[0] = &_event_data.rdata[roc].channel[_referenceChannel[roc][0]];
       _event_data.rdata[roc].ref_ch[1] = &_event_data.rdata[roc].channel[_referenceChannel[roc][1]];
     }
-
-    _nActiveLinks        = _activeLinks.size();
 
     _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
     _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
@@ -173,9 +179,11 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->dt2     = Dir->make<TH1F>(Form("ch_%02i_dt2"    ,I),Form("run %06i: ch %02i T2(i+1)-T2(i)",RunNumber,I)      ,50000,  0.,50);
     Hist->dt0r    = Dir->make<TH1F>(Form("ch_%02i_dt0r_0" ,I),Form("run %06i: ch %02i T0(ich,0)-T0(ref,0)[0]",RunNumber,I),20000,-10.,10);
     Hist->dt1r    = Dir->make<TH1F>(Form("ch_%02i_dt1r_0" ,I),Form("run %06i: ch %02i T1(ich,0)-T1(ref,0)[0]",RunNumber,I),20000,-10.,10);
-    
+//-----------------------------------------------------------------------------
+// waveform histograms, assume number of samples < 50
+//-----------------------------------------------------------------------------
     for (int j=0; j<kMaxNHitsPerChannel; j++) {
-      Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),20, 0.,20.);
+      Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),50, 0.,50.);
     }
   }
 
@@ -306,6 +314,33 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
 
 //-----------------------------------------------------------------------------
+  void TrkFragmentAna::unpack_adc_waveform(TrackerFragment::TrackerDataPacket* Hit, uint16_t* Awf) {
+
+    int n_adc_packets = Hit->NumADCPackets;
+
+    Awf[ 0] = reverseBits(Hit->ADC00);
+    Awf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
+    Awf[ 2] = reverseBits(Hit->ADC02);
+
+    for (int i=0; i<n_adc_packets-1; i++) {
+      TrackerFragment::TrackerADCPacket* ahit = (TrackerFragment::TrackerADCPacket*) ((uint16_t*) (Hit+6+8*i));
+      int loc = 12*i+2;
+
+      Awf[loc+ 1] = reverseBits(ahit->ADC0);
+      Awf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
+      Awf[loc+ 3] = reverseBits(ahit->ADC2);
+      Awf[loc+ 4] = reverseBits(ahit->ADC3);
+      Awf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
+      Awf[loc+ 6] = reverseBits(ahit->ADC5);
+      Awf[loc+ 7] = reverseBits(ahit->ADC6);
+      Awf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
+      Awf[loc+ 9] = reverseBits(ahit->ADC5);
+      Awf[loc+10] = reverseBits(ahit->ADC6);
+      Awf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
+      Awf[loc+12] = reverseBits(ahit->ADC11);
+    }
+  }
+//-----------------------------------------------------------------------------
   void TrkFragmentAna::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
     
     Hist->nbytes->Fill  (Rd->nbytes);
@@ -361,31 +396,15 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         hch->tot [1]->Fill(hit->TOT1);
         hch->pmp    ->Fill(hit->PMP);
 //-----------------------------------------------------------------------------
-// waveforms in a given channel
+// waveforms in a given channel, assume number of samples less than 50
 //-----------------------------------------------------------------------------
-        uint16_t adc[15];
+        uint16_t adc[100];
+        unpack_adc_waveform(hit,adc);
 
-        adc[ 0] = reverseBits(hit->ADC00);
-        adc[ 1] = reverseBits(hit->ADC01A + (hit->ADC01B << 6));
-        adc[ 2] = reverseBits(hit->ADC02);
+        int nsamples = 15+12*(hit->NumADCPackets-1);
 
-        TrackerFragment::TrackerADCPacket* ahit = (TrackerFragment::TrackerADCPacket*) ((uint16_t*)hit+6);
-
-        adc[ 3] = reverseBits(ahit->ADC0);
-        adc[ 4] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-        adc[ 5] = reverseBits(ahit->ADC2);
-        adc[ 6] = reverseBits(ahit->ADC3);
-        adc[ 7] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-        adc[ 8] = reverseBits(ahit->ADC5);
-        adc[ 9] = reverseBits(ahit->ADC6);
-        adc[10] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-        adc[11] = reverseBits(ahit->ADC5);
-        adc[12] = reverseBits(ahit->ADC6);
-        adc[13] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-        adc[14] = reverseBits(ahit->ADC11);
-        
         Hist->channel[ich].wf[ih]->Reset();
-        for (int is=0; is<15; is++) {
+        for (int is=0; is<nsamples; is++) {
           Hist->channel[ich].wf[ih]->Fill(is,adc[is]);
         }
       }
@@ -409,6 +428,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     }
 //-----------------------------------------------------------------------------
 // 
+//-----------------------------------------------------------------------------
     for (int ich=0; ich<kNChannels; ich++) {
       int ind_0 = _adc_index_0[ich];
       int ind_1 = _adc_index_1[ich];

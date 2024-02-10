@@ -16,19 +16,23 @@
 #include "art_root_io/TFileService.h"
 #include "fhiclcpp/ParameterSet.h"
 
-#ifndef __CLING__ 
+// #ifndef __CLING__ 
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
+
+typedef artdaq::Fragment::type_t  type_t;
+
 #include "artdaq-core-mu2e/Data/TrackerFragment.hh"
 #include "artdaq-core/Data/Fragment.hh"
-#else 
-namespace mu2e {
-  class TrackerFragment;
-}
+//  #else 
+//  namespace mu2e {
+//    class TrackerFragment;
+//    class TrackerFragment::TrackerDataPacket;
+//  }
 
-namespace artdaq {
-  class Fragment;
-}
-#endif
+// namespace artdaq {
+//   class Fragment;
+// }
+// #endif
 
 // Mu2e includes
 #include "Offline/DataProducts/inc/StrawId.hh"
@@ -167,21 +171,28 @@ namespace mu2e {
                                         // in reality, this is the fragment data, 
                                         // an event can contain multiple fragments
     DtcDataBlock_t*  _trkFragment;
-
+//-----------------------------------------------------------------------------
+// talk-to parameters
+//-----------------------------------------------------------------------------
     int              _diagLevel;
     int              _minNBytes;
     int              _maxNBytes;
     int              _dataHeaderOffset;
     std::vector<int> _activeLinks;            // active links - connected ROCs
-    int              _nActiveLinks;
-
+    std::vector<int> _refChCal;               // reference channel on CAL side FPGA
+    std::vector<int> _refChHV;                // reference channel on HV  side FPGA
     art::InputTag    _trkfCollTag;
     int              _dumpDTCRegisters;
-    int              _referenceChannel[kMaxNLinks][2];
     int              _analyzeFragments;
     int              _maxFragmentSize;
-    int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
     int              _pulserFrequency;          // in kHz, either 60 or 250
+
+    int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
+//-----------------------------------------------------------------------------
+// the rest
+//-----------------------------------------------------------------------------
+    int              _nActiveLinks;
+    int              _referenceChannel[kMaxNLinks][2];
     
     int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
     int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
@@ -236,7 +247,8 @@ namespace mu2e {
     int          fill_histograms        ();
 
     // NWords: number of 2-byte words
-    void         printFragment   (const artdaq::Fragment* Fragment, int NWords);
+    void         printFragment      (const artdaq::Fragment* Fragment, int NWords);
+    void         unpack_adc_waveform(TrackerFragment::TrackerDataPacket* Hit, uint16_t* Wf);
   };
 }
 #endif
