@@ -6,6 +6,9 @@
 // 3: fragment too long
 // 4: wrong active link ID
 ///////////////////////////////////////////////////////////////////////////////
+#include "TRACE/tracemf.h"
+#define TRACE_NAME "TrkFragmentAna_module"
+
 #include "daqana/mod/TrkFragmentAna_module.hh"
 
 namespace mu2e {
@@ -72,7 +75,9 @@ unsigned int correctedTDC(unsigned int TDC) {
     _dumpDTCRegisters(PSet.get<int>             ("dumpDTCRegisters")),
     _analyzeFragments(PSet.get<int>             ("analyzeFragments")),
     _maxFragmentSize (PSet.get<int>             ("maxFragmentSize" )),
-    _pulserFrequency (PSet.get<int>             ("pulserFrequency" ))
+    _pulserFrequency (PSet.get<int>             ("pulserFrequency" )),
+    _nSamplesBL      (PSet.get<int>             ("nSamplesBL"      )),
+    _minPulseHeight  (PSet.get<float>           ("minPulseHeight"  ))
   {
 
     double f0(31.29e6);                   // 31.29 MHz
@@ -160,7 +165,7 @@ unsigned int correctedTDC(unsigned int TDC) {
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int I) {
 
-    Hist->nhits   = Dir->make<TH1F>(Form("ch_%02i_nhits",I),Form("run %06i: ch %02i nhits"  ,RunNumber,I), 100, 0., 100.);
+    Hist->nhits   = Dir->make<TH1F>(Form("ch_%02i_nhits",I),Form("run %06i: ch %02i nhits"  ,RunNumber,I), 20, -0.5, 19.5);
     
     Hist->time[0] = Dir->make<TH1F>(Form("ch_%02i_time0",I),Form("run %06i: ch %02i time[0]",RunNumber,I),1000, 0., 100.);  // us
     Hist->time[1] = Dir->make<TH1F>(Form("ch_%02i_time1",I),Form("run %06i: ch %02i time[0]",RunNumber,I),1000, 0., 100.);  // us
@@ -180,7 +185,16 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->dt0r    = Dir->make<TH1F>(Form("ch_%02i_dt0r_0" ,I),Form("run %06i: ch %02i T0(ich,0)-T0(ref,0)[0]",RunNumber,I),20000,-10.,10);
     Hist->dt1r    = Dir->make<TH1F>(Form("ch_%02i_dt1r_0" ,I),Form("run %06i: ch %02i T1(ich,0)-T1(ref,0)[0]",RunNumber,I),20000,-10.,10);
 //-----------------------------------------------------------------------------
-// waveform histograms, assume number of samples < 50
+// waveform parameters
+//-----------------------------------------------------------------------------
+    Hist->fsample = Dir->make<TH1F>(Form("ch_%02i_fs"    ,I),Form("run %06i: ch %02i first sample"   ,RunNumber,I), 30,-0.5, 29.5);
+    Hist->bline   = Dir->make<TH1F>(Form("ch_%02i_bl"    ,I),Form("run %06i: ch %02i WF baseline"    ,RunNumber,I),200,0,300);
+    Hist->pheight = Dir->make<TH1F>(Form("ch_%02i_ph"    ,I),Form("run %06i: ch %02i WF pulse height",RunNumber,I),500,0,500);
+    Hist->q       = Dir->make<TH1F>(Form("ch_%02i_q"     ,I),Form("run %06i: ch %02i WF charge"      ,RunNumber,I),500,0,500);//
+    Hist->qt      = Dir->make<TH1F>(Form("ch_%02i_qt"    ,I),Form("run %06i: ch %02i WF tail charge" ,RunNumber,I),500,0,500);
+    Hist->qtq     = Dir->make<TH1F>(Form("ch_%02i_qtq"   ,I),Form("run %06i: ch %02i WF Qt/Q"        ,RunNumber,I),200,0,1);
+//-----------------------------------------------------------------------------
+// waveform histograms, assume number of samples < 30
 //-----------------------------------------------------------------------------
     for (int j=0; j<kMaxNHitsPerChannel; j++) {
       Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),30, 0.,30.);
@@ -219,6 +233,13 @@ unsigned int correctedTDC(unsigned int TDC) {
 
     Hist->dt1rc_vs_adc[0] = Dir->make<TH2F>("dt1rc_vs_adc_0", Form("run %06i: dt1rc vs adc[0], ns",RunNumber),  100,0.,100.,1000,-10,10);
     Hist->dt1rc_vs_adc[1] = Dir->make<TH2F>("dt1rc_vs_adc_1", Form("run %06i: dt1rc vs adc[1], ns",RunNumber),  100,0.,100.,1000,-10,10);
+
+    Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: fs vs ich"    ,RunNumber),  100, 0.,   100.,0,  30);
+    Hist->bl_vs_ich       = Dir->make<TProfile>("bl_vs_ich"  , Form("run %06i: bl vs ich"    ,RunNumber),  100, 0.,   100.,0, 500);
+    Hist->ph_vs_ich       = Dir->make<TProfile>("ph_vs_ich"  , Form("run %06i: ph vs ich"    ,RunNumber),  100, 0.,   100.,0, 500);
+    Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: Q vs ich"     ,RunNumber),  100, 0.,   100.,0,1500);
+    Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: Qt vs ich"    ,RunNumber),  100, 0.,   100.,0, 500);
+    Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: Qt/Q vs ich"  ,RunNumber),  100, 0.,   100.,0, 1);
 
     for (int i=0; i<kNChannels; i++) {
       art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
@@ -314,7 +335,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
 
 //-----------------------------------------------------------------------------
-  void TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, uint16_t* Wf) {
+  void TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
 
     int n_adc_packets = Hit->NumADCPackets;
 
@@ -338,6 +359,54 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       Wf[loc+10] = reverseBits(ahit->ADC6);
       Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
       Wf[loc+12] = reverseBits(ahit->ADC11);
+    }
+//-----------------------------------------------------------------------------
+// waveform processing
+// 1. determine the baseline
+//-----------------------------------------------------------------------------
+    Wp->bl = 0;
+    for (int i=0; i<_nSamplesBL; i++) {
+      Wp->bl += Wf[i];
+    }
+    Wp->bl = Wp->bl/_nSamplesBL;
+//-----------------------------------------------------------------------------
+// 2. subtract the baseline and calculate the charge
+//-----------------------------------------------------------------------------
+    int nsamples = 15+12*(Hit->NumADCPackets-1);
+    for (int i=0; i<nsamples; i++) {
+      Wf[i] = Wf[i]-Wp->bl;
+    }
+
+    int   tail  = 0;
+    Wp->fs = -1;
+    Wp->q  = 0;
+    Wp->qt = 0;
+    Wp->ph = -1;
+    for (int i=_nSamplesBL; i<nsamples; i++) {
+      if (Wf[i] > _minPulseHeight) {
+        if (tail == 0) {
+                                        // first sample above the threshold
+          if (Wp->fs < 0) Wp->fs = i;
+
+          Wp->q += Wf[i];
+          if (Wf[i] > Wp->ph) {
+            Wp->ph = Wf[i];
+          }
+        }
+      }
+      else if (Wf[i] < 0) {
+        if (Wp->ph > 0) {
+          tail  = 1;
+        }
+        if (tail == 1) Wp->qt -= Wf[i];
+      }
+    }
+//-----------------------------------------------------------------------------
+// done
+//-----------------------------------------------------------------------------
+    if (Wp->q < 100) {
+      TLOG(TLVL_DEBUG+10) << "event=" << _event->run() << ":" << _event->subRun() << ":" << _event->event() 
+                          << " Q=" << Wp->q;
     }
   }
 //-----------------------------------------------------------------------------
@@ -398,15 +467,38 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // waveforms in a given channel, assume number of samples less than 50
 //-----------------------------------------------------------------------------
-        uint16_t adc[100];
-        unpack_adc_waveform(hit,adc);
-
         int nsamples = 15+12*(hit->NumADCPackets-1);
+        float     wform[50];
 
-        Hist->channel[ich].wf[ih]->Reset();
+        WfParam_t* wpar = &chd->wp[ih];
+        unpack_adc_waveform(hit,wform,wpar);
+
+        hch->wf[ih]->Reset();
         for (int is=0; is<nsamples; is++) {
-          Hist->channel[ich].wf[ih]->Fill(is,adc[is]);
+          hch->wf[ih]->Fill(is,wform[is]);
         }
+                                        // also set bin errors to zero
+        int nb =  hch->wf[ih]->GetNbinsX();
+        for (int ib=0; ib<nb; ib++) {
+          hch->wf[ih]->SetBinError(ib+1,0);
+          hch->wf[ih]->SetOption("HIST");
+        }
+//-----------------------------------------------------------------------------
+// reconstructed waveform parameters
+//-----------------------------------------------------------------------------
+        hch->fsample->Fill(wpar->fs);
+        hch->bline->Fill(wpar->bl);
+        hch->pheight->Fill(wpar->ph);
+        hch->q->Fill(wpar->q);
+        hch->qt->Fill(wpar->qt);
+        hch->qtq->Fill(wpar->qt/(wpar->q+1e-12));
+
+        Hist->fs_vs_ich->Fill(ich,wpar->fs);
+        Hist->bl_vs_ich->Fill(ich,wpar->bl);
+        Hist->ph_vs_ich->Fill(ich,wpar->ph);
+        Hist->q_vs_ich->Fill(ich,wpar->q);
+        Hist->qt_vs_ich->Fill(ich,wpar->qt);
+        Hist->qtq_vs_ich->Fill(ich,wpar->qt/(wpar->q+1e-12));
       }
 //-----------------------------------------------------------------------------
 // time distance between the two sequential hits - need at least two
@@ -658,6 +750,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 void TrkFragmentAna::analyze(const art::Event& event) {
   //art::EventNumber_t eventNumber = event.event();
+
+  _event = &event;
 
   _event_data.nbtot = 0;
   _event_data.nhtot = 0;

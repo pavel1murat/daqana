@@ -72,6 +72,7 @@ def local_build():
                   'hep_concurrency',
                   'artdaq-core-mu2e_Data',
                   'artdaq-core_Data',
+                  'tracelib'
                   # 'DTCInterface'
               ];
 

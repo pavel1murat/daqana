@@ -44,13 +44,15 @@ physics : {
 	    trkfCollTag         : "daq:TRK"   # 
             nAdcPackets         : 2           # until the format is fixed
 #	    diagLevel           : 2           # print one line per event
-	    diagLevel           : 3           # print the whole event
+#	    diagLevel           : 3           # print the whole event
             analyzeFragments    : 1
             minNBytes           : 0 ## 4800
-            maxNBytes           : 6000
+            maxNBytes           : 10000
             nSamplesBL          : 10
-            minPulseHeight      :  5.
-            maxFileSize         : 2000        ## in MBytes
+            minPulseHeight      : 5.
+	    
+	    interactiveMode     : 0
+	    maxFileSize         : 2000        ## in MBytes
 #------------------------------------------------------------------------------
 # run-dependent parameters
 #------------------------------------------------------------------------------
@@ -69,7 +71,7 @@ physics : {
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
             # dumpDTCRegisters : 1 # DTC register dump
-            interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
+            # interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
             # rootMacro        : "display_001.C"
 	}
     }
@@ -102,7 +104,7 @@ physics : {
 #     }
 # }
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "no_histograms" ## "trkvst.annex.trk_fragment_ana.%06r.hist"
+services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
 source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.105099_00000001.art" ]

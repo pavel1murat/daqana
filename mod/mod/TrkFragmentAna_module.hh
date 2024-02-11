@@ -56,6 +56,15 @@ namespace mu2e {
     };
 
   public:
+
+    struct WfParam_t {
+      int   fs;                         // first sample above _minPulseHeight
+      float bl;                         // baseline
+      float ph;                         // pulse height
+      float q;                          // Q(positive)
+      float qt;                         // Q(tail)
+    };
+
     struct DtcDMAPacket_t {              // 2 16-byte words
       uint16_t       byteCount   : 16;   ///< Byte count of current block
       uint8_t        subsystemID :  4;   ///< Hop count
@@ -91,6 +100,14 @@ namespace mu2e {
       TH1F*         dt2;                // T2 = (dt1+dt2)/2
       TH1F*         dt0r;               // T0(ich,0)-T0(ref,0)
       TH1F*         dt1r;               // T1(ich,0)-distance between the two pulses (if more than one)
+
+      TH1F*         fsample;
+      TH1F*         bline;
+      TH1F*         pheight;
+      TH1F*         q;                  // waveform charge Q
+      TH1F*         qt;                 // tail charge Qt
+      TH1F*         qtq;                // Qt/Q
+
       TH1F*         wf[kMaxNHitsPerChannel];
     };
                                         // per-ROC histograms
@@ -128,6 +145,13 @@ namespace mu2e {
       TH1F*         nhits_vs_ich;
       TH1F*         nhits_vs_adc[2];
 
+      TProfile*     fs_vs_ich;
+      TProfile*     bl_vs_ich;
+      TProfile*     ph_vs_ich;
+      TProfile*     q_vs_ich;
+      TProfile*     qt_vs_ich;
+      TProfile*     qtq_vs_ich;
+
       ChannelHist_t channel[kNChannels];
     };
 
@@ -139,6 +163,7 @@ namespace mu2e {
       float    dt1r_c;
       
       TrackerDataDecoder::TrackerDataPacket* hit[kMaxNHitsPerChannel];
+      WfParam_t wp[kMaxNHitsPerChannel];
     };
 
     struct RocData_t {
@@ -188,6 +213,8 @@ namespace mu2e {
     int              _pulserFrequency;          // in kHz, either 60 or 250
 
     int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
+    int              _nSamplesBL;               // number of first samples used to determine the baseline
+    float            _minPulseHeight;           // threshold for the charge integration;
 //-----------------------------------------------------------------------------
 // the rest
 //-----------------------------------------------------------------------------
@@ -203,6 +230,8 @@ namespace mu2e {
     double           _tdc_bin;        // 
     double           _tdc_bin_ns;     // TDC bin, in nanoseconds
     int              _initialized;    // histograms are booked in beginRun, protect ...
+
+    const art::Event*  _event;
 //-----------------------------------------------------------------------------
 // forgetting, for now, about multiple DTC's
 //-----------------------------------------------------------------------------
@@ -248,7 +277,7 @@ namespace mu2e {
 
     // NWords: number of 2-byte words
     void         printFragment      (const artdaq::Fragment* Fragment, int NWords);
-    void         unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, uint16_t* Wf);
+    void         unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
   };
 }
 #endif
