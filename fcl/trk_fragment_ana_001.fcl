@@ -1,9 +1,10 @@
 # -*- mode:tcl -*-
-# Run StrawAndCaloDigisFromFragments module to convert artdaq::Fragment collections
-# into TRK and CAL digi collections.
-# Usage: mu2e -c DAQ/test/generateDigiFromFragment.fcl -s <input art files> -n '-1'
+#------------------------------------------------------------------------------
+# run interactively, stop after each event to display waveforms
 #
-#
+# Usage: mu2e -c daqana/fcl/trk_fragment_ana_001.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous

@@ -1,5 +1,8 @@
 # -*- mode:tcl -*-
-# debug only : dump events
+#------------------------------------------------------------------------------
+# run on the whole file, produce histogram file for analysis
+#
+# Usage: mu2e -c daqana/fcl/trk_fragment_ana_002.fcl -s <input art files> 
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
@@ -38,30 +41,41 @@ physics : {
     analyzers : {
 	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
 	    trkfCollTag         : "daq:TRK"   # 
+#            nAdcPackets         : 2           # until the format is fixed
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event
-            minNBytes           : 4800
+            analyzeFragments    : 1
+            minNBytes           : 0 ## 4800
             maxNBytes           : 6000
-	    
-	    interactiveMode     : 0
-	    maxFileSize         : 2000   # in MBytes
+            nSamplesBL          : 10
+            minPulseHeight      :  5.
+            maxFileSize         : 2000        ## in MBytes
+#------------------------------------------------------------------------------
+# run-dependent parameters
+#------------------------------------------------------------------------------
+            timeWindow          :  2000
+            pulserFrequency     :   250
+            maxFragmentSize     : 10000
+            activeLinks         : [ 0 ]
+#------------------------------------------------------------------------------
+# for run 105099 have only two channels in different FPGA's
+#------------------------------------------------------------------------------
+            refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
+            refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
-	    rootMacro           : ""
+            # dumpDTCRegisters : 1 # DTC register dump
+            # interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
+            # rootMacro        : "display_001.C"
 	}
     }
 
-# t1 : [ PrefetchDAQData, makeSD , CaloDigiMaker, CaloHitMaker, CaloClusterFast]
-    # t1 : [ PrefetchDAQData, makeSD , CaloHitMaker, CaloClusterFast]
-
     t1 : [  ]
-    # t1 : [ makeSD , makeSH ]
-    # t1 : [ makeSD ]
 
-    e1 : [ TrkFragmentAna]
+    e1 : [ TrkFragmentAna ]
     # e1 : []
 
     trigger_paths  : [ t1 ]
@@ -90,13 +104,8 @@ physics : {
 services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
-# physics.analyzers.TrkFragmentAna.diagLevel       : 0 # no debug  printout
-physics.analyzers.TrkFragmentAna.diagLevel       : 2 # print one line per event
-# physics.analyzers.TrkFragmentAna.diagLevel        : 3 # event dump
-# physics.analyzers.TrkFragmentAna.dumpDTCRegisters : 1 # event dump
+source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.105099_00000001.art" ]
 
-# physics.analyzers.TrkFragmentAna.interactiveMode : 2  ## 1:stop on every event, 2:stop in the end
-# physics.analyzers.TrkFragmentAna.rootMacro       : "display_001.C"
 
 #physics.producers.makeSD.diagLevel        : 10
 #physics.producers.CaloDigiMaker.diagLevel : 10
