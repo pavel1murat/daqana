@@ -159,7 +159,6 @@ unsigned int correctedTDC(unsigned int TDC) {
     _initialized         = 0;
   }
 
-
 //-----------------------------------------------------------------------------
 // I : channel number
 //-----------------------------------------------------------------------------
@@ -179,6 +178,9 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->tot [0] = Dir->make<TH1F>(Form("ch_%02i_tot0"   ,I),Form("run %06i: ch %02i tot[0]" ,RunNumber,I), 100, 0., 100.);
     Hist->tot [1] = Dir->make<TH1F>(Form("ch_%02i_tot1"   ,I),Form("run %06i: ch %02i tot[1]" ,RunNumber,I), 100, 0., 100.);
     Hist->pmp     = Dir->make<TH1F>(Form("ch_%02i_pmp"    ,I),Form("run %06i: ch %02i pmp"    ,RunNumber,I), 100, 0.,  10.);
+
+    Hist->dt01    = Dir->make<TH1F>(Form("ch_%02i_dt01"   ,I),Form("run %06i: ch %02i T0(i)-T1(i),ns",RunNumber,I) ,500, -25,25);
+
     Hist->dt0     = Dir->make<TH1F>(Form("ch_%02i_dt0"    ,I),Form("run %06i: ch %02i T0(i+1)-T0(i)",RunNumber,I)      ,50000,  0.,50);
     Hist->dt1     = Dir->make<TH1F>(Form("ch_%02i_dt1"    ,I),Form("run %06i: ch %02i T1(i+1)-T1(i)",RunNumber,I)      ,50000,  0.,50);
     Hist->dt2     = Dir->make<TH1F>(Form("ch_%02i_dt2"    ,I),Form("run %06i: ch %02i T2(i+1)-T2(i)",RunNumber,I)      ,50000,  0.,50);
@@ -197,7 +199,8 @@ unsigned int correctedTDC(unsigned int TDC) {
 // waveform histograms, assume number of samples < 30
 //-----------------------------------------------------------------------------
     for (int j=0; j<kMaxNHitsPerChannel; j++) {
-      Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),30, 0.,30.);
+      Hist->raw_wf[j] = Dir->make<TH1F>(Form("h_raw_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] raw_waveform",RunNumber,I,j),30, 0.,30.);
+      Hist->wf    [j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),30, 0.,30.);
     }
   }
 
@@ -286,8 +289,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   if (_initialized != 0) return;
   _initialized = 1;
 
-  if (rn <= 285) _dataHeaderOffset =  0;
-  else           _dataHeaderOffset = 32;
+  // if (rn <= 285) _dataHeaderOffset =  0;
+  // else           _dataHeaderOffset = 32;
 //-----------------------------------------------------------------------------
 // init timing offsets for known runs
 // 'offset' is defined from the analysis of the dt0r_vs_ch_0
@@ -344,7 +347,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     Wf[ 2] = reverseBits(Hit->ADC02);
 
     for (int i=0; i<n_adc_packets; i++) {
-      TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+6+8*i);
+      TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
 
       Wf[loc+ 1] = reverseBits(ahit->ADC0);
@@ -355,8 +358,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       Wf[loc+ 6] = reverseBits(ahit->ADC5);
       Wf[loc+ 7] = reverseBits(ahit->ADC6);
       Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      Wf[loc+ 9] = reverseBits(ahit->ADC5);
-      Wf[loc+10] = reverseBits(ahit->ADC6);
+      Wf[loc+ 9] = reverseBits(ahit->ADC8);
+      Wf[loc+10] = reverseBits(ahit->ADC9);
       Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
       Wf[loc+12] = reverseBits(ahit->ADC11);
     }
@@ -455,6 +458,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         hch->time[0]->Fill(corr_tdc0*_tdc_bin); // in us
         hch->time[1]->Fill(corr_tdc1*_tdc_bin); // in us
 
+        hch->dt01->Fill((corr_tdc0-corr_tdc1)*_tdc_bin_ns); // in ns
+
         hch->t0  [0]->Fill(corr_tdc0*_tdc_bin_ns);
         hch->t0  [1]->Fill(corr_tdc1*_tdc_bin_ns);
 
@@ -473,13 +478,17 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         WfParam_t* wpar = &chd->wp[ih];
         unpack_adc_waveform(hit,wform,wpar);
 
-        hch->wf[ih]->Reset();
+        hch->raw_wf[ih]->Reset();
+        hch->wf    [ih]->Reset();
         for (int is=0; is<nsamples; is++) {
-          hch->wf[ih]->Fill(is,wform[is]);
+          hch->raw_wf[ih]->Fill(is,wform[is]+wpar->bl);
+          hch->wf    [ih]->Fill(is,wform[is]);
         }
                                         // also set bin errors to zero
         int nb =  hch->wf[ih]->GetNbinsX();
         for (int ib=0; ib<nb; ib++) {
+          hch->raw_wf[ih]->SetBinError(ib+1,0);
+          hch->raw_wf[ih]->SetOption("HIST");
           hch->wf[ih]->SetBinError(ib+1,0);
           hch->wf[ih]->SetOption("HIST");
         }
@@ -824,7 +833,7 @@ void TrkFragmentAna::analyze(const art::Event& event) {
   }
 //-----------------------------------------------------------------------------
 // finally, if requested, go into interactive mode, 
-// fInteractiveMode = 0 : do not stop
+// fInteractiveMode = 0 : do not stop (default)
 // fInteractiveMode = 1 : stop after each event (event display mode)
 // fInteractiveMode = 2 : stop only in the end of run, till '.q' is pressed
 //-----------------------------------------------------------------------------

@@ -52,7 +52,7 @@ namespace mu2e {
 
     enum { kNChannels          = 96,
            kMaxNLinks          =  6,
-           kMaxNHitsPerChannel = 20
+           kMaxNHitsPerChannel = 10
     };
 
   public:
@@ -95,6 +95,7 @@ namespace mu2e {
       TH1F*         t1  [2];            // late  times in ns
       TH1F*         tot [2];
       TH1F*         pmp;
+      TH1F*         dt01;               // T0-T1 for each hit
       TH1F*         dt0;                // T0 distance between the two consequtive pulses
       TH1F*         dt1;                // T1 distance between the two consequtive pulses
       TH1F*         dt2;                // T2 = (dt1+dt2)/2
@@ -108,7 +109,8 @@ namespace mu2e {
       TH1F*         qt;                 // tail charge Qt
       TH1F*         qtq;                // Qt/Q
 
-      TH1F*         wf[kMaxNHitsPerChannel];
+      TH1F*         raw_wf[kMaxNHitsPerChannel];
+      TH1F*         wf    [kMaxNHitsPerChannel];
     };
                                         // per-ROC histograms
     struct EventHist_t {

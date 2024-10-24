@@ -1,4 +1,4 @@
-#+startup:fold
+#+startup:fold -*- buffer-read-only:t -*-
 * ------------------------------------------------------------------------------
 * setup (in the working directory)
 #+begin_src
@@ -14,7 +14,7 @@ muse setup -q $opt
 - 3 : fragment nbytes > maxFragmentSize
 - 4 : unexpected link ID 
 * [[file:sql_queries.org][SQL queries]]
-* ROC simulation
+* ROC simulation                                                             
 - add to rootlogon.C (needs libStntuple_loop.so)
 - can used gh1 and friends to plot:
 #+begin_src  
