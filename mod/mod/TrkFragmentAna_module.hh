@@ -16,23 +16,8 @@
 #include "art_root_io/TFileService.h"
 #include "fhiclcpp/ParameterSet.h"
 
-// #ifndef __CLING__ 
-// #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
-
-// typedef artdaq::Fragment::type_t  type_t;
-
 #include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 #include "artdaq-core/Data/Fragment.hh"
-//  #else 
-//  namespace mu2e {
-//    class TrackerFragment;
-//    class TrackerFragment::TrackerDataPacket;
-//  }
-
-// namespace artdaq {
-//   class Fragment;
-// }
-// #endif
 
 // Mu2e includes
 #include "Offline/DataProducts/inc/StrawId.hh"
@@ -53,6 +38,16 @@ namespace mu2e {
     enum { kNChannels          = 96,
            kMaxNLinks          =  6,
            kMaxNHitsPerChannel = 10
+    };
+
+    enum {
+      kNBytesErrorBit     = 0x0001,
+      kNWfsErrorBit       = 0x0002,
+      kLinkIDErrorBit     = 0x0004,  // link ID error bit
+      kChIDErrorBit       = 0x0008,
+      kNChHitsErrorBit    = 0x0010,
+      
+      kNErrorBits         = 5
     };
 
   public:
@@ -95,7 +90,7 @@ namespace mu2e {
       TH1F*         t1  [2];            // late  times in ns
       TH1F*         tot [2];
       TH1F*         pmp;
-      TH1F*         dt01;               // T0-T1 for each hit
+      TH1F*         dt01[2];            // T0-T1 for each hit, with different binning
       TH1F*         dt0;                // T0 distance between the two consequtive pulses
       TH1F*         dt1;                // T1 distance between the two consequtive pulses
       TH1F*         dt2;                // T2 = (dt1+dt2)/2
@@ -119,6 +114,11 @@ namespace mu2e {
       TH1F*         nhits;
       TH1F*         fsize;
       TH1F*         error;
+      TH1F*         n_nb_errors;
+      TH1F*         n_nwfs_errors;
+      TH1F*         n_linkid_errors;
+      TH1F*         n_chid_errors;
+      TH1F*         n_nchh_errors;
       TH1F*         valid;
     };
 
@@ -164,11 +164,12 @@ namespace mu2e {
       float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
       float    dt1r_c;
       
-      TrackerDataDecoder::TrackerDataPacket* hit[kMaxNHitsPerChannel];
-      WfParam_t wp[kMaxNHitsPerChannel];
+      std::vector<TrackerDataDecoder::TrackerDataPacket*> hit;
+      std::vector<WfParam_t>                              wp; 
     };
 
     struct RocData_t {
+      int       link;
       int       size;
       int       nhits;
       int       nbytes;
@@ -215,6 +216,7 @@ namespace mu2e {
     int              _pulserFrequency;          // in kHz, either 60 or 250
 
     int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
+    int              _nADCPackets;              // number of waveform packets
     int              _nSamplesBL;               // number of first samples used to determine the baseline
     float            _minPulseHeight;           // threshold for the charge integration;
 //-----------------------------------------------------------------------------
@@ -248,6 +250,11 @@ namespace mu2e {
       int       nfrag;
       int       valid;
       int       error;
+      int       n_nb_errors;     // 0x01 : wrong event size
+      int       n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
+      int       n_linkid_errors; // 0x04 : hit reported wrond channel ID
+      int       n_chid_errors;   // 0x08 : hit reported wrond channel ID
+      int       n_nchh_errors;   // 0x10 : too many hits in one channel
       RocData_t rdata[kMaxNLinks];
 
       std::vector<FragmentData_t> fragments;
@@ -265,7 +272,7 @@ namespace mu2e {
     virtual void analyze         (const art::Event& e) override;
     void         analyze_fragment(const art::Event& e, const artdaq::Fragment* Fragment);
 
-    void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Ich);
+    void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int Ich);
     void         book_event_histograms  (art::TFileDirectory* Dir, int RunNumber, EventHist_t*   Hist);
     void         book_roc_histograms    (art::TFileDirectory* Dir, int RunNumber, RocHist_t*     Hist, int Link);
     void         book_histograms        (int RunNumber);
@@ -279,7 +286,7 @@ namespace mu2e {
 
     // NWords: number of 2-byte words
     void         printFragment      (const artdaq::Fragment* Fragment, int NWords);
-    void         unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
+    int          unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
   };
 }
 #endif

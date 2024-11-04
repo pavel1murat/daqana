@@ -19,6 +19,8 @@ daqana : {
             minNBytes           : -1
             maxNBytes           : 1000000
             maxFragmentSize     : 20000       ## to catch obvious errors
+            nADCPackets         : 1           ## sometimes 2
+            nSamplesBL          : 6           ## 
 #------------------------------------------------------------------------------
 # old format: offset 0x00 :  0  (16 bytes = (0x00 + 0x08) in 2-byte words)
 # new format: offset 0x20 : 40  (80 bytes = (0x20 + 0x08) in 2-byte words)
