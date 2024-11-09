@@ -35,9 +35,10 @@ namespace mu2e {
 
   class TrkFragmentAna : public THistModule {
 
-    enum { kNChannels          = 96,
-           kMaxNLinks          =  6,
-           kMaxNHitsPerChannel = 10
+    enum { kNChannels         = 96,
+           kMaxNLinks         =  6,
+           kMaxNHWfPerChannel = 10,
+           kMaxStations       = 2       // for now, just make it an array
     };
 
     enum {
@@ -104,8 +105,8 @@ namespace mu2e {
       TH1F*         qt;                 // tail charge Qt
       TH1F*         qtq;                // Qt/Q
 
-      TH1F*         raw_wf[kMaxNHitsPerChannel];
-      TH1F*         wf    [kMaxNHitsPerChannel];
+      TH1F*         raw_wf[kMaxNHWfPerChannel];
+      TH1F*         wf    [kMaxNHWfPerChannel];
     };
                                         // per-ROC histograms
     struct EventHist_t {
@@ -124,7 +125,6 @@ namespace mu2e {
 
     struct RocHist_t {
       TH1F*         nbytes;
-      // TH1F*         dsize;              // size()-nbytes
       TH1F*         npackets;
       TH1F*         nhits;
       TH1F*         valid;
@@ -157,6 +157,22 @@ namespace mu2e {
       ChannelHist_t channel[kNChannels];
     };
 
+//-----------------------------------------------------------------------------
+// multiple DTC's
+//-----------------------------------------------------------------------------
+    struct DtcHist_t {
+      RocHist_t     roc[kMaxNLinks];
+    };
+
+    struct StationHist_t {
+      DtcHist_t     dtc[2];
+    };
+
+    struct Hist_t {
+      EventHist_t   event;
+      StationHist_t stn[2];
+    } _Hist;
+
     struct ChannelData_t {
       int      nhits;
       float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
@@ -183,9 +199,33 @@ namespace mu2e {
       float     dt1r01;                 // time difference between the two reference channels, TDC1, ns
     };
 
+    struct StationData_t {
+      int        dtcid[2];
+      int        nbytes[2];
+      int        nhits[2];
+      int        error[2];
+      RocData_t  roc[2][6];
+    };
+                                        // pointer to the raw event data
     struct FragmentData_t {
       int       nbytes;
     };
+
+    struct EventData_t {
+      int           nbtot;                  // total nbytes
+      int           nhtot;
+      int           nfrag;
+      int           valid;
+      int           error;
+      int           n_nb_errors;     // 0x01 : wrong event size
+      int           n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
+      int           n_linkid_errors; // 0x04 : hit reported wrond channel ID
+      int           n_chid_errors;   // 0x08 : hit reported wrond channel ID
+      int           n_nchh_errors;   // 0x10 : too many hits in one channel
+      StationData_t station[kMaxStations];
+
+      std::vector<FragmentData_t> fragments;
+    } _edata;
 
     // struct Config {
     //   fhicl::Atom<int>               diagLevel{fhicl::Name("diagLevel"), fhicl::Comment("diagnostic level")};
@@ -206,7 +246,9 @@ namespace mu2e {
     int              _minNBytes;
     int              _maxNBytes;
     int              _dataHeaderOffset;
-    std::vector<int> _activeLinks;            // active links - connected ROCs
+    std::vector<int>  _activeLinks_0;
+    std::vector<int>  _activeLinks_1;
+    std::vector<int>*_activeLinks[2];         // active links - connected ROCs
     std::vector<int> _refChCal;               // reference channel on CAL side FPGA
     std::vector<int> _refChHV;                // reference channel on HV  side FPGA
     art::InputTag    _trkfCollTag;
@@ -219,10 +261,11 @@ namespace mu2e {
     int              _nADCPackets;              // number of waveform packets
     int              _nSamplesBL;               // number of first samples used to determine the baseline
     float            _minPulseHeight;           // threshold for the charge integration;
+    int              _nStations;
 //-----------------------------------------------------------------------------
-// the rest
+// the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------
-    int              _nActiveLinks;
+    int              _nActiveLinks[2];
     int              _referenceChannel[kMaxNLinks][2];
     
     int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
@@ -234,31 +277,10 @@ namespace mu2e {
     double           _tdc_bin;        // 
     double           _tdc_bin_ns;     // TDC bin, in nanoseconds
     int              _initialized;    // histograms are booked in beginRun, protect ...
+    int              _idtc;           // fragment number, today - proxy to the DTC ID
+    int              _station;
 
     const art::Event*  _event;
-//-----------------------------------------------------------------------------
-// forgetting, for now, about multiple DTC's
-//-----------------------------------------------------------------------------
-    struct Hist_t {
-      EventHist_t   event;
-      RocHist_t     roc[kMaxNLinks];
-    } _Hist;
-
-    struct EventData_t {
-      int       nbtot;                  // total nbytes
-      int       nhtot;
-      int       nfrag;
-      int       valid;
-      int       error;
-      int       n_nb_errors;     // 0x01 : wrong event size
-      int       n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
-      int       n_linkid_errors; // 0x04 : hit reported wrond channel ID
-      int       n_chid_errors;   // 0x08 : hit reported wrond channel ID
-      int       n_nchh_errors;   // 0x10 : too many hits in one channel
-      RocData_t rdata[kMaxNLinks];
-
-      std::vector<FragmentData_t> fragments;
-    } _event_data;
 
     explicit TrkFragmentAna(fhicl::ParameterSet const& pset);
     // explicit TrkFragmentAna(const art::EDAnalyzer::Table<Config>& config);
@@ -273,11 +295,18 @@ namespace mu2e {
     void         analyze_fragment(const art::Event& e, const artdaq::Fragment* Fragment);
 
     void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int Ich);
+
     void         book_event_histograms  (art::TFileDirectory* Dir, int RunNumber, EventHist_t*   Hist);
-    void         book_roc_histograms    (art::TFileDirectory* Dir, int RunNumber, RocHist_t*     Hist, int Link);
+    
+    void         book_dtc_histograms    (art::TFileDirectory* Dir, int RunNumber, DtcHist_t*     Hist,
+                                         int IStation, int IDtc);
+    void         book_roc_histograms    (art::TFileDirectory* Dir, int RunNumber, RocHist_t*     Hist,
+                                         int IStation, int IDtc, int Link);
+    
     void         book_histograms        (int RunNumber);
   
     void         fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data);
+    void         fill_dtc_histograms    (DtcHist_t*     Hist, StationData_t* Data, int IDtc);
     void         fill_event_histograms  (EventHist_t*   Hist, EventData_t*   Data);
     void         fill_roc_histograms    (RocHist_t*     Hist, RocData_t*     Data);
 

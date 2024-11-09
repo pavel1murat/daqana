@@ -29,320 +29,11 @@ unsigned int reverseBits(unsigned int num) {
 }
 
 //-----------------------------------------------------------------------------
-unsigned int correctedTDC(unsigned int TDC) {
-  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
-  return corrected_tdc;
-}
-
-//-----------------------------------------------------------------------------
-// NWords : the number of short words
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::printFragment(const artdaq::Fragment* Frag, int NWords) {
-//-----------------------------------------------------------------------------
-// print fragments in HEX, for the tracker, the data has to be in 2-byte words
-//-----------------------------------------------------------------------------
-    ushort* buf = (ushort*) (Frag->dataBegin());
-
-    int loc     = 0;
-      
-    for (int i=0; i<NWords; i++) {
-      if (loc == 0) printf(" 0x%08x: ",i*2);
-
-      ushort  word = buf[i];
-      printf("0x%04x ",word);
-
-      loc += 1;
-      if (loc == 8) {
-        printf("\n");
-        loc = 0;
-      }
-    }
-      
-    if (loc != 0) printf("\n");
-  }
-
-// ======================================================================
-
-  TrkFragmentAna::TrkFragmentAna(fhicl::ParameterSet const& PSet) : 
-    THistModule      (PSet                      ,"TrkFragmentAna"  ) ,
-
-    _diagLevel       (PSet.get<int>             ("diagLevel"       )), 
-    _minNBytes       (PSet.get<int>             ("minNBytes"       )), 
-    _maxNBytes       (PSet.get<int>             ("maxNBytes"       )), 
-    _dataHeaderOffset(PSet.get<int>             ("dataHeaderOffset")),
-    //    _nAdcPackets     (PSet.get<int>             ("nAdcPackets"     )),
-    _activeLinks     (PSet.get<std::vector<int>>("activeLinks"     )),
-    _refChCal        (PSet.get<std::vector<int>>("refChCal"        )),
-    _refChHV         (PSet.get<std::vector<int>>("refChHV"         )),
-    _trkfCollTag     (PSet.get<std::string>     ("trkfCollTag"     )),
-    _dumpDTCRegisters(PSet.get<int>             ("dumpDTCRegisters")),
-    _analyzeFragments(PSet.get<int>             ("analyzeFragments")),
-    _maxFragmentSize (PSet.get<int>             ("maxFragmentSize" )),
-    _pulserFrequency (PSet.get<int>             ("pulserFrequency" )),
-    _nADCPackets     (PSet.get<int>             ("nADCPackets"     )),
-    _nSamplesBL      (PSet.get<int>             ("nSamplesBL"      )),
-    _minPulseHeight  (PSet.get<float>           ("minPulseHeight"  ))
-  {
-
-    double f0(31.29e6);                   // 31.29 MHz
-
-    _timeWindow = PSet.get<int>("timeWindow")*25.;  // in ns
-
-    if      (_pulserFrequency ==  60) _freq = f0/(pow(2,9)+1);     // ~ 60 kHz
-    else if (_pulserFrequency == 250) _freq = f0/(pow(2,7)+1);     // ~250 kHz
-
-    _dt   = 1/_freq*1.e9;               // in ns
-//------------------------------------------------------------------------------
-// default map, Richie says TS1 may have an old firmware with some bugs
-//-----------------------------------------------------------------------------
-    int adc_index_0[96] = {
-      91, 85, 79, 73, 67, 61, 55, 49,
-      43, 37, 31, 25, 19, 13,  7,  1,
-      90, 84, 78, 72, 66, 60, 54, 48,
-      
-      42, 36, 30, 24, 18, 12,  6,  0,
-      93, 87, 81, 75, 69, 63, 57, 51,
-      45, 39, 33, 27, 21, 15,  9,  3,
-      
-      44, 38, 32, 26, 20, 14,  8,  2, 
-      92, 86, 80, 74, 68, 62, 56, 50,
-      47, 41, 35, 29, 23, 17, 11,  5,
-      
-      95, 89, 83, 77, 71, 65, 59, 53,
-      46, 40, 34, 28, 22, 16, 10,  4,
-      94, 88, 82, 76, 70, 64, 58, 52
-    };
-//-----------------------------------------------------------------------------
-// TS1: compared to _0, swap lanes 3 and 4, and in the new lane3 swap lines 1 and 3
-//-----------------------------------------------------------------------------
-    int adc_index_1[96] = {
-      91, 85, 79, 73, 67, 61, 55, 49,
-      43, 37, 31, 25, 19, 13,  7,  1,
-      90, 84, 78, 72, 66, 60, 54, 48,
-      
-      42, 36, 30, 24, 18, 12,  6,  0,
-      93, 87, 81, 75, 69, 63, 57, 51,
-      45, 39, 33, 27, 21, 15,  9,  3,
-      
-      94, 88, 82, 76, 70, 64, 58, 52,
-      46, 40, 34, 28, 22, 16, 10,  4,
-      95, 89, 83, 77, 71, 65, 59, 53,
-      
-      44, 38, 32, 26, 20, 14,  8,  2, 
-      92, 86, 80, 74, 68, 62, 56, 50,
-      47, 41, 35, 29, 23, 17, 11,  5
-    };
-
-
-    for (int i=0; i<96; i++) {
-      _adc_index_0[adc_index_0[i]] = i;
-      _adc_index_1[adc_index_1[i]] = i;
-    }
-
-//-----------------------------------------------------------------------------
-// initialize reference channels, at this point use channels 91 and 94 for all 
-// ROC's (the readout order is defined in firmware and is the same for all channels)
-//-----------------------------------------------------------------------------
-    _nActiveLinks        = _activeLinks.size();
-
-    for (int roc=0; roc<kMaxNLinks; roc++) {
-      _event_data.rdata[roc].link      = roc;
-
-      _referenceChannel[roc][0] = 91;
-      _referenceChannel[roc][1] = 94;
-      if (roc < _nActiveLinks) {
-        _referenceChannel[roc][0] = _refChCal[roc];
-        _referenceChannel[roc][1] = _refChHV [roc];
-      }
-
-      _event_data.rdata[roc].ref_ch[0] = &_event_data.rdata[roc].channel[_referenceChannel[roc][0]];
-      _event_data.rdata[roc].ref_ch[1] = &_event_data.rdata[roc].channel[_referenceChannel[roc][1]];
-    }
-
-    _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
-    _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
-
-    _initialized         = 0;
-  }
-
-//-----------------------------------------------------------------------------
-// I : channel number
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int I) {
-
-    Hist->nhits   = Dir->make<TH1F>(Form("ch_%i_%02i_nhits" ,Link,I),Form("run %06i: link %i ch %02i nhits"  ,RunNumber,Link,I), 20, -0.5, 19.5);
-    Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
-    Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
-    Hist->t0  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_0"  ,Link,I),Form("run %06i: link %i ch %02i t0[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-    Hist->t0  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_1"  ,Link,I),Form("run %06i: link %i ch %02i t0[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-    Hist->t1  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_0"  ,Link,I),Form("run %06i: link %i ch %02i t1[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-    Hist->t1  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_1"  ,Link,I),Form("run %06i: link %i ch %02i t1[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-    Hist->tot [0] = Dir->make<TH1F>(Form("ch_%i_%02i_tot0"  ,Link,I),Form("run %06i: link %i ch %02i tot[0]" ,RunNumber,Link,I), 100, 0., 100.);
-    Hist->tot [1] = Dir->make<TH1F>(Form("ch_%i_%02i_tot1"  ,Link,I),Form("run %06i: link %i ch %02i tot[1]" ,RunNumber,Link,I), 100, 0., 100.);
-    Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i ch %02i pmp"    ,RunNumber,Link,I), 100, 0.,  10.);
-    Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,I) ,500, -25,25);
-    Hist->dt01[1] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_1",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [1],ns",RunNumber,Link,I) ,500, -2500,2500);
-    Hist->dt0     = Dir->make<TH1F>(Form("ch_%i_%02i_dt0"   ,Link,I),Form("run %06i: link %i ch %02i T0(i+1)-T0(i)",RunNumber,Link,I)      ,50000,  0.,50);
-    Hist->dt1     = Dir->make<TH1F>(Form("ch_%i_%02i_dt1"   ,Link,I),Form("run %06i: link %i ch %02i T1(i+1)-T1(i)",RunNumber,Link,I)      ,50000,  0.,50);
-    Hist->dt2     = Dir->make<TH1F>(Form("ch_%i_%02i_dt2"   ,Link,I),Form("run %06i: link %i ch %02i T2(i+1)-T2(i)",RunNumber,Link,I)      ,50000,  0.,50);
-    Hist->dt0r    = Dir->make<TH1F>(Form("ch_%i_%02i_dt0r_0",Link,I),Form("run %06i: link %i ch %02i T0(ich,0)-T0(ref,0)[0]",RunNumber,Link,I),20000,-10.,10);
-    Hist->dt1r    = Dir->make<TH1F>(Form("ch_%i_%02i_dt1r_0",Link,I),Form("run %06i: link %i ch %02i T1(ich,0)-T1(ref,0)[0]",RunNumber,Link,I),20000,-10.,10);
-//-----------------------------------------------------------------------------
-// waveform parameters
-//-----------------------------------------------------------------------------
-    Hist->fsample = Dir->make<TH1F>(Form("ch_%i_%02i_fs"    ,Link,I),Form("run %06i: link %i ch %02i first sample"   ,RunNumber,Link,I), 30,-0.5, 29.5);
-    Hist->bline   = Dir->make<TH1F>(Form("ch_%i_%02i_bl"    ,Link,I),Form("run %06i: link %i ch %02i WF baseline"    ,RunNumber,Link,I),250,0,500);
-    Hist->pheight = Dir->make<TH1F>(Form("ch_%i_%02i_ph"    ,Link,I),Form("run %06i: link %i ch %02i WF pulse height",RunNumber,Link,I),500,0,500);
-    Hist->q       = Dir->make<TH1F>(Form("ch_%i_%02i_q"     ,Link,I),Form("run %06i: link %i ch %02i WF charge"      ,RunNumber,Link,I),500,0,500);//
-    Hist->qt      = Dir->make<TH1F>(Form("ch_%i_%02i_qt"    ,Link,I),Form("run %06i: link %i ch %02i WF tail charge" ,RunNumber,Link,I),500,0,500);
-    Hist->qtq     = Dir->make<TH1F>(Form("ch_%i_%02i_qtq"   ,Link,I),Form("run %06i: link %i ch %02i WF Qt/Q"        ,RunNumber,Link,I),200,0,1);
-//-----------------------------------------------------------------------------
-// waveform histograms, assume number of samples < 30
-//-----------------------------------------------------------------------------
-    for (int j=0; j<kMaxNHitsPerChannel; j++) {
-      Hist->raw_wf[j] = Dir->make<TH1F>(Form("raw_wf_ch_%i_%02i_%i",Link,I,j),Form("run %06i: link %i ch [%02i][%i] raw_waveform",RunNumber,Link,I,j),30, 0.,30.);
-      Hist->wf    [j] = Dir->make<TH1F>(Form("wf_ch_%i_%02i_%i"    ,Link,I,j),Form("run %06i: link %i ch [%02i][%i] waveform"    ,RunNumber,Link,I,j),30, 0.,30.);
-    }
-  }
-
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, RocHist_t* Hist, int Link) {
-    Hist->nbytes          = Dir->make<TH1F>("nbytes"  , Form("run %06i: link %i n bytes"     ,RunNumber,Link),10000,    0., 10000.);
-    Hist->npackets        = Dir->make<TH1F>("npackets", Form("run %06i: link %i n packets"   ,RunNumber,Link), 1000,    0.,  1000.);
-    Hist->nhits           = Dir->make<TH1F>("nhits"   , Form("run %06i: link %i n hits"      ,RunNumber,Link),  300,    0.,   300.);
-    Hist->valid           = Dir->make<TH1F>("valid"   , Form("run %06i: link %i valid"       ,RunNumber,Link),    2,    0.,     2.);
-
-    Hist->nh_vs_ch        = Dir->make<TH2F>("nh_vs_ch"  , Form("run %06i: link %i nh vs ch"  ,RunNumber,Link),  100,0.,100., 25,0,25);
-    Hist->nh_vs_adc1      = Dir->make<TH2F>("nh_vs_adc1", Form("run %06i: link %i nh vs adc" ,RunNumber,Link),  100,0.,100., 25,0,25);
-
-    Hist->dt0r_vs_ch      = Dir->make<TH2F>("dt0r_vs_ch_0", Form("run %06i: link %i dt0r vs ch[0]",RunNumber,Link),  100,0.,100.,2500,-25,25);
-    Hist->dt1r_vs_ch      = Dir->make<TH2F>("dt1r_vs_ch_0", Form("run %06i: link %i dt1r vs ch[0]",RunNumber,Link),  100,0.,100.,2500,-25,25);
-
-    Hist->dt0r01          = Dir->make<TH1F>("dt0r01", Form("run %06i: link %i dt0r01"             ,RunNumber,Link), 40000,-20000,20000);
-    Hist->dt1r01          = Dir->make<TH1F>("dt1r01", Form("run %06i: link %i dt1r01"             ,RunNumber,Link), 40000,-20000,20000);
-
-    Hist->nhits_vs_ich    = Dir->make<TH1F>("nh_vs_ich"  , Form("run %06i: link %i nh vs ich"  ,RunNumber,Link),  100, 0.,   100.);
-    Hist->nhits_vs_adc[0] = Dir->make<TH1F>("nh_vs_adc_0", Form("run %06i: link %i nh vs adc_0",RunNumber,Link),  100, 0.,   100.);
-    Hist->nhits_vs_adc[1] = Dir->make<TH1F>("nh_vs_adc_1", Form("run %06i: link %i nh vs adc_1",RunNumber,Link),  100, 0.,   100.);
-
-    Hist->dt0rc_vs_ch[0]  = Dir->make<TH2F>("dt0rc_vs_ch_0", Form("run %06i: link %i dt0rc vs ch[0], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-    Hist->dt0rc_vs_ch[1]  = Dir->make<TH2F>("dt0rc_vs_ch_1", Form("run %06i: link %i dt0rc vs ch[1], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-
-    Hist->dt1rc_vs_ch[0]  = Dir->make<TH2F>("dt1rc_vs_ch_0", Form("run %06i: link %i dt1rc vs ch[0], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-    Hist->dt1rc_vs_ch[1]  = Dir->make<TH2F>("dt1rc_vs_ch_1", Form("run %06i: link %i dt1rc vs ch[1], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-
-    Hist->dt0rc_vs_adc[0] = Dir->make<TH2F>("dt0rc_vs_adc_0", Form("run %06i: link %i dt0rc vs adc[0], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-    Hist->dt0rc_vs_adc[1] = Dir->make<TH2F>("dt0rc_vs_adc_1", Form("run %06i: link %i dt0rc vs adc[1], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-
-    Hist->dt1rc_vs_adc[0] = Dir->make<TH2F>("dt1rc_vs_adc_0", Form("run %06i: link %i dt1rc vs adc[0], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-    Hist->dt1rc_vs_adc[1] = Dir->make<TH2F>("dt1rc_vs_adc_1", Form("run %06i: link %i dt1rc vs adc[1], ns",RunNumber,Link),  100,0.,100.,1000,-10,10);
-
-    Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: link %i fs vs ich"    ,RunNumber,Link),  100, 0.,   100.,0,  30);
-    Hist->bl_vs_ich       = Dir->make<TProfile>("bl_vs_ich"  , Form("run %06i: link %i bl vs ich"    ,RunNumber,Link),  100, 0.,   100.,0, 500);
-    Hist->ph_vs_ich       = Dir->make<TProfile>("ph_vs_ich"  , Form("run %06i: link %i ph vs ich"    ,RunNumber,Link),  100, 0.,   100.,0, 500);
-    Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: link %i Q vs ich"     ,RunNumber,Link),  100, 0.,   100.,0,1500);
-    Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: link %i Qt vs ich"    ,RunNumber,Link),  100, 0.,   100.,0, 500);
-    Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: link %i Qt/Q vs ich"  ,RunNumber,Link),  100, 0.,   100.,0, 1);
-
-    for (int i=0; i<kNChannels; i++) {
-      art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
-      book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
-    }
-  }
-
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, EventHist_t* Hist) {
-   
-    Hist->nhits           = Dir->make<TH1F>("nhits"      , Form("run %06i: nhits total"  ,RunNumber), 1000, 0.,   1000.);
-    Hist->nbtot           = Dir->make<TH1F>("nbtot"      , Form("run %06i: nbytes total" ,RunNumber), 1000, 0., 100000.);
-    Hist->nfrag           = Dir->make<TH1F>("nfrag"      , Form("run %06i: n fragments"  ,RunNumber),  100, 0.,    100.);
-    Hist->fsize           = Dir->make<TH1F>("fsize"      , Form("run %06i: fragment size",RunNumber), 1000, 0., 100000.);
-    Hist->error           = Dir->make<TH1F>("error"      , Form("run %06i: error code"   ,RunNumber),   10, 0.,     10.);
-    Hist->valid           = Dir->make<TH1F>("valid"      , Form("run %06i: valid code"   ,RunNumber),  100, 0.,    100.);
-  }
-
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::book_histograms(int RunNumber) {
-    art::ServiceHandle<art::TFileService> tfs;
-    
-    art::TFileDirectory top_dir = tfs->mkdir("trk");
-
-    book_event_histograms(&top_dir,RunNumber,&_Hist.event);
-
-    for (int i=0; i<_nActiveLinks; i++) {
-      int link  = _activeLinks[i];
-      art::TFileDirectory roc_dir = top_dir.mkdir(Form("roc_%i",link));
-      book_roc_histograms(&roc_dir,RunNumber,&_Hist.roc[link],link);
-    }
-    
-    printf("[mu2e::TrkFragmentAna] pointer to the module: 0x%8p\n",(void*) this);
-  }
-
-//-----------------------------------------------------------------------------
-// for run<=285, wasn't saving the event header and subheader, 64 bytes in total
-// or 32 2-byte words
-// book histograms only once
-//-----------------------------------------------------------------------------
-void TrkFragmentAna::beginRun(const art::Run& aRun) {
-  int rn  = aRun.run();
-
-  if (_initialized != 0) return;
-  _initialized = 1;
-
-  // if (rn <= 285) _dataHeaderOffset =  0;
-  // else           _dataHeaderOffset = 32;
-//-----------------------------------------------------------------------------
-// init timing offsets for known runs
-// 'offset' is defined from the analysis of the dt0r_vs_ch_0
-//-----------------------------------------------------------------------------
-  double offset(0);
-
-  if      (rn ==    281) offset = 15030; 
-  else if (rn == 105023) offset =     0;
-  else if (rn == 105026) offset = 10400;
-  else if (rn == 105038) offset =  7964; 
-  else if (rn == 105041) offset =  1128;
-  else if (rn == 105042) offset =  1128;
-  else if (rn == 105043) offset =  1128;
-  else if (rn == 105044) offset =  1129;
-  else if (rn == 105059) offset =     0; 
-  else if (rn == 105060) offset = 11130; 
-  else if (rn == 105066) offset = 10580;
-  // 105067-1105070: four runs with the same settings, 2 ROCs, no data file for 105067 
-  else if ((rn >= 105067) and (rn <= 105070)) offset = 0;
-//-----------------------------------------------------------------------------
-// add 20 ns to have the HV lanes distinct on the plot
-//-----------------------------------------------------------------------------
-  for (int i=0; i<kNChannels; i++) {
-    if (_adc_index_0[i] < 48) _gen_offset[i] = 0;
-    else                      _gen_offset[i] = offset;
-  }
-//-----------------------------------------------------------------------------
-// as a last step, book histograms - need to know the number of active links
-//-----------------------------------------------------------------------------
-  book_histograms(rn);
-}
-
-//--------------------------------------------------------------------------------
-  void TrkFragmentAna::beginJob() {
-  }
-
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::endJob() {
-    printf("[mu2e::TrkFragmentAna] pointer to the module: 0x%8p\n",(void*) this);
-  }
-
-//-----------------------------------------------------------------------------
-  void TrkFragmentAna::fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data) {
-    Hist->nhits->Fill(Data->nhits);
-  }
-
-//-----------------------------------------------------------------------------
   int TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
     // int rc(0);
     int n_adc_packets = Hit->NumADCPackets;
     if (n_adc_packets != _nADCPackets) {
-      _event_data.error = 5;
+      _edata.error = 5;
       return -n_adc_packets;
     }
 
@@ -419,6 +110,342 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
   
 //-----------------------------------------------------------------------------
+unsigned int correctedTDC(unsigned int TDC) {
+  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+  return corrected_tdc;
+}
+
+//-----------------------------------------------------------------------------
+// NWords : the number of short words
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::printFragment(const artdaq::Fragment* Frag, int NWords) {
+//-----------------------------------------------------------------------------
+// print fragments in HEX, for the tracker, the data has to be in 2-byte words
+//-----------------------------------------------------------------------------
+    ushort* buf = (ushort*) (Frag->dataBegin());
+
+    int loc     = 0;
+      
+    for (int i=0; i<NWords; i++) {
+      if (loc == 0) printf(" 0x%08x: ",i*2);
+
+      ushort  word = buf[i];
+      printf("0x%04x ",word);
+
+      loc += 1;
+      if (loc == 8) {
+        printf("\n");
+        loc = 0;
+      }
+    }
+      
+    if (loc != 0) printf("\n");
+  }
+
+// ======================================================================
+
+  TrkFragmentAna::TrkFragmentAna(fhicl::ParameterSet const& PSet) : 
+    THistModule      (PSet                      ,"TrkFragmentAna"  ) ,
+
+    _diagLevel       (PSet.get<int>             ("diagLevel"       )), 
+    _minNBytes       (PSet.get<int>             ("minNBytes"       )), 
+    _maxNBytes       (PSet.get<int>             ("maxNBytes"       )), 
+    _dataHeaderOffset(PSet.get<int>             ("dataHeaderOffset")),
+    _activeLinks_0   (PSet.get<std::vector<int>>("activeLinks_0"   )),
+    _activeLinks_1   (PSet.get<std::vector<int>>("activeLinks_1"   )),
+    _refChCal        (PSet.get<std::vector<int>>("refChCal"        )),
+    _refChHV         (PSet.get<std::vector<int>>("refChHV"         )),
+    _trkfCollTag     (PSet.get<std::string>     ("trkfCollTag"     )),
+    _dumpDTCRegisters(PSet.get<int>             ("dumpDTCRegisters")),
+    _analyzeFragments(PSet.get<int>             ("analyzeFragments")),
+    _maxFragmentSize (PSet.get<int>             ("maxFragmentSize" )),
+    _pulserFrequency (PSet.get<int>             ("pulserFrequency" )),
+    _nADCPackets     (PSet.get<int>             ("nADCPackets"     )),
+    _nSamplesBL      (PSet.get<int>             ("nSamplesBL"      )),
+    _minPulseHeight  (PSet.get<float>           ("minPulseHeight"  ))
+  {
+    _activeLinks[0] = &_activeLinks_0;
+    _activeLinks[1] = &_activeLinks_1;
+
+    double f0(31.29e6);                   // 31.29 MHz
+
+    _timeWindow = PSet.get<int>("timeWindow")*25.;  // in ns
+
+    if      (_pulserFrequency ==  60) _freq = f0/(pow(2,9)+1);     // ~ 60 kHz
+    else if (_pulserFrequency == 250) _freq = f0/(pow(2,7)+1);     // ~250 kHz
+
+    _dt   = 1/_freq*1.e9;               // in ns
+//------------------------------------------------------------------------------
+// default map, Richie says TS1 may have an old firmware with some bugs
+//-----------------------------------------------------------------------------
+    int adc_index_0[96] = {
+      91, 85, 79, 73, 67, 61, 55, 49,
+      43, 37, 31, 25, 19, 13,  7,  1,
+      90, 84, 78, 72, 66, 60, 54, 48,
+      
+      42, 36, 30, 24, 18, 12,  6,  0,
+      93, 87, 81, 75, 69, 63, 57, 51,
+      45, 39, 33, 27, 21, 15,  9,  3,
+      
+      44, 38, 32, 26, 20, 14,  8,  2, 
+      92, 86, 80, 74, 68, 62, 56, 50,
+      47, 41, 35, 29, 23, 17, 11,  5,
+      
+      95, 89, 83, 77, 71, 65, 59, 53,
+      46, 40, 34, 28, 22, 16, 10,  4,
+      94, 88, 82, 76, 70, 64, 58, 52
+    };
+//-----------------------------------------------------------------------------
+// TS1: compared to _0, swap lanes 3 and 4, and in the new lane3 swap lines 1 and 3
+//-----------------------------------------------------------------------------
+    int adc_index_1[96] = {
+      91, 85, 79, 73, 67, 61, 55, 49,
+      43, 37, 31, 25, 19, 13,  7,  1,
+      90, 84, 78, 72, 66, 60, 54, 48,
+      
+      42, 36, 30, 24, 18, 12,  6,  0,
+      93, 87, 81, 75, 69, 63, 57, 51,
+      45, 39, 33, 27, 21, 15,  9,  3,
+      
+      94, 88, 82, 76, 70, 64, 58, 52,
+      46, 40, 34, 28, 22, 16, 10,  4,
+      95, 89, 83, 77, 71, 65, 59, 53,
+      
+      44, 38, 32, 26, 20, 14,  8,  2, 
+      92, 86, 80, 74, 68, 62, 56, 50,
+      47, 41, 35, 29, 23, 17, 11,  5
+    };
+
+
+    for (int i=0; i<96; i++) {
+      _adc_index_0[adc_index_0[i]] = i;
+      _adc_index_1[adc_index_1[i]] = i;
+    }
+//-----------------------------------------------------------------------------
+// initialize reference channels, at this point use channels 91 and 94 for all 
+// ROC's (the readout order is defined in firmware and is the same for all channels)
+//-----------------------------------------------------------------------------
+    _nActiveLinks[0]      = _activeLinks[0]->size();
+    _nActiveLinks[1]      = _activeLinks[1]->size();
+
+    for (int ilink=0; ilink<kMaxNLinks; ilink++) {
+      _referenceChannel[ilink][0] = 91;
+      _referenceChannel[ilink][1] = 94;
+    }
+
+    _nStations = 1; // for now
+    for (int ist=0; ist<_nStations; ist++) {
+      for (int idtc=0; idtc<2; idtc++) {
+        for (int ilink=0; ilink<kMaxNLinks; ilink++) {
+          RocData_t* rd = &_edata.station[ist].roc[idtc][ilink];
+          rd->link      = ilink;
+
+          if (ilink < _nActiveLinks[idtc]) {
+            _referenceChannel[ilink][0] = _refChCal[ilink];
+            _referenceChannel[ilink][1] = _refChHV [ilink];
+          }
+
+          rd->ref_ch[0] = &rd->channel[_referenceChannel[ilink][0]];
+          rd->ref_ch[1] = &rd->channel[_referenceChannel[ilink][1]];
+        }
+      }
+    }
+
+    _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
+    _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
+
+    _initialized         = 0;
+  }
+
+//-----------------------------------------------------------------------------
+// I : channel number
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int I) {
+
+    Hist->nhits   = Dir->make<TH1F>(Form("ch_%i_%02i_nhits" ,Link,I),Form("run %06i: link %i ch %02i nhits"  ,RunNumber,Link,I), 20, -0.5, 19.5);
+    Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
+    Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
+    Hist->t0  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_0"  ,Link,I),Form("run %06i: link %i ch %02i t0[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
+    Hist->t0  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_1"  ,Link,I),Form("run %06i: link %i ch %02i t0[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
+    Hist->t1  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_0"  ,Link,I),Form("run %06i: link %i ch %02i t1[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
+    Hist->t1  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_1"  ,Link,I),Form("run %06i: link %i ch %02i t1[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
+    Hist->tot [0] = Dir->make<TH1F>(Form("ch_%i_%02i_tot0"  ,Link,I),Form("run %06i: link %i ch %02i tot[0]" ,RunNumber,Link,I), 100, 0., 100.);
+    Hist->tot [1] = Dir->make<TH1F>(Form("ch_%i_%02i_tot1"  ,Link,I),Form("run %06i: link %i ch %02i tot[1]" ,RunNumber,Link,I), 100, 0., 100.);
+    Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i ch %02i pmp"    ,RunNumber,Link,I), 100, 0.,  10.);
+    Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,I) ,500, -25,25);
+    Hist->dt01[1] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_1",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [1],ns",RunNumber,Link,I) ,500, -2500,2500);
+    Hist->dt0     = Dir->make<TH1F>(Form("ch_%i_%02i_dt0"   ,Link,I),Form("run %06i: link %i ch %02i T0(i+1)-T0(i)",RunNumber,Link,I)      ,50000,  0.,50);
+    Hist->dt1     = Dir->make<TH1F>(Form("ch_%i_%02i_dt1"   ,Link,I),Form("run %06i: link %i ch %02i T1(i+1)-T1(i)",RunNumber,Link,I)      ,50000,  0.,50);
+    Hist->dt2     = Dir->make<TH1F>(Form("ch_%i_%02i_dt2"   ,Link,I),Form("run %06i: link %i ch %02i T2(i+1)-T2(i)",RunNumber,Link,I)      ,50000,  0.,50);
+    Hist->dt0r    = Dir->make<TH1F>(Form("ch_%i_%02i_dt0r_0",Link,I),Form("run %06i: link %i ch %02i T0(ich,0)-T0(ref,0)[0]",RunNumber,Link,I),20000,-10.,10);
+    Hist->dt1r    = Dir->make<TH1F>(Form("ch_%i_%02i_dt1r_0",Link,I),Form("run %06i: link %i ch %02i T1(ich,0)-T1(ref,0)[0]",RunNumber,Link,I),20000,-10.,10);
+//-----------------------------------------------------------------------------
+// waveform parameters
+//-----------------------------------------------------------------------------
+    Hist->fsample = Dir->make<TH1F>(Form("ch_%i_%02i_fs"    ,Link,I),Form("run %06i: link %i ch %02i first sample"   ,RunNumber,Link,I), 30,-0.5, 29.5);
+    Hist->bline   = Dir->make<TH1F>(Form("ch_%i_%02i_bl"    ,Link,I),Form("run %06i: link %i ch %02i WF baseline"    ,RunNumber,Link,I),250,0,500);
+    Hist->pheight = Dir->make<TH1F>(Form("ch_%i_%02i_ph"    ,Link,I),Form("run %06i: link %i ch %02i WF pulse height",RunNumber,Link,I),500,0,500);
+    Hist->q       = Dir->make<TH1F>(Form("ch_%i_%02i_q"     ,Link,I),Form("run %06i: link %i ch %02i WF charge"      ,RunNumber,Link,I),500,0,500);//
+    Hist->qt      = Dir->make<TH1F>(Form("ch_%i_%02i_qt"    ,Link,I),Form("run %06i: link %i ch %02i WF tail charge" ,RunNumber,Link,I),500,0,500);
+    Hist->qtq     = Dir->make<TH1F>(Form("ch_%i_%02i_qtq"   ,Link,I),Form("run %06i: link %i ch %02i WF Qt/Q"        ,RunNumber,Link,I),200,0,1);
+//-----------------------------------------------------------------------------
+// waveform histograms, assume number of samples < 30
+//-----------------------------------------------------------------------------
+    for (int j=0; j<kMaxNHWfPerChannel; j++) {
+      Hist->raw_wf[j] = Dir->make<TH1F>(Form("raw_wf_ch_%i_%02i_%i",Link,I,j),Form("run %06i: link %i ch [%02i][%i] raw_waveform",RunNumber,Link,I,j),30, 0.,30.);
+      Hist->wf    [j] = Dir->make<TH1F>(Form("wf_ch_%i_%02i_%i"    ,Link,I,j),Form("run %06i: link %i ch [%02i][%i] waveform"    ,RunNumber,Link,I,j),30, 0.,30.);
+    }
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::book_dtc_histograms(art::TFileDirectory* Dir, int RunNumber, DtcHist_t* Hist, int IStation, int IDtc) {
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, RocHist_t* Hist, int Station, int Dtc, int Link) {
+    Hist->nbytes          = Dir->make<TH1F>("nbytes"  ,        Form("run %06i: link_%02i:%i:%i n bytes"      ,RunNumber,Station,Dtc,Link),10000,    0., 10000.);
+    Hist->npackets        = Dir->make<TH1F>("npackets",        Form("run %06i: link %02i:%i:%i n packets"    ,RunNumber,Station,Dtc,Link), 1000,    0.,  1000.);
+    Hist->nhits           = Dir->make<TH1F>("nhits"   ,        Form("run %06i: link %02i:%i:%i n hits"       ,RunNumber,Station,Dtc,Link),  300,    0.,   300.);
+    Hist->valid           = Dir->make<TH1F>("valid"   ,        Form("run %06i: link %02i:%i:%i valid"        ,RunNumber,Station,Dtc,Link),    2,    0.,     2.);
+
+    Hist->nh_vs_ch        = Dir->make<TH2F>("nh_vs_ch"  ,      Form("run %06i: link %02i:%i:%i nh vs ch"     ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
+    Hist->nh_vs_adc1      = Dir->make<TH2F>("nh_vs_adc1",      Form("run %06i: link %02i:%i:%i nh vs adc"    ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
+
+    Hist->dt0r_vs_ch      = Dir->make<TH2F>("dt0r_vs_ch_0",    Form("run %06i: link %02i:%i:%i dt0r vs ch[0]",RunNumber,Station,Dtc,Link),  100,0.,100.,2500,-25,25);
+    Hist->dt1r_vs_ch      = Dir->make<TH2F>("dt1r_vs_ch_0",    Form("run %06i: link %02i:%i:%i dt1r vs ch[0]",RunNumber,Station,Dtc,Link),  100,0.,100.,2500,-25,25);
+
+    Hist->dt0r01          = Dir->make<TH1F>("dt0r01",          Form("run %06i: link %02i:%i:%i dt0r01"       ,RunNumber,Station,Dtc,Link), 40000,-20000,20000);
+    Hist->dt1r01          = Dir->make<TH1F>("dt1r01",          Form("run %06i: link %02i:%i:%i dt1r01"       ,RunNumber,Station,Dtc,Link), 40000,-20000,20000);
+
+    Hist->nhits_vs_ich    = Dir->make<TH1F>("nh_vs_ich"  ,     Form("run %06i: link %02i:%i:%i nh vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+    Hist->nhits_vs_adc[0] = Dir->make<TH1F>("nh_vs_adc_0",     Form("run %06i: link %02i:%i:%i nh vs adc_0"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+    Hist->nhits_vs_adc[1] = Dir->make<TH1F>("nh_vs_adc_1",     Form("run %06i: link %02i:%i:%i nh vs adc_1"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+
+    Hist->dt0rc_vs_ch[0]  = Dir->make<TH2F>("dt0rc_vs_ch_0",   Form("run %06i: link %02i:%i:%i dt0rc vs ch[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+    Hist->dt0rc_vs_ch[1]  = Dir->make<TH2F>("dt0rc_vs_ch_1",   Form("run %06i: link %02i:%i:%i dt0rc vs ch[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+
+    Hist->dt1rc_vs_ch[0]  = Dir->make<TH2F>("dt1rc_vs_ch_0",   Form("run %06i: link %02i:%i:%i dt1rc vs ch[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+    Hist->dt1rc_vs_ch[1]  = Dir->make<TH2F>("dt1rc_vs_ch_1",   Form("run %06i: link %02i:%i:%i dt1rc vs ch[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+
+    Hist->dt0rc_vs_adc[0] = Dir->make<TH2F>("dt0rc_vs_adc_0",  Form("run %06i: link %02i:%i:%i dt0rc vs adc[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+    Hist->dt0rc_vs_adc[1] = Dir->make<TH2F>("dt0rc_vs_adc_1",  Form("run %06i: link %02i:%i:%i dt0rc vs adc[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+
+    Hist->dt1rc_vs_adc[0] = Dir->make<TH2F>("dt1rc_vs_adc_0",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+    Hist->dt1rc_vs_adc[1] = Dir->make<TH2F>("dt1rc_vs_adc_1",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+
+    Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: link %02i:%i:%i fs vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,  30);
+    Hist->bl_vs_ich       = Dir->make<TProfile>("bl_vs_ich"  , Form("run %06i: link %02i:%i:%i bl vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->ph_vs_ich       = Dir->make<TProfile>("ph_vs_ich"  , Form("run %06i: link %02i:%i:%i ph vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: link %02i:%i:%i Q vs ich"     ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,1500);
+    Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: link %02i:%i:%i Qt vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: link %02i:%i:%i Qt/Q vs ich"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 1);
+
+    for (int i=0; i<kNChannels; i++) {
+      art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
+      book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
+    }
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, EventHist_t* Hist) {
+   
+    Hist->nhits           = Dir->make<TH1F>("nhits"      , Form("run %06i: nhits total"  ,RunNumber), 1000, 0.,   1000.);
+    Hist->nbtot           = Dir->make<TH1F>("nbtot"      , Form("run %06i: nbytes total" ,RunNumber), 1000, 0., 100000.);
+    Hist->nfrag           = Dir->make<TH1F>("nfrag"      , Form("run %06i: n fragments"  ,RunNumber),  100, 0.,    100.);
+    Hist->fsize           = Dir->make<TH1F>("fsize"      , Form("run %06i: fragment size",RunNumber), 1000, 0., 100000.);
+    Hist->error           = Dir->make<TH1F>("error"      , Form("run %06i: error code"   ,RunNumber),   10, 0.,     10.);
+    Hist->valid           = Dir->make<TH1F>("valid"      , Form("run %06i: valid code"   ,RunNumber),  100, 0.,    100.);
+  }
+
+//-----------------------------------------------------------------------------
+// for now - make the interface work with one station only
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::book_histograms(int RunNumber) {
+    art::ServiceHandle<art::TFileService> tfs;
+    
+    art::TFileDirectory top_dir = tfs->mkdir("trk");
+
+    book_event_histograms(&top_dir,RunNumber,&_Hist.event);
+
+    for (int ist=0; ist<1; ist++) {
+      for (int idtc=0; idtc<2; idtc++) {
+        art::TFileDirectory dtc_dir = top_dir.mkdir(Form("dtc_%02i%i",ist,idtc));
+        book_dtc_histograms(&dtc_dir,RunNumber,&_Hist.stn[ist].dtc[idtc],ist,idtc);
+        for (int i=0; i<_nActiveLinks[idtc]; i++) {
+          int link  = (_activeLinks[idtc])->at(i); // this assumes one station
+          art::TFileDirectory roc_dir = dtc_dir.mkdir(Form("roc_%i",link));
+          book_roc_histograms(&roc_dir,RunNumber,&_Hist.stn[ist].dtc[idtc].roc[link],ist,idtc,link);
+        }
+      }
+    }
+    
+    printf("[mu2e::TrkFragmentAna] pointer to the module: 0x%8p\n",(void*) this);
+  }
+
+//-----------------------------------------------------------------------------
+// for run<=285, wasn't saving the event header and subheader, 64 bytes in total
+// or 32 2-byte words
+// book histograms only once
+//-----------------------------------------------------------------------------
+void TrkFragmentAna::beginRun(const art::Run& aRun) {
+  int rn  = aRun.run();
+
+  if (_initialized != 0) return;
+  _initialized = 1;
+
+  // if (rn <= 285) _dataHeaderOffset =  0;
+  // else           _dataHeaderOffset = 32;
+//-----------------------------------------------------------------------------
+// init timing offsets for known runs
+// 'offset' is defined from the analysis of the dt0r_vs_ch_0
+//-----------------------------------------------------------------------------
+  double offset(0);
+
+  if      (rn ==    281) offset = 15030; 
+  else if (rn == 105023) offset =     0;
+  else if (rn == 105026) offset = 10400;
+  else if (rn == 105038) offset =  7964; 
+  else if (rn == 105041) offset =  1128;
+  else if (rn == 105042) offset =  1128;
+  else if (rn == 105043) offset =  1128;
+  else if (rn == 105044) offset =  1129;
+  else if (rn == 105059) offset =     0; 
+  else if (rn == 105060) offset = 11130; 
+  else if (rn == 105066) offset = 10580;
+  // 105067-1105070: four runs with the same settings, 2 ROCs, no data file for 105067 
+  else if ((rn >= 105067) and (rn <= 105070)) offset = 0;
+//-----------------------------------------------------------------------------
+// add 20 ns to have the HV lanes distinct on the plot
+//-----------------------------------------------------------------------------
+  for (int i=0; i<kNChannels; i++) {
+    if (_adc_index_0[i] < 48) _gen_offset[i] = 0;
+    else                      _gen_offset[i] = offset;
+  }
+//-----------------------------------------------------------------------------
+// as a last step, book histograms - need to know the number of active links
+//-----------------------------------------------------------------------------
+  book_histograms(rn);
+}
+
+//--------------------------------------------------------------------------------
+  void TrkFragmentAna::beginJob() {
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::endJob() {
+    printf("[mu2e::TrkFragmentAna] pointer to the module: 0x%8p\n",(void*) this);
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data) {
+    Hist->nhits->Fill(Data->nhits);
+  }
+
+//-----------------------------------------------------------------------------
+  void TrkFragmentAna::fill_dtc_histograms(DtcHist_t* Hist, StationData_t* Sd, int IDtc) {
+  }
+    
+//-----------------------------------------------------------------------------
   void TrkFragmentAna::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
     
     Hist->nbytes->Fill  (Rd->nbytes);
@@ -454,7 +481,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       Hist->dt0rc_vs_adc[fpga]->Fill(iadc,chd->dt0r_c);
       Hist->dt1rc_vs_adc[fpga]->Fill(iadc,chd->dt1r_c);
 //-----------------------------------------------------------------------------
-// there are hits in this channel, store not more than kMaxNHitsPerChannel,
+// there are hits in this channel, store not more than kMaxNHWfPerChannel,
 // but want to handle all hits correctly
 //-----------------------------------------------------------------------------
       for (int ih=0; ih<chd->nhits; ih++) {
@@ -497,7 +524,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         
         if (rc < 0) {
           // return -Npackets
-          if (_event_data.error == 5) {
+          if (_edata.error == 5) {
             int npackets = -rc;
             TLOG(TLVL_ERROR) << "link:" << Rd->link << " ch:0x" << std::hex << ich 
                              << " Wrong number of ADC packets: " << std::dec << npackets
@@ -506,9 +533,9 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
           return;
         }
 //-----------------------------------------------------------------------------
-// fill waveform histograms only for the firstkMaxNHitsPerChannel  channels
+// fill waveform histograms only for the firstkMaxNHWfPerChannel  channels
 //-----------------------------------------------------------------------------
-        if (ih < kMaxNHitsPerChannel) {
+        if (ih < kMaxNHWfPerChannel) {
           hch->raw_wf[ih]->Reset();
           hch->wf    [ih]->Reset();
           for (int is=0; is<nsamples; is++) {
@@ -600,17 +627,21 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
   int TrkFragmentAna::fill_histograms() {
 
-    _Hist.event.error->Fill(_event_data.error);
-    _Hist.event.valid->Fill(_event_data.valid);
+    _Hist.event.error->Fill(_edata.error);
+    _Hist.event.valid->Fill(_edata.valid);
 
-    fill_event_histograms(&_Hist.event,&_event_data);
+    fill_event_histograms(&_Hist.event,&_edata);
 
-    if (_event_data.error != 0) return -1;
+    if (_edata.error != 0) return -1;
 
-    for (int ir=0; ir<_nActiveLinks; ir++) {
-      int link = _activeLinks[ir];
-      fill_roc_histograms(&_Hist.roc[link],&_event_data.rdata[link]);
-      if (_event_data.error != 0) return -1;
+    for (int ist=0; ist<1; ist++) {
+      for (int idtc=0; idtc<2; idtc++) {
+        for (int ir=0; ir<_nActiveLinks[idtc]; ir++) {
+          int link = _activeLinks[idtc]->at(ir);
+          fill_roc_histograms(&_Hist.stn[ist].dtc[idtc].roc[link],&_edata.station[ist].roc[idtc][link]);
+          if (_edata.error != 0) return -1;
+        }
+      }
     }
     return 0;
   }
@@ -623,18 +654,25 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 
     short* fdata = (short*) Fragment->dataBegin();
 
-    _event_data.fragments.push_back(FragmentData_t());
-    FragmentData_t* fdt = &_event_data.fragments.back();
+    _edata.fragments.push_back(FragmentData_t());
+//-----------------------------------------------------------------------------
+// pointer to the last one
+//-----------------------------------------------------------------------------
+    FragmentData_t* fdt = &_edata.fragments.back();
 //-----------------------------------------------------------------------------
 // fragment size is specified in longs and includes service data, don't use
 //-----------------------------------------------------------------------------
     fdt->nbytes  = fdata[0];
     if (fdata[0] > _maxFragmentSize) {
-      _event_data.error = 3;
+      _edata.error = 3;
       printf ("event %6i:%8i:%8i : ERROR:%i in %s: fdt->nbytes= %i, BAIL OUT\n",
-              Evt.run(),Evt.subRun(),Evt.event(),_event_data.error,__func__,fdt->nbytes);
+              Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,fdt->nbytes);
       return;
     }
+//-----------------------------------------------------------------------------
+// somewhere here handle the DTC ID
+//-----------------------------------------------------------------------------
+    int ist  = 0;
 //-----------------------------------------------------------------------------
 // start handling the ROC data
 //-----------------------------------------------------------------------------
@@ -649,21 +687,21 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // check link number
 //-----------------------------------------------------------------------------
       int found = 0;
-      for (int i=0; i<_nActiveLinks; i++) {
-        if (_activeLinks[i] == link) {
+      for (int i=0; i<_nActiveLinks[_idtc]; i++) {
+        if (_activeLinks[_idtc]->at(i) == link) {
           found = 1;
           break;
         }
       }
 
       if (found == 0) {
-        _event_data.error = 4;
-        printf ("event %6i:%8i:%8i : ERROR:%i in %s: link=%i, BAIL OUT\n",
-                Evt.run(),Evt.subRun(),Evt.event(),_event_data.error,__func__,link);
+        _edata.error = 4;
+        printf ("event %6i:%8i:%8i : ERROR:%i in %s: link=%i not defined as active, BAIL OUT\n",
+                Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,link);
         return;
       }
-
-      RocData_t* rd = &_event_data.rdata[link];
+      
+      RocData_t* rd = &_edata.station[ist].roc[_idtc][link];
 //-----------------------------------------------------------------------------
 // for a given FPGA, a reference channel is the first channel in the readout order
 //-----------------------------------------------------------------------------
@@ -687,8 +725,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       rd->dt0r01    = -1.e12;
       rd->dt1r01    = -1.e12;
       
-      _event_data.nhtot += rd->nhits;
-      _event_data.valid += dh->valid*10;
+      _edata.nhtot += rd->nhits;
+      _edata.valid += dh->valid*10;
       
       for (int i=0; i<kNChannels; i++) {
         rd->channel[i].nhits = 0;
@@ -707,9 +745,9 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         if (ich > 128) ich = ich-128;
 
         if (ich > 95) {
-          _event_data.error = 1;
+          _edata.error = 1;
           printf ("event %6i:%8i:%8i : ERROR:%i in %s: link = %i ich = %i, BAIL OUT\n",
-                  Evt.run(),Evt.subRun(),Evt.event(),_event_data.error,__func__,link,ich);
+                  Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,link,ich);
           return;
         }
 
@@ -784,24 +822,23 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // assume that we only have tracker fragment(s)
 //-----------------------------------------------------------------------------
 void TrkFragmentAna::analyze(const art::Event& event) {
-  //art::EventNumber_t eventNumber = event.event();
 
   _event = &event;
 
-  _event_data.nbtot = 0;
-  _event_data.nhtot = 0;
-  _event_data.nfrag = 0;
-  _event_data.error = 0;
-  _event_data.valid = 0;
+  _edata.nbtot = 0;
+  _edata.nhtot = 0;
+  _edata.nfrag = 0;
+  _edata.error = 0;
+  _edata.valid = 0;
 //-----------------------------------------------------------------------------
 // reset error counters
 //-----------------------------------------------------------------------------
-  _event_data.n_nb_errors   = 0;
-  _event_data.n_nwfs_errors = 0;
-  _event_data.n_chid_errors = 0;
-  _event_data.n_nchh_errors = 0;
+  _edata.n_nb_errors   = 0;
+  _edata.n_nwfs_errors = 0;
+  _edata.n_chid_errors = 0;
+  _edata.n_nchh_errors = 0;
 
-  _event_data.fragments.clear();
+  _edata.fragments.clear();
 
   auto handle = event.getValidHandle<std::vector<artdaq::Fragment> >(_trkfCollTag);
 //-----------------------------------------------------------------------------
@@ -811,42 +848,46 @@ void TrkFragmentAna::analyze(const art::Event& event) {
     printf(" Run : %5i subrun: %5i event: %8i\n", event.run(),event.subRun(),event.event());
   }
   
-  int ifrag = 0;
+  _idtc = 0;
   for (const artdaq::Fragment& frag : *handle) {
+//-----------------------------------------------------------------------------
+// different fragments correspond to different DTCs, somewhere there should be the DTC ID
+//-----------------------------------------------------------------------------
+    _station = 0;
     ushort* buf = (ushort*) (frag.dataBegin());
     int nbytes  = buf[0];
     int fsize   = frag.sizeBytes();
 
     if (nbytes < 2) {
-      _event_data.error       |= kNBytesErrorBit;
-      _event_data.n_nb_errors += 1;
+      _edata.error       |= kNBytesErrorBit;
+      _edata.n_nb_errors += 1;
       
       TLOG(TLVL_DEBUG+8) << Form("event %6i:%8i:%8i : ERROR:%i nbytes=%i",
                                  event.run(),event.subRun(),event.event(),
-                                 _event_data.error,nbytes);
+                                 _edata.error,nbytes);
     }
 
-    _event_data.nfrag += 1;
-    _event_data.nbtot += nbytes;        // including artdaq part
+    _edata.nfrag += 1;
+    _edata.nbtot += nbytes;        // including artdaq part
 
     if (_diagLevel > 2) {
       TLOG(TLVL_DEBUG+10) << Form("---------- TRK fragment # %3i nbytes: %5i fsize: %5i error: %5i\n",
-                                  ifrag,nbytes,fsize,_event_data.error);
+                                  _idtc,nbytes,fsize,_edata.error);
       printFragment(&frag,nbytes/2);
     }
 
-    if ((_event_data.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
+    if ((_edata.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
 
-    ifrag++;
+    _idtc++;
   }
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
   if (_diagLevel > 1) {
-    if ((_event_data.nbtot >= _minNBytes) and (_event_data.nbtot <= _maxNBytes)) {
+    if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
       TLOG(TLVL_DEBUG+10) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
                                event.run(),event.subRun(),event.event(),
-                                  _event_data.nfrag, _event_data.nbtot);
+                                  _edata.nfrag, _edata.nbtot);
     }
   }
 //-----------------------------------------------------------------------------

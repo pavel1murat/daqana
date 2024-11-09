@@ -5,19 +5,7 @@
 #
 #
 #-----------------------------------------------------------------------------
-BEGIN_PROLOG
-  STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
-  STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
-  GEN_ID              : "particleGun"                        #    ignore GEN_ID check
-  PDG_ID              : 0                                    # 0: ignore PDG_ID
-END_PROLOG
-
-#include "Offline/fcl/minimalMessageService.fcl"
-#include "Offline/fcl/standardServices.fcl"
-
-#include "Offline/TrkReco/fcl/prolog.fcl"
-
-#include "Stntuple/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple.fcl"
 #include "daqana/fcl/prolog.fcl"
 
 process_name : TrkFragmentAna
@@ -32,8 +20,6 @@ source : {
 #                   "drop *Mu2eEventHeader*_*_*_*"]
 }
 
-services : @local::Services.Reco
-
 physics : {
     
     producers : { }
@@ -41,30 +27,30 @@ physics : {
     
     analyzers : {
 	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
-	    trkfCollTag         : "daq:TRK"   #
-            nADCPackets         : 2
+	    trkfCollTag         : "daq:TRK"   # 
+            nAdcPackets         : 2           # until the format is fixed
 #	    diagLevel           : 2           # print one line per event
-#	    diagLevel           : 3           # print the whole event
-            analyzeFragments    : 1
+	    diagLevel           : 3           # print the whole event
+            analyzeFragments    : 0           # 1 ## dump-only
             minNBytes           : 0 ## 4800
             maxNBytes           : 10000
             nSamplesBL          : 10
             minPulseHeight      : 5.
 	    
+	    interactiveMode     : 0
 	    maxFileSize         : 2000        ## in MBytes
 #------------------------------------------------------------------------------
 # run-dependent parameters
 #------------------------------------------------------------------------------
             timeWindow          :  2000
             pulserFrequency     :   250
-            maxFragmentSize     : 100000
-            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
-            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
+            maxFragmentSize     : 10000
+            activeLinks         : [ 0 ]
 #------------------------------------------------------------------------------
 # for run 105099 have only two channels in different FPGA's
 #------------------------------------------------------------------------------
-            refChCal            : [ 91, 91, 91, 91, 91, 91 ]
-            refChHV             : [ 94, 94, 94, 94, 94, 94 ]
+            refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
+            refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
@@ -85,6 +71,18 @@ physics : {
     end_paths      : [ e1 ]
 }
 
+# outputs:  {
+#     outfile :  {
+#         module_type   :   RootOutput
+#         fileName      :   "trk_fragment_ana.art"
+# 
+#         outputCommands: [
+#                          "drop *_*_*_*",
+#                          "keep *_*_*_*"
+#                         ]
+#     }
+# }
+
 # services.TimeTracker : {
 #     dbOutput : {
 #         filename  : "trk_fragment_ana.sqlite3"
@@ -92,14 +90,10 @@ physics : {
 #     }
 # }
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "trkvst.tstation.trk_fragment_ana.%06r.hist"
+services.TFileService.fileName                   : "trkvst.annex.trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
-#source.fileNames : [ "/exp/mu2e/data/users/murat/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000304_00000001.art" ]
-#source.fileNames : [ "/exp/mu2e/data/users/murat/tracker/vst/datasets/raw.mu2e.trkvst.roctower.art/raw.mu2e.trkvst.roctower.001309_00000001.art" ]
-# source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002306_00000001.art" ]
-# source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002309_00000001.art" ]
-source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002319_00000001.art" ]
+source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.105099_00000001.art" ]
 
 
 #physics.producers.makeSD.diagLevel        : 10
