@@ -1,7 +1,8 @@
 # -*- mode:tcl -*-
 #-----------------------------------------------------------------------------
-#include "Stntuple/fcl/stntuple.fcl"
+#include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
 
 process_name : TrkFragmentAna
 
@@ -41,7 +42,8 @@ physics : {
             timeWindow          :  2000
             pulserFrequency     :   250
             maxFragmentSize     : 10000
-            activeLinks         : [ 0 ]
+            activeLinks_0       : [ 0, 1, 2, 3, 4, 5 ]
+            activeLinks_1       : [ 0, 1, 2, 3, 4, 5 ]
 #------------------------------------------------------------------------------
 # for run 105099 have only two channels in different FPGA's
 #------------------------------------------------------------------------------

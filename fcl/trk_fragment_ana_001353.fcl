@@ -81,15 +81,7 @@ physics : {
 #     }
 # }
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "trkvst.tstation.trk_fragment_ana.%06r.hist"
+services.TFileService.fileName                   : "trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
-#source.fileNames : [ "/exp/mu2e/data/users/murat/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.000304_00000001.art" ]
-#source.fileNames : [ "/exp/mu2e/data/users/murat/tracker/vst/datasets/raw.mu2e.trkvst.roctower.art/raw.mu2e.trkvst.roctower.001309_00000001.art" ]
-# source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002306_00000001.art" ]
-# source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002309_00000001.art" ]
-source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.tstation.art/raw.mu2e.trkvst.tstation.002319_00000001.art" ]
-
-
-#physics.producers.makeSD.diagLevel        : 10
-#physics.producers.CaloDigiMaker.diagLevel : 10
+source.fileNames : [ "/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.roctower.art/raw.mu2e.trkvst.roctower.001353_00000001.art" ]

@@ -179,24 +179,25 @@ unsigned int correctedTDC(unsigned int TDC) {
 // default map, Richie says TS1 may have an old firmware with some bugs
 //-----------------------------------------------------------------------------
     int adc_index_0[96] = {
-      91, 85, 79, 73, 67, 61, 55, 49,
+      91, 85, 79, 73, 67, 61, 55, 49,          // lane 0
       43, 37, 31, 25, 19, 13,  7,  1,
       90, 84, 78, 72, 66, 60, 54, 48,
       
-      42, 36, 30, 24, 18, 12,  6,  0,
+      42, 36, 30, 24, 18, 12,  6,  0,          // lane 1
       93, 87, 81, 75, 69, 63, 57, 51,
       45, 39, 33, 27, 21, 15,  9,  3,
       
-      44, 38, 32, 26, 20, 14,  8,  2, 
+      44, 38, 32, 26, 20, 14,  8,  2,          // lane 2
       92, 86, 80, 74, 68, 62, 56, 50,
       47, 41, 35, 29, 23, 17, 11,  5,
       
-      95, 89, 83, 77, 71, 65, 59, 53,
+      95, 89, 83, 77, 71, 65, 59, 53,          // lane 3
       46, 40, 34, 28, 22, 16, 10,  4,
       94, 88, 82, 76, 70, 64, 58, 52
     };
 //-----------------------------------------------------------------------------
 // TS1: compared to _0, swap lanes 3 and 4, and in the new lane3 swap lines 1 and 3
+// the firmware was seemingly fixed since then
 //-----------------------------------------------------------------------------
     int adc_index_1[96] = {
       91, 85, 79, 73, 67, 61, 55, 49,
@@ -369,7 +370,7 @@ unsigned int correctedTDC(unsigned int TDC) {
 
     for (int ist=0; ist<1; ist++) {
       for (int idtc=0; idtc<2; idtc++) {
-        art::TFileDirectory dtc_dir = top_dir.mkdir(Form("dtc_%02i%i",ist,idtc));
+        art::TFileDirectory dtc_dir = top_dir.mkdir(Form("dtc_%02i_%i",ist,idtc));
         book_dtc_histograms(&dtc_dir,RunNumber,&_Hist.stn[ist].dtc[idtc],ist,idtc);
         for (int i=0; i<_nActiveLinks[idtc]; i++) {
           int link  = (_activeLinks[idtc])->at(i); // this assumes one station
