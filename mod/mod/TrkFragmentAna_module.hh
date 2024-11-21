@@ -131,16 +131,6 @@ namespace mu2e {
       int                 overflow  () { return (status & 0x10); }
     };
 
-    // struct DtcDataHeaderPacket_t : public DtcDMAPacket_t {  // 8 16-byte words in total
-    //   uint16_t            nPackets     : 11;
-    //   uint16_t            unused       :  5;
-    //   uint16_t            eventTag[3];             // DTC_EventWindowTag
-    //   uint8_t             status;                  // DTC_DataStatus
-    //   uint8_t             version;
-    //   uint8_t             DTCID;
-    //   uint8_t             EVBMode;
-    // };
-
     struct DtcDataBlock_t : public RocDataHeaderPacket_t {
       uint16_t            hitData[10000];
     };
@@ -192,6 +182,7 @@ namespace mu2e {
       TH1F*         n_overflows;
 
       TH1F*         nerr_vs_evt;
+      TH1F*         eflg_vs_evt;
     };
 
     struct RocHist_t {
@@ -208,6 +199,7 @@ namespace mu2e {
 
       TH1F*         nerr_tot;
       TH1F*         nerr_vs_evt;
+      TH1F*         eflg_vs_evt;
 
       TH2F*         nh_vs_ch;
       TH2F*         nh_vs_adc1;
@@ -370,6 +362,7 @@ namespace mu2e {
     int              _nSamplesBL;               // number of first samples used to determine the baseline
     float            _minPulseHeight;           // threshold for the charge integration;
     int              _nStations;
+    int              _minNErrors;               // min number of errros for printout on bit3
 //-----------------------------------------------------------------------------
 // the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------
@@ -410,6 +403,7 @@ namespace mu2e {
                                          int IStation, int IDtc, int Link);
     
     void         book_histograms        (int RunNumber);
+    void         debug                  (const art::Event& event);
   
     void         fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data);
     void         fill_dtc_histograms    (DtcHist_t*     Hist, StationData_t* Data, int IDtc);
@@ -419,11 +413,13 @@ namespace mu2e {
                                         // returns -1 if in trouble
     int          fill_histograms();
 
-    int          init_event();
+    int          init_event       (const art::Event& AnEvent);
     int          validate_roc_data(RocDataHeaderPacket_t* Rdp);
 
     // NWords: number of 2-byte words
-    void         printFragment      (const artdaq::Fragment* Fragment, int NWords);
+    void         print_fragment     (const artdaq::Fragment* Fragment, int NWords);
+    void         print_hit          (const TrackerDataDecoder::TrackerDataPacket* Hit);
+    void         print_message      (const char* Message);
     int          unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
   };
 }

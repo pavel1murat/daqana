@@ -11,6 +11,7 @@ daqana : {
 	    
 	    trkfCollTag         : "daq:TRK"   # 
             analyzeFragments    : 1           ## set to 0 to print only
+            minNErrors          : 100
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
