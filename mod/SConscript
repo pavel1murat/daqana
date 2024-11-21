@@ -20,8 +20,8 @@ def local_build():
 
     helper.handle_dictionaries();
 
-    libs      = [ 'murat_alg',
-                  'murat_obj',
+    libs      = [ # 'murat_alg',
+                  # 'murat_obj',
                   'Stntuple_loop',
                   'Stntuple_base',
                   'Stntuple_val',
@@ -76,7 +76,7 @@ def local_build():
                   # 'DTCInterface'
               ];
 
-    list_of_cc_files = Glob('*.cc',strings=True);
+    list_of_cc_files = Glob('*.cc'       , strings=True)
     list_of_modules  = Glob('*_module.cc', strings=True)
     list_of_plugins  = Glob('*_tool.cc'  , strings=True)
     skip_list        = list_of_modules+list_of_plugins

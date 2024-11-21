@@ -44,9 +44,9 @@ namespace mu2e {
     enum {
       kNBytesErrorBit     = 0x0001,
       kNWfsErrorBit       = 0x0002,
-      kLinkIDErrorBit     = 0x0004,  // link ID error bit
-      kChIDErrorBit       = 0x0008,
-      kNChHitsErrorBit    = 0x0010,
+      kLinkIDErrorBit     = 0x0004,  // link ID    error bit
+      kChIDErrorBit       = 0x0008,  // channel ID error bit
+      kNChHitsErrorBit    = 0x0010,  // nhits > kMaxNHWfPerChannel
       
       kNErrorBits         = 5
     };
@@ -60,6 +60,35 @@ namespace mu2e {
       float q;                          // Q(positive)
       float qt;                         // Q(tail)
     };
+//-----------------------------------------------------------------------------
+// subevent header is 3 packets
+//-----------------------------------------------------------------------------
+    struct SubEventHeader_t {
+                                        // packet #1 
+      uint32_t       byteCount   : 24;    
+      uint16_t       unused      :  8;
+      uint16_t       eventTag[3]     ;
+      uint16_t       numRocs     :  8;
+      uint8_t        eventMode[5]    ;
+                                        // packet #2
+      uint8_t        dtcMacByte0     ;
+      uint8_t        dtcMacByte2     ;
+      uint8_t        evbMode         ;
+      uint8_t        dtcID           ;
+      uint8_t        subsystemID :  3;
+      uint32_t       unused2     : 29;
+      uint8_t        linkStatus[6]   ;
+      uint8_t        version         ;
+      uint8_t        rf0Tdc          ;
+                                        // packet #3
+      uint16_t       link4Lat        ;
+      uint16_t       link5Lat        ;
+      uint16_t       unused3[2]      ;
+      uint16_t       link0Lat        ;
+      uint16_t       link1Lat        ;
+      uint16_t       link2Lat        ;
+      uint16_t       link3Lat        ;
+    };
 
     struct DtcDMAPacket_t {              // 2 16-byte words
       uint16_t       byteCount   : 16;   ///< Byte count of current block
@@ -70,17 +99,49 @@ namespace mu2e {
       bool           valid       :  1;   ///< Whether the DTC believes the packet to be valid
     };
 
-    struct DtcDataHeaderPacket_t : public DtcDMAPacket_t {  // 8 16-byte words in total
-      uint16_t            nPackets     : 11;
-      uint16_t            unused       :  5;
-      uint16_t            eventTag[3];             // DTC_EventWindowTag
-      uint8_t             status;                  // DTC_DataStatus
-      uint8_t             version;
-      uint8_t             DTCID;
-      uint8_t             EVBMode;
+    struct RocDataHeaderPacket_t {            // 8 16-byte words in total
+                                              // 16-bit word 0
+      uint16_t            byteCount    : 16;
+                                              // 16-bit word 1
+      uint16_t            unused       : 4;
+      uint16_t            packetType   : 4;
+      uint16_t            linkID       : 3;
+      uint16_t            DtcErrors    : 4;
+      uint16_t            valid        : 1;
+                                              // 16-bit word 2
+      uint16_t            packetCount  : 11;
+      uint16_t            unused2      : 2;
+      uint16_t            subsystemID  : 3;
+                                              // 16-bit words 3-5
+      uint16_t            eventTag[3];
+                                              // 16-bit word 6
+      uint8_t             status       : 8;
+      uint8_t             version      : 8;
+                                              // 16-bit word 7
+      uint8_t             dtcID        : 8;
+      uint8_t             onSpill      : 1;
+      uint8_t             subrun       : 2;
+      uint8_t             eventMode    : 5;
+                                              // decoding status
+      
+      int                 empty     () { return (status & 0x01) == 0; }
+      int                 invalid_dr() { return (status & 0x02); }
+      int                 corrupt   () { return (status & 0x04); }
+      int                 timeout   () { return (status & 0x08); }
+      int                 overflow  () { return (status & 0x10); }
     };
 
-    struct DtcDataBlock_t : public DtcDataHeaderPacket_t {
+    // struct DtcDataHeaderPacket_t : public DtcDMAPacket_t {  // 8 16-byte words in total
+    //   uint16_t            nPackets     : 11;
+    //   uint16_t            unused       :  5;
+    //   uint16_t            eventTag[3];             // DTC_EventWindowTag
+    //   uint8_t             status;                  // DTC_DataStatus
+    //   uint8_t             version;
+    //   uint8_t             DTCID;
+    //   uint8_t             EVBMode;
+    // };
+
+    struct DtcDataBlock_t : public RocDataHeaderPacket_t {
       uint16_t            hitData[10000];
     };
 
@@ -114,13 +175,23 @@ namespace mu2e {
       TH1F*         nfrag;
       TH1F*         nhits;
       TH1F*         fsize;
-      TH1F*         error;
       TH1F*         n_nb_errors;
       TH1F*         n_nwfs_errors;
       TH1F*         n_linkid_errors;
       TH1F*         n_chid_errors;
       TH1F*         n_nchh_errors;
       TH1F*         valid;
+
+      TH1F*         error_code;
+      TH1F*         nerr_tot;
+
+      TH1F*         n_empty;
+      TH1F*         n_invalid_dr;
+      TH1F*         n_corrupt;
+      TH1F*         n_timeouts;
+      TH1F*         n_overflows;
+
+      TH1F*         nerr_vs_evt;
     };
 
     struct RocHist_t {
@@ -128,6 +199,16 @@ namespace mu2e {
       TH1F*         npackets;
       TH1F*         nhits;
       TH1F*         valid;
+
+      TH1F*         n_empty;
+      TH1F*         n_invalid_dr;
+      TH1F*         n_corrupt;
+      TH1F*         n_timeouts;
+      TH1F*         n_overflows;
+
+      TH1F*         nerr_tot;
+      TH1F*         nerr_vs_evt;
+
       TH2F*         nh_vs_ch;
       TH2F*         nh_vs_adc1;
 
@@ -174,14 +255,15 @@ namespace mu2e {
     } _Hist;
 
     struct ChannelData_t {
-      int      nhits;
       float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
       float    dt1r;                     // time dist btw this channel and an FPGA reference channel, TDC1, ns
       float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
       float    dt1r_c;
       
       std::vector<TrackerDataDecoder::TrackerDataPacket*> hit;
-      std::vector<WfParam_t>                              wp; 
+      std::vector<WfParam_t>                              wp;
+
+      int nhits() { return hit.size(); }
     };
 
     struct RocData_t {
@@ -191,6 +273,15 @@ namespace mu2e {
       int       nbytes;
       int       npackets;
       int       valid;
+      int       dtc_id;
+      
+      int       n_empty;
+      int       n_invalid_dr;
+      int       n_corrupt;
+      int       n_timeouts;
+      int       n_overflows;
+
+      int       nerr_tot;
       
       ChannelData_t  channel[kNChannels];
       ChannelData_t* ref_ch [2];
@@ -200,11 +291,17 @@ namespace mu2e {
     };
 
     struct StationData_t {
-      int        dtcid[2];
-      int        nbytes[2];
-      int        nhits[2];
-      int        error[2];
-      RocData_t  roc[2][6];
+      int       dtcid[2];
+      int       nbytes[2];
+      int       nhits[2];
+      int       error[2];
+      RocData_t roc[2][6];
+      
+      int       n_empty;
+      int       n_invalid_dr;
+      int       n_corrupt;
+      int       n_timeouts;
+      int       n_overflows;
     };
                                         // pointer to the raw event data
     struct FragmentData_t {
@@ -212,16 +309,27 @@ namespace mu2e {
     };
 
     struct EventData_t {
+      const art::Event*  _event;
+
       int           nbtot;                  // total nbytes
       int           nhtot;
       int           nfrag;
       int           valid;
-      int           error;
+      
       int           n_nb_errors;     // 0x01 : wrong event size
       int           n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
       int           n_linkid_errors; // 0x04 : hit reported wrond channel ID
       int           n_chid_errors;   // 0x08 : hit reported wrond channel ID
       int           n_nchh_errors;   // 0x10 : too many hits in one channel
+      
+      int           n_empty;
+      int           n_invalid_dr;
+      int           n_corrupt;
+      int           n_timeouts;
+      int           n_overflows;
+      int           error_code;
+      int           nerr_tot;
+
       StationData_t station[kMaxStations];
 
       std::vector<FragmentData_t> fragments;
@@ -280,8 +388,6 @@ namespace mu2e {
     int              _idtc;           // fragment number, today - proxy to the DTC ID
     int              _station;
 
-    const art::Event*  _event;
-
     explicit TrkFragmentAna(fhicl::ParameterSet const& pset);
     // explicit TrkFragmentAna(const art::EDAnalyzer::Table<Config>& config);
     virtual ~TrkFragmentAna() {}
@@ -311,7 +417,10 @@ namespace mu2e {
     void         fill_roc_histograms    (RocHist_t*     Hist, RocData_t*     Data);
 
                                         // returns -1 if in trouble
-    int          fill_histograms        ();
+    int          fill_histograms();
+
+    int          init_event();
+    int          validate_roc_data(RocDataHeaderPacket_t* Rdp);
 
     // NWords: number of 2-byte words
     void         printFragment      (const artdaq::Fragment* Fragment, int NWords);

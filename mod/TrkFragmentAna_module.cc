@@ -30,18 +30,12 @@ unsigned int reverseBits(unsigned int num) {
 
 //-----------------------------------------------------------------------------
   int TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
-    // int rc(0);
-    int n_adc_packets = Hit->NumADCPackets;
-    if (n_adc_packets != _nADCPackets) {
-      _edata.error = 5;
-      return -n_adc_packets;
-    }
 
     Wf[ 0] = reverseBits(Hit->ADC00);
     Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
     Wf[ 2] = reverseBits(Hit->ADC02);
 
-    for (int i=0; i<n_adc_packets; i++) {
+    for (int i=0; i<_nADCPackets; i++) {
       TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
 
@@ -103,8 +97,8 @@ unsigned int reverseBits(unsigned int num) {
 // done
 //-----------------------------------------------------------------------------
     if (Wp->q < 100) {
-      TLOG(TLVL_DEBUG+10) << "event=" << _event->run() << ":" << _event->subRun() << ":" << _event->event() 
-                          << " Q=" << Wp->q;
+      TLOG(TLVL_DEBUG+1) << "event=" << _edata._event->run() << ":" << _edata._event->subRun() << ":" << _edata._event->event() 
+                         << " Q=" << Wp->q;
     }
     return 0;
   }
@@ -309,6 +303,15 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->nhits           = Dir->make<TH1F>("nhits"   ,        Form("run %06i: link %02i:%i:%i n hits"       ,RunNumber,Station,Dtc,Link),  300,    0.,   300.);
     Hist->valid           = Dir->make<TH1F>("valid"   ,        Form("run %06i: link %02i:%i:%i valid"        ,RunNumber,Station,Dtc,Link),    2,    0.,     2.);
 
+    Hist->n_empty         = Dir->make<TH1F>("nempt"      , Form("run %06i: N(empty)"     ,RunNumber),  100, 0.,    100.);
+    Hist->n_invalid_dr    = Dir->make<TH1F>("ninvr"      , Form("run %06i: N(invalid DR)",RunNumber),  100, 0.,    100.);
+    Hist->n_corrupt       = Dir->make<TH1F>("ncorr"      , Form("run %06i: N(corrupt)"   ,RunNumber),  100, 0.,    100.);
+    Hist->n_timeouts      = Dir->make<TH1F>("ntmo"       , Form("run %06i: N(timeouts)"  ,RunNumber),  100, 0.,    100.);
+    Hist->n_overflows     = Dir->make<TH1F>("nover"      , Form("run %06i: N(overflows)" ,RunNumber),  100, 0.,    100.);
+
+    Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: link %02i:%i:%i N errors"     ,RunNumber,Station,Dtc,Link), 1000, 0.,   2000.);
+    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: link %02i:%i:%i N err vs evt" ,RunNumber,Station,Dtc,Link), 1000, 0.,   5000000.);
+
     Hist->nh_vs_ch        = Dir->make<TH2F>("nh_vs_ch"  ,      Form("run %06i: link %02i:%i:%i nh vs ch"     ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
     Hist->nh_vs_adc1      = Dir->make<TH2F>("nh_vs_adc1",      Form("run %06i: link %02i:%i:%i nh vs adc"    ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
 
@@ -350,12 +353,21 @@ unsigned int correctedTDC(unsigned int TDC) {
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, EventHist_t* Hist) {
    
-    Hist->nhits           = Dir->make<TH1F>("nhits"      , Form("run %06i: nhits total"  ,RunNumber), 1000, 0.,   1000.);
+    Hist->nhits           = Dir->make<TH1F>("nhits"      , Form("run %06i: nhits total"  ,RunNumber), 1000, 0.,   5000.);
     Hist->nbtot           = Dir->make<TH1F>("nbtot"      , Form("run %06i: nbytes total" ,RunNumber), 1000, 0., 100000.);
     Hist->nfrag           = Dir->make<TH1F>("nfrag"      , Form("run %06i: n fragments"  ,RunNumber),  100, 0.,    100.);
     Hist->fsize           = Dir->make<TH1F>("fsize"      , Form("run %06i: fragment size",RunNumber), 1000, 0., 100000.);
-    Hist->error           = Dir->make<TH1F>("error"      , Form("run %06i: error code"   ,RunNumber),   10, 0.,     10.);
     Hist->valid           = Dir->make<TH1F>("valid"      , Form("run %06i: valid code"   ,RunNumber),  100, 0.,    100.);
+
+    Hist->n_empty         = Dir->make<TH1F>("nempt"      , Form("run %06i: N(empty)"     ,RunNumber),  100, 0.,    100.);
+    Hist->n_invalid_dr    = Dir->make<TH1F>("ninvr"      , Form("run %06i: N(invalid dr)",RunNumber),  100, 0.,    100.);
+    Hist->n_corrupt       = Dir->make<TH1F>("ncorr"      , Form("run %06i: N(corrupt)"   ,RunNumber),  100, 0.,    100.);
+    Hist->n_timeouts      = Dir->make<TH1F>("ntmo"       , Form("run %06i: N(timeouts)"  ,RunNumber),  100, 0.,    100.);
+    Hist->n_overflows     = Dir->make<TH1F>("nover"      , Form("run %06i: N(overflows)" ,RunNumber),  100, 0.,    100.);
+
+    Hist->error_code      = Dir->make<TH1F>("error_code" , Form("run %06i: error code"   ,RunNumber),  100, 0.,    100.);
+    Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: N errors"     ,RunNumber), 1000, 0.,   2000.);
+    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: N err vs evt" ,RunNumber), 1000, 0.,   5000000.);
   }
 
 //-----------------------------------------------------------------------------
@@ -439,7 +451,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data) {
-    Hist->nhits->Fill(Data->nhits);
+    Hist->nhits->Fill(Data->nhits());
   }
 
 //-----------------------------------------------------------------------------
@@ -453,6 +465,15 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     Hist->npackets->Fill(Rd->npackets);
     Hist->nhits->Fill   (Rd->nhits);
     Hist->valid->Fill   (Rd->valid);
+
+    Hist->n_empty->Fill     (Rd->n_empty);
+    Hist->n_invalid_dr->Fill(Rd->n_invalid_dr);
+    Hist->n_corrupt->Fill   (Rd->n_corrupt);
+    Hist->n_timeouts->Fill  (Rd->n_timeouts);
+    Hist->n_overflows->Fill (Rd->n_overflows);
+
+    Hist->nerr_vs_evt->Fill  (_edata._event->event(),Rd->nerr_tot);
+
     if (Rd->nhits <= 0) return;
 
     Hist->dt0r01->Fill  (Rd->dt0r01);
@@ -465,10 +486,11 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       ChannelData_t* chd = &Rd->channel[ich];
       ChannelHist_t* hch = &Hist->channel[ich];
 
-      int fpga = _adc_index_1[ich] / 48;
+      int fpga  = _adc_index_1[ich] / 48;
+      int nhits = chd->nhits();
 
-      hch->nhits->Fill(chd->nhits);
-      if (chd->nhits == 0)                                  continue;
+      hch->nhits->Fill(nhits);
+      if (nhits == 0)                                       continue;
       hch->dt0r->Fill(chd->dt0r);
       hch->dt1r->Fill(chd->dt1r);
             
@@ -485,7 +507,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // there are hits in this channel, store not more than kMaxNHWfPerChannel,
 // but want to handle all hits correctly
 //-----------------------------------------------------------------------------
-      for (int ih=0; ih<chd->nhits; ih++) {
+      for (int ih=0; ih<nhits; ih++) {
         TrackerDataDecoder::TrackerDataPacket* hit = chd->hit[ih];
 
         uint32_t corr_tdc0 = correctedTDC(hit->TDC0());
@@ -513,26 +535,15 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         hch->tot [1]->Fill(hit->TOT1);
         hch->pmp    ->Fill(hit->PMP);
 //-----------------------------------------------------------------------------
-// waveforms in a given channel, assume number of samples less than 50
+// assume that nsamples is known and try to process the waveform        
 //-----------------------------------------------------------------------------
-        int   nsamples = 15+12*(hit->NumADCPackets-1);
+        int   nsamples = 15+12*(_nADCPackets-1);
         float wform[50];
-
+          
         WfParam_t wpar;
-        int rc = unpack_adc_waveform(hit,wform,&wpar);
-
+        unpack_adc_waveform(hit,wform,&wpar);
+          
         chd->wp.push_back(wpar);
-        
-        if (rc < 0) {
-          // return -Npackets
-          if (_edata.error == 5) {
-            int npackets = -rc;
-            TLOG(TLVL_ERROR) << "link:" << Rd->link << " ch:0x" << std::hex << ich 
-                             << " Wrong number of ADC packets: " << std::dec << npackets
-                             << " BAIL OUT" << std::endl;
-          }
-          return;
-        }
 //-----------------------------------------------------------------------------
 // fill waveform histograms only for the firstkMaxNHWfPerChannel  channels
 //-----------------------------------------------------------------------------
@@ -543,7 +554,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
             hch->raw_wf[ih]->Fill(is,wform[is]+wpar.bl);
             hch->wf    [ih]->Fill(is,wform[is]);
           }
-          // also set bin errors to zero
+            // also set bin errors to zero
           int nb =  hch->wf[ih]->GetNbinsX();
           for (int ib=0; ib<nb; ib++) {
             hch->raw_wf[ih]->SetBinError(ib+1,0);
@@ -551,6 +562,14 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
             hch->wf[ih]->SetBinError(ib+1,0);
             hch->wf[ih]->SetOption("HIST");
           }
+        }
+        else {
+          int nmax = kMaxNHWfPerChannel;
+          TLOG(TLVL_WARNING) << "DTC:"     << Rd->dtc_id  << " link:" << Rd->link
+                             << " ih="     << ih 
+                             << " ch:0x"   << std::hex << ich 
+                             << " hits > " << std::dec << nmax << " do not make extra waveform histograms"
+                             << std::endl;
         }
 //-----------------------------------------------------------------------------
 // reconstructed waveform parameters
@@ -561,7 +580,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         hch->q->Fill(wpar.q);
         hch->qt->Fill(wpar.qt);
         hch->qtq->Fill(wpar.qt/(wpar.q+1e-12));
-
+        
         Hist->fs_vs_ich->Fill(ich,wpar.fs);
         Hist->bl_vs_ich->Fill(ich,wpar.bl);
         Hist->ph_vs_ich->Fill(ich,wpar.ph);
@@ -572,7 +591,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // time distance between the two sequential hits - need at least two
 //-----------------------------------------------------------------------------
-      for (int ih=1; ih<chd->nhits; ih++) {
+      for (int ih=1; ih<nhits; ih++) {
         int corr_tdc0_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC0());
         int corr_tdc1_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC1());
         int corr_tdc0_ih1 = (int) correctedTDC(chd->hit[ih-1]->TDC0());
@@ -594,7 +613,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       int ind_0 = _adc_index_0[ich];
       int ind_1 = _adc_index_1[ich];
 
-      int nh    = Rd->channel[ich].nhits;
+      int nh    = Rd->channel[ich].nhits();
                                         // number of hits in a channel vs the channel number
       Hist->nh_vs_ch->Fill(ich,nh);
       Hist->nh_vs_adc1->Fill(ind_1,nh);
@@ -609,16 +628,28 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
 
 //-----------------------------------------------------------------------------
-  void TrkFragmentAna::fill_event_histograms(EventHist_t* Hist, EventData_t* Data) {
+  void TrkFragmentAna::fill_event_histograms(EventHist_t* Hist, EventData_t* Ed) {
 
-    Hist->nbtot->Fill(Data->nbtot);
-    Hist->nhits->Fill(Data->nhtot);
-    Hist->nfrag->Fill(Data->nfrag);
+    Hist->error_code->Fill(Ed->error_code);
+    Hist->nerr_tot->Fill(Ed->nerr_tot);
+    Hist->valid->Fill(Ed->valid);
 
-    for (int i=0; i<Data->nfrag; i++) {
-      int fsize = Data->fragments[i].nbytes;
+    Hist->nbtot->Fill(Ed->nbtot);
+    Hist->nhits->Fill(Ed->nhtot);
+    Hist->nfrag->Fill(Ed->nfrag);
+
+    Hist->n_empty->Fill     (Ed->n_empty);
+    Hist->n_invalid_dr->Fill(Ed->n_invalid_dr);
+    Hist->n_corrupt->Fill   (Ed->n_corrupt);
+    Hist->n_timeouts->Fill  (Ed->n_timeouts);
+    Hist->n_overflows->Fill (Ed->n_overflows);
+
+    for (int i=0; i<Ed->nfrag; i++) {
+      int fsize = Ed->fragments[i].nbytes;
       Hist->fsize->Fill(fsize);
     }
+
+    Hist->nerr_vs_evt->Fill  (Ed->_event->event(),Ed->nerr_tot);
   }
 
 
@@ -628,25 +659,33 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
   int TrkFragmentAna::fill_histograms() {
 
-    _Hist.event.error->Fill(_edata.error);
-    _Hist.event.valid->Fill(_edata.valid);
-
-    fill_event_histograms(&_Hist.event,&_edata);
-
-    if (_edata.error != 0) return -1;
-
     for (int ist=0; ist<1; ist++) {
       for (int idtc=0; idtc<2; idtc++) {
         for (int ir=0; ir<_nActiveLinks[idtc]; ir++) {
           int link = _activeLinks[idtc]->at(ir);
           fill_roc_histograms(&_Hist.stn[ist].dtc[idtc].roc[link],&_edata.station[ist].roc[idtc][link]);
-          if (_edata.error != 0) return -1;
         }
       }
     }
+//-----------------------------------------------------------------------------
+// currently, error flags are also being set in fill_roc_histograms.
+// so this call should be the last one
+// later, the errro handling will move to validate_roc_data()
+//-----------------------------------------------------------------------------
+    fill_event_histograms(&_Hist.event,&_edata);
+
     return 0;
   }
 
+  
+//-----------------------------------------------------------------------------
+// a fragment may have multiple ROC blocks
+//-----------------------------------------------------------------------------
+  int TrkFragmentAna::validate_roc_data(RocDataHeaderPacket_t* Rdh) {
+    int rc(0);
+
+    return rc;
+  }
 
 //-----------------------------------------------------------------------------
 // a fragment may have multiple ROC blocks
@@ -665,25 +704,34 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
     fdt->nbytes  = fdata[0];
     if (fdata[0] > _maxFragmentSize) {
-      _edata.error = 3;
-      printf ("event %6i:%8i:%8i : ERROR:%i in %s: fdt->nbytes= %i, BAIL OUT\n",
-              Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,fdt->nbytes);
-      return;
+      _edata.error_code |= kNBytesErrorBit;
+      _edata.nerr_tot   += 1;
+      TLOG(TLVL_ERROR) << Form("event %6i:%8i:%8i : ERROR_CODE:0x%04x in %s: fdt->nbytes= %i, BAIL OUT\n",
+                               Evt.run(),Evt.subRun(),Evt.event(),_edata.error_code,__func__,fdt->nbytes);
     }
 //-----------------------------------------------------------------------------
 // somewhere here handle the DTC ID
 //-----------------------------------------------------------------------------
-    int ist  = 0;
+    _station          = 0;
+    StationData_t* sd = &_edata.station[_station];
 //-----------------------------------------------------------------------------
 // start handling the ROC data
+// need mapping of the DTC ID to the plane number
+// for now, just label the DTCs by their PCIE address
 //-----------------------------------------------------------------------------
-    short* first_address = fdata+_dataHeaderOffset; // offset is specified in 2-byte words
-    short* last_address  = fdata+fdt->nbytes/2; // 
+    SubEventHeader_t* sh = (SubEventHeader_t*) fdata;
+    int dtc_id           = sh->dtcID;
+    
+    short* first_address = fdata+sizeof(SubEventHeader_t)/2; // _dataHeaderOffset; // offset is specified in 2-byte words
+    short* last_address  = fdata+fdt->nbytes/2;     // 
 
     while (first_address < last_address) {
-
-      DtcDataHeaderPacket_t* dh = (DtcDataHeaderPacket_t*) first_address;
-      int link      = dh->ROCID;
+//-----------------------------------------------------------------------------
+// next ROC
+//-----------------------------------------------------------------------------
+      RocDataHeaderPacket_t* dh = (RocDataHeaderPacket_t*) first_address;
+      int link      = dh->linkID;
+      validate_roc_data(dh);
 //-----------------------------------------------------------------------------
 // check link number
 //-----------------------------------------------------------------------------
@@ -695,14 +743,27 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         }
       }
 
+      RocData_t* rd = &_edata.station[_station].roc[_idtc][link];
+
       if (found == 0) {
-        _edata.error = 4;
-        printf ("event %6i:%8i:%8i : ERROR:%i in %s: link=%i not defined as active, BAIL OUT\n",
-                Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,link);
-        return;
+//-----------------------------------------------------------------------------
+// in some cases, this one could be just a warning
+//-----------------------------------------------------------------------------
+        _edata.error_code |= kLinkIDErrorBit;
+        _edata.nerr_tot   += 1;
+        rd->nerr_tot      += 1;
+        TLOG(TLVL_ERROR) << Form("event %6i:%8i:%8i : ERROR_CODE:0x%04x in %s: link=%i not defined as active, BAIL OUT\n",
+                                 Evt.run(),Evt.subRun(),Evt.event(),kLinkIDErrorBit,__func__,link);
       }
-      
-      RocData_t* rd = &_edata.station[ist].roc[_idtc][link];
+// try to handle as much as possible ... the line below is a kludge
+//-----------------------------------------------------------------------------
+// check status
+//-----------------------------------------------------------------------------
+      if (dh->empty()     ) rd->n_empty      += 1;
+      if (dh->invalid_dr()) rd->n_invalid_dr += 1;
+      if (dh->corrupt()   ) rd->n_corrupt    += 1;
+      if (dh->timeout()   ) rd->n_timeouts   += 1;
+      if (dh->overflow()  ) rd->n_overflows  += 1;
 //-----------------------------------------------------------------------------
 // for a given FPGA, a reference channel is the first channel in the readout order
 //-----------------------------------------------------------------------------
@@ -712,16 +773,13 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       ref_ch[1]     = &rd->channel[_referenceChannel[link][1]];
         
       rd->nbytes    = dh->byteCount;
-      rd->npackets  = dh->nPackets;
+      rd->npackets  = dh->packetCount;
+      rd->dtc_id    = dtc_id;
 //-----------------------------------------------------------------------------
 // for now, assume that all hits in the run have the same number of packets per hit
 // take that from the first hit
 //-----------------------------------------------------------------------------
-      TrackerDataDecoder::TrackerDataPacket* hit0 ;
-      hit0     = (TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08);
-      int n_adc_packets = hit0->NumADCPackets;
-
-      rd->nhits     = dh->nPackets/(n_adc_packets+1);         //  printf("nhits : %3i\n",nhits);
+      rd->nhits     = dh->packetCount/(_nADCPackets+1);         //  printf("nhits : %3i\n",nhits);
       rd->valid     = dh->valid;
       rd->dt0r01    = -1.e12;
       rd->dt1r01    = -1.e12;
@@ -729,43 +787,59 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       _edata.nhtot += rd->nhits;
       _edata.valid += dh->valid*10;
       
-      for (int i=0; i<kNChannels; i++) {
-        rd->channel[i].nhits = 0;
-        rd->channel[i].hit.clear();
-      }
+      // for (int i=0; i<kNChannels; i++) {
+      //   //rd->channel[i].nhits = 0;
+      //   rd->channel[i].hit.clear();
+      // }
 
       for (int ihit=0; ihit<rd->nhits; ihit++) {
 //-----------------------------------------------------------------------------
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
         TrackerDataDecoder::TrackerDataPacket* hit ;
-        int offset = ihit*(8+8*n_adc_packets);
+        int offset = ihit*(8+8*_nADCPackets);
         hit     = (TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
+
+        if (hit->NumADCPackets != _nADCPackets) {
+          TLOG(TLVL_ERROR) << "DTC:" << rd->dtc_id  << " link:" << rd->link
+                           << " ih=" << ihit
+                           << " offset:0x" << std::hex << offset
+                           << " Wrong number of ADC packets: " << std::dec << hit->NumADCPackets
+                           << std::endl;
+          _edata.error_code |= kNWfsErrorBit;
+          _edata.nerr_tot   += 1;
+          rd->nerr_tot      += 1;
+        }
+
         int ich = hit->StrawIndex;
 
         if (ich > 128) ich = ich-128;
 
         if (ich > 95) {
-          _edata.error = 1;
-          printf ("event %6i:%8i:%8i : ERROR:%i in %s: link = %i ich = %i, BAIL OUT\n",
-                  Evt.run(),Evt.subRun(),Evt.event(),_edata.error,__func__,link,ich);
-          return;
+//-----------------------------------------------------------------------------
+// non existing channel ID : flag an error, don't save the hit, but continue
+//-----------------------------------------------------------------------------
+          _edata.error_code |= kChIDErrorBit;
+          _edata.nerr_tot   += 1;
+          rd->nerr_tot      += 1;
+          TLOG(TLVL_ERROR) << Form("event %6i:%8i:%8i : ERROR_CODE:0x%04x in %s: link = %i ich = %i\n",
+                  Evt.run(),Evt.subRun(),Evt.event(),kChIDErrorBit,__func__,link,ich);
         }
+        else {
+          ChannelData_t* chd = &rd->channel[ich];
 
-        ChannelData_t* chd = &rd->channel[ich];
-
-        chd->hit.push_back(hit);
-        chd->nhits    += 1;
+          chd->hit.push_back(hit);
+        }
       }
 //-----------------------------------------------------------------------------
-// hits in all channels counted
+// hits in all channels counted, modulo those with corrupted channel IDs
 // time difference between this channel and a reference channel
 // determined using the first hit only
 //-----------------------------------------------------------------------------
       for (int i=0; i<kNChannels; i++) {
         ChannelData_t* chd = &rd->channel[i];
 
-        int nh   = chd->nhits;
+        int nh   = chd->nhits();
         int fpga = _adc_index_1[i] / 48;
 
         ChannelData_t* rch = ref_ch[fpga];
@@ -774,7 +848,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // than the number of channels in any other channel of a given FPGA
 //-----------------------------------------------------------------------------
         int iref = _referenceChannel[link][fpga];
-        int nhr  = rd->channel[iref].nhits;
+        int nhr  = rd->channel[iref].nhits();
         if ((nhr > 0) and (nh > 0)) {
 //-----------------------------------------------------------------------------
 // at least one hit in both reference and test channels
@@ -802,7 +876,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // time offset between the two pulsers for the same ROC
 //-----------------------------------------------------------------------------
-      if ((rd->ref_ch[0]->nhits > 0) and (rd->ref_ch[1]->nhits > 0)) {
+      if ((rd->ref_ch[0]->nhits() > 0) and (rd->ref_ch[1]->nhits() > 0)) {
         int t0r0   = correctedTDC(rd->ref_ch[0]->hit[0]->TDC0());
         int t1r0   = correctedTDC(rd->ref_ch[0]->hit[0]->TDC1());
         
@@ -813,27 +887,32 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         rd->dt1r01 = (t1r0-t1r1)*_tdc_bin_ns;        // convert to ns  
       }
 //-----------------------------------------------------------------------------
+// update station counters
+//-----------------------------------------------------------------------------
+      sd->n_empty      += rd->n_empty; 
+      sd->n_invalid_dr += rd->n_invalid_dr; 
+      sd->n_corrupt    += rd->n_corrupt; 
+      sd->n_timeouts   += rd->n_timeouts; 
+      sd->n_overflows  += rd->n_overflows; 
+//-----------------------------------------------------------------------------
 // address in 2-byte words (N(data packets)+data header packet)
 //-----------------------------------------------------------------------------
-      first_address += (dh->nPackets + 1)*8;
+      first_address    += (dh->packetCount + 1)*8;
     }
   }
 
-//--------------------------------------------------------------------------------
-// assume that we only have tracker fragment(s)
 //-----------------------------------------------------------------------------
-void TrkFragmentAna::analyze(const art::Event& event) {
-
-  _event = &event;
-
-  _edata.nbtot = 0;
-  _edata.nhtot = 0;
-  _edata.nfrag = 0;
-  _edata.error = 0;
-  _edata.valid = 0;
+int TrkFragmentAna::init_event() {
+  _edata.nbtot      = 0;
+  _edata.nhtot      = 0;
+  _edata.nfrag      = 0;
+  _edata.valid      = 0;
 //-----------------------------------------------------------------------------
 // reset error counters
 //-----------------------------------------------------------------------------
+  _edata.error_code    = 0;
+  _edata.nerr_tot      = 0;
+
   _edata.n_nb_errors   = 0;
   _edata.n_nwfs_errors = 0;
   _edata.n_chid_errors = 0;
@@ -841,12 +920,58 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 
   _edata.fragments.clear();
 
+  _edata.n_empty      = 0;
+  _edata.n_invalid_dr = 0;
+  _edata.n_corrupt    = 0;
+  _edata.n_timeouts   = 0;
+  _edata.n_overflows  = 0;  
+//-----------------------------------------------------------------------------
+// clear all counters
+//-----------------------------------------------------------------------------
+  for (int ist=0; ist<kMaxStations; ist++) {
+    StationData_t* sd = &_edata.station[ist];
+    
+    sd->n_empty       = 0;
+    sd->n_invalid_dr  = 0;
+    sd->n_corrupt     = 0;
+    sd->n_timeouts    = 0;
+    sd->n_overflows   = 0;
+    
+    for (int dtc=0; dtc<2; dtc++) {
+      for (int lnk=0; lnk<6; lnk++) {
+        RocData_t* rd    = &sd->roc[dtc][lnk];
+        rd->n_empty      = 0;
+        rd->n_invalid_dr = 0;
+        rd->n_corrupt    = 0;
+        rd->n_timeouts   = 0;
+        rd->n_overflows  = 0;
+        rd->nerr_tot     = 0;
+        for (int ich=0; ich<kNChannels; ich++) {
+          ChannelData_t* chd = &rd->channel[ich];
+          chd->hit.clear();
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+
+//--------------------------------------------------------------------------------
+// assume that we only have tracker fragment(s)
+//-----------------------------------------------------------------------------
+void TrkFragmentAna::analyze(const art::Event& event) {
+
+  _edata._event = &event;
+
+  init_event();
+
   auto handle = event.getValidHandle<std::vector<artdaq::Fragment> >(_trkfCollTag);
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
   if (_diagLevel > 0) {
-    printf(" Run : %5i subrun: %5i event: %8i\n", event.run(),event.subRun(),event.event());
+    printf(" Event : %06i:%08i%08i\n", event.run(),event.subRun(),event.event());
   }
   
   _idtc = 0;
@@ -854,41 +979,53 @@ void TrkFragmentAna::analyze(const art::Event& event) {
 //-----------------------------------------------------------------------------
 // different fragments correspond to different DTCs, somewhere there should be the DTC ID
 //-----------------------------------------------------------------------------
-    _station = 0;
     ushort* buf = (ushort*) (frag.dataBegin());
     int nbytes  = buf[0];
     int fsize   = frag.sizeBytes();
 
     if (nbytes < 2) {
-      _edata.error       |= kNBytesErrorBit;
+      _edata.error_code  |= kNBytesErrorBit;
+      _edata.nerr_tot    += 1;
       _edata.n_nb_errors += 1;
       
-      TLOG(TLVL_DEBUG+8) << Form("event %6i:%8i:%8i : ERROR:%i nbytes=%i",
-                                 event.run(),event.subRun(),event.event(),
-                                 _edata.error,nbytes);
+      TLOG(TLVL_DEBUG) << Form("event %6i:%8i:%8i : ERROR_CODE:0x%04x nbytes=%i",
+                               event.run(),event.subRun(),event.event(),
+                               kNBytesErrorBit,nbytes);
     }
 
     _edata.nfrag += 1;
-    _edata.nbtot += nbytes;        // including artdaq part
+    _edata.nbtot += nbytes;        // including the artdaq part
 
     if (_diagLevel > 2) {
-      TLOG(TLVL_DEBUG+10) << Form("---------- TRK fragment # %3i nbytes: %5i fsize: %5i error: %5i\n",
-                                  _idtc,nbytes,fsize,_edata.error);
+      printf("%s\n",Form("---------- fragment # %3i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x\n",
+                         _idtc,nbytes,fsize,_edata.error_code));
       printFragment(&frag,nbytes/2);
     }
 
-    if ((_edata.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
-
+    //    if ((_edata.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
+    if (_analyzeFragments) analyze_fragment(event,&frag);
     _idtc++;
+  }
+//-----------------------------------------------------------------------------
+// update per-event counters
+//-----------------------------------------------------------------------------
+  for (int ist=0; ist<kMaxStations; ist++) {
+    StationData_t* sd    = &_edata.station[ist];
+    
+    _edata.n_empty      += sd->n_empty; 
+    _edata.n_invalid_dr += sd->n_invalid_dr; 
+    _edata.n_corrupt    += sd->n_corrupt; 
+    _edata.n_timeouts   += sd->n_timeouts; 
+    _edata.n_overflows  += sd->n_overflows; 
   }
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
   if (_diagLevel > 1) {
     if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
-      TLOG(TLVL_DEBUG+10) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
+      TLOG(TLVL_DEBUG) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
                                event.run(),event.subRun(),event.event(),
-                                  _edata.nfrag, _edata.nbtot);
+                               _edata.nfrag, _edata.nbtot);
     }
   }
 //-----------------------------------------------------------------------------

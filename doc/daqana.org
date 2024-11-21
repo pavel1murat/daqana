@@ -1,12 +1,16 @@
 #+startup:fold -*- buffer-read-only:t -*-
 * ------------------------------------------------------------------------------
-* setup (in the working directory)
+* setup (in the working directory)                                           
 #+begin_src
 opt=debug      # or "prof"
 source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
-export PRODUCTS=/mu2e/app/users/murat/artexternals/products:$PRODUCTS
 muse setup -q $opt
+muse build
 #+end_src
+* printnting events in hex format :
+#+begin_src
+mu2e -c daqana/fcl/hex_dump.fcl -s your_file -n 10
+#end_src
 * TrkFragmentAna event processing codes                                      
 - 0 : OK
 - 1 : wrong channel ID

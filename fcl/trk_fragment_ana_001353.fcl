@@ -52,8 +52,8 @@ physics : {
 #------------------------------------------------------------------------------
 # for run 105099 have only two channels in different FPGA's
 #------------------------------------------------------------------------------
-            refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
-            refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
+            refChCal            : [ 91, 91, 91, 91, 91, 91 ]
+            refChHV             : [ 94, 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop

@@ -1,0 +1,91 @@
+# -*- mode:tcl -*-
+# Run StrawAndCaloDigisFromFragments module to convert artdaq::Fragment collections
+# into TRK and CAL digi collections.
+# Usage: mu2e -c DAQ/test/generateDigiFromFragment.fcl -s <input art files> -n '-1'
+#
+#
+#-----------------------------------------------------------------------------
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+process_name : TrkFragmentAna
+
+source : {
+   module_type : RootInput
+   fileNames   : @nil
+
+   # firstEvent  : 500
+   maxEvents   : -1
+#   inputCommands: ["keep *",
+#                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+services : @local::Services.Reco
+
+physics : {
+    
+    producers : { }
+    filters   : { }
+    
+    analyzers : {
+	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
+	    trkfCollTag         : "daq:TRK"   #
+            nADCPackets         : 1
+#	    diagLevel           : 2           # print one line per event
+#	    diagLevel           : 3           # print the whole event
+            analyzeFragments    : 1
+            minNBytes           : 0 ## 4800
+            maxNBytes           : 10000
+            nSamplesBL          : 10
+            minPulseHeight      : 5.
+	    
+	    maxFileSize         : 2000        ## in MBytes
+#------------------------------------------------------------------------------
+# run-dependent parameters
+#------------------------------------------------------------------------------
+            timeWindow          :  2000
+            pulserFrequency     :   250
+            maxFragmentSize     : 100000
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
+#------------------------------------------------------------------------------
+# for run 105099 have only two channels in different FPGA's
+#------------------------------------------------------------------------------
+            refChCal            : [ 91, 91, 91, 91, 91, 91 ]
+            refChHV             : [ 94, 94, 94, 94, 94, 94 ]
+#------------------------------------------------------------------------------
+# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
+# in interpreted mode in the art event loop
+# see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
+#------------------------------------------------------------------------------
+            # dumpDTCRegisters : 1 # DTC register dump
+            # interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
+            # rootMacro        : "display_001.C"
+	}
+    }
+
+    t1 : [  ]
+
+    e1 : [ TrkFragmentAna ]
+    # e1 : []
+
+    trigger_paths  : [ t1 ]
+    end_paths      : [ e1 ]
+}
+
+# services.TimeTracker : {
+#     dbOutput : {
+#         filename  : "trk_fragment_ana.sqlite3"
+#         overwrite : true
+#     }
+# }
+#------------------------------------------------------------------------------
+services.TFileService.fileName                   : "trk_fragment_ana.%06r.hist"
+services.scheduler.wantSummary                   : true
+
+source.fileNames :
+[
+ "/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.ts200000.art/raw.mu2e.trkvst.ts200000.001364_00000001.art",
+ "/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.ts200000.art/raw.mu2e.trkvst.ts200000.001364_00000003.art"
+]

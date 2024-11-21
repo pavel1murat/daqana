@@ -211,14 +211,15 @@ class TrackerDQM : public art::EDAnalyzer {
 
   struct ChannelData_t {
     int      error;                    // 1:filled up
-    int      nhits;
     float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
     float    dt1r;                     // time dist btw this channel and an FPGA reference channel, TDC1, ns
     float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
     float    dt1r_c;
     
-    mu2e::TrackerDataDecoder::TrackerDataPacket* hit[kMaxNHitsPerChannel];
+    std::vector<mu2e::TrackerDataDecoder::TrackerDataPacket*> hit;
     WfParam_t  wp[kMaxNHitsPerChannel];
+
+    int nhits() { return hit.size(); }
   };
   
   struct RocData_t {
