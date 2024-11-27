@@ -361,6 +361,8 @@ unsigned int correctedTDC(unsigned int TDC) {
   void TrkFragmentAna::book_histograms(int RunNumber) {
     art::ServiceHandle<art::TFileService> tfs;
     
+    TH1::AddDirectory(kFALSE);
+    
     int book_event_histset[kNEventHistSets];
     for (int i=0; i<kNEventHistSets; i++) book_event_histset[i] = 0;
 
@@ -763,14 +765,14 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // check link number
 //-----------------------------------------------------------------------------
       int found = 0;
-      for (int i=0; i<_nActiveLinks[_idtc]; i++) {
-        if (_activeLinks[_idtc]->at(i) == link) {
+      for (int i=0; i<_nActiveLinks[dtc_id]; i++) {
+        if (_activeLinks[dtc_id]->at(i) == link) {
           found = 1;
           break;
         }
       }
 
-      RocData_t* rd = &_edata.station[_station].roc[_idtc][link];
+      RocData_t* rd = &_edata.station[_station].roc[dtc_id][link];
 
       if (found == 0) {
 //-----------------------------------------------------------------------------
@@ -804,7 +806,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         
       rd->nbytes    = dh->byteCount;
       rd->npackets  = dh->packetCount;
-      rd->dtc_id    = dtc_id;
+      rd->dtc_id    = dtc_id;         // is wrong ! dtc_id;
 //-----------------------------------------------------------------------------
 // for now, assume that all hits in the run have the same number of packets per hit
 // take that from the first hit
@@ -822,7 +824,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
         TrackerDataDecoder::TrackerDataPacket* hit ;
-        int offset = ihit*(8+8*_nADCPackets);
+        int offset          = ihit*(8+8*_nADCPackets);   // in 2-byte words
+        int offset_in_bytes = offset*2;
         hit     = (TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
 
         if (DebugBit(5) != 0) {
@@ -832,12 +835,12 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         
         if (hit->ErrorFlags != 0) {  // 4 bits
           if (DebugBit(0) == 1) {
-          TLOG(TLVL_ERROR) << "DTC:" << rd->dtc_id  << " link:" << rd->link
-                           << " ih=" << ihit
-                           << " first_address:0x" << std::hex << first_address
-                           << " offset:0x" << std::hex << offset
-                           << " HIT ERROR FLAG:0x" << std::hex << hit->ErrorFlags
-                           << std::endl;
+            TLOG(TLVL_ERROR) << "dtc_id:" << dtc_id  << " link:" << rd->link
+                             << " ih=" << ihit
+                             << " first_address:0x" << std::hex << first_address 
+                             << " offset(bytes):0x" << std::hex << offset_in_bytes
+                             << " HIT ERROR FLAG:0x" << std::hex << hit->ErrorFlags
+                             << std::endl;
           }
           _edata.error_code |= kHitErrorBit;
           _edata.nerr_tot   += 1;
@@ -852,7 +855,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
             TLOG(TLVL_ERROR) << "DTC:" << rd->dtc_id  << " link:" << rd->link
                              << " ih=" << ihit
                              << " first_address:0x" << std::hex << first_address
-                             << " offset:0x" << std::hex << offset
+                             << " offset:0x" << std::hex << offset_in_bytes
                              << " WRONG NUMBER OF ADC PACKETS: " << std::dec << hit->NumADCPackets
                              << " BAIL OUT" << std::endl;
           }
@@ -880,8 +883,9 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
           rd->nerr_tot      += 1;
 
           if (DebugBit(0) != 0) {
-            TLOG(TLVL_ERROR) << Form("event %i:%i:%i : ERROR_CODE:0x%04x in %s: link = %i offset: 0x%04x hit->StrawIndex = 0x%04x\n",
-                                     Evt.run(),Evt.subRun(),Evt.event(),kChIDErrorBit,__func__,link,offset,hit->StrawIndex);
+            TLOG(TLVL_ERROR) << Form("event %i:%i:%i : ERROR_CODE:0x%04x in %s: link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                                     Evt.run(),Evt.subRun(),Evt.event(),kChIDErrorBit,
+                                     __func__,link,offset_in_bytes,hit->StrawIndex);
           }
         }
         else {
@@ -897,19 +901,20 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
           uint16_t* w = (uint16_t*) hit;
           int nw = 2+_nADCPackets*8;
                                         // finding first word - they can move
-          int offset = -1;
+          int offs = -1;
           int loc    = 6;
           for (int i=0; i<4; i++) {
             if (w[loc] == pattern[i]) {
-              offset = i;
+              offs = i;
               break;
             }
           }
 
-          if (offset == -1) {
+          if (offs == -1) {
             TLOG(TLVL_ERROR) << Form("event %i:%i:%i", Evt.run(),Evt.subRun(),Evt.event())
                              << Form(", : WRONG ADC PATTERN 0x%04x in %s: ",kAdcPatternErrorBit,__func__)
-                             << Form(" link = %i offset: 0x%04x hit->StrawIndex = 0x%04x\n",link,offset,hit->StrawIndex);
+                             << Form(" link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                                     link,offset_in_bytes,hit->StrawIndex);
             
             _edata.error_code |= kAdcPatternErrorBit;
             _edata.nerr_tot   += 1;
@@ -922,14 +927,15 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // thus starting from 1 
 //-----------------------------------------------------------------------------
             for (int i=1; i<nw; i++) {
-              int ipat = (offset+i) % 4;
+              int ipat = (offs+i) % 4;
               if (w[loc+i] == pattern[ipat]) continue;
 //-----------------------------------------------------------------------------
 // in trouble
 //-----------------------------------------------------------------------------
             TLOG(TLVL_ERROR) << Form("event %i:%i:%i", Evt.run(),Evt.subRun(),Evt.event())
                              << Form(", : WRONG ADC PATTERN 0x%04x in %s: ",kAdcPatternErrorBit,__func__)
-                             << Form(" link = %i offset: 0x%04x hit->StrawIndex = 0x%04x\n",link,offset,hit->StrawIndex);
+                             << Form(" link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                                     link,offset_in_bytes,hit->StrawIndex);
             
             _edata.error_code |= kAdcPatternErrorBit;
             _edata.nerr_tot   += 1;
@@ -1084,7 +1090,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
     printf(" Event : %06i:%08i%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
   }
   
-  _idtc = 0;
+  int ifrag = 0;
   for (const artdaq::Fragment& frag : *handle) {
 //-----------------------------------------------------------------------------
 // different fragments correspond to different DTCs, somewhere there should be the DTC ID
@@ -1098,7 +1104,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
       _edata.nerr_tot    += 1;
       _edata.n_nb_errors += 1;
       
-      TLOG(TLVL_DEBUG) << Form("event %6i:%8i:%8i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
+      TLOG(TLVL_DEBUG) << Form("event %i:%i:%i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
                                AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
                                kNBytesErrorBit,nbytes);
     }
@@ -1108,13 +1114,13 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 
     if (_diagLevel > 2) {
       printf("%s\n",Form("---------- fragment # %3i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x\n",
-                         _idtc,nbytes,fsize,_edata.error_code));
+                         ifrag,nbytes,fsize,_edata.error_code));
       print_fragment(&frag,nbytes/2);
     }
 
     //    if ((_edata.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
     if (_analyzeFragments) analyze_fragment(AnEvent,&frag);
-    _idtc++;
+    ifrag++;
   }
 //-----------------------------------------------------------------------------
 // update per-event counters
@@ -1230,26 +1236,29 @@ void TrkFragmentAna::print_hit(const TrackerDataDecoder::TrackerDataPacket* Hit)
   if (loc != 0) printf("\n");
     
 }
-  
+
+//-----------------------------------------------------------------------------
 void TrkFragmentAna::debug(const art::Event& AnEvent) {
   
   auto handle = AnEvent.getValidHandle<std::vector<artdaq::Fragment> >(_trkfCollTag);
 
   int ifrag = 0;
   for (const artdaq::Fragment& frag : *handle) {
-    ushort* buf = (ushort*) (frag.dataBegin());
-    int nbytes  = buf[0];
-    int fsize   = frag.sizeBytes();
+    ushort* buf          = (ushort*) (frag.dataBegin());
+    int fsize            = frag.sizeBytes();
+    SubEventHeader_t* sh = (SubEventHeader_t*) buf;
+    int nbytes           = buf[0];
+    int dtc_id           = sh->dtcID;
     
     if (DebugBit(0) == 1) {
-      print_message(Form("bit:000: fragment # %3i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
-                         ifrag,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
+      print_message(Form("bit:000: fragment # %3i dtc_id:%i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
+                         ifrag,dtc_id,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
       print_fragment(&frag,nbytes/2);
     }
 
     if ((DebugBit(3) & 0x1) and (_edata.nerr_tot > _minNErrors)) {
-      print_message(Form("bit:003: fragment # %3i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i\n",
-                         ifrag,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
+      print_message(Form("bit:003: fragment # %3i dtc_id:%i nnbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i\n",
+                         ifrag,dtc_id,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
 
       if (DebugBit(3) & 0x2) print_fragment(&frag,nbytes/2);
     }

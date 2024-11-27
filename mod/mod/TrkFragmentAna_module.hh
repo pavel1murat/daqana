@@ -392,7 +392,7 @@ namespace mu2e {
     double           _tdc_bin;        // 
     double           _tdc_bin_ns;     // TDC bin, in nanoseconds
     int              _initialized;    // histograms are booked in beginRun, protect ...
-    int              _idtc;           // fragment number, today - proxy to the DTC ID
+    //    int              _idtc;           // fragment number, today - proxy to the DTC ID
     int              _station;
 
     explicit TrkFragmentAna(fhicl::ParameterSet const& pset);
