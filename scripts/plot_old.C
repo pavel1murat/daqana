@@ -34,38 +34,38 @@ int plot_totals(int RunNumber, const char* Fn = nullptr) {
 
   c->cd(1);
   gPad->SetLogy(1);
-  TH1* h1 = (TH1*) f->Get("//TrkFragmentAna/evt_0/nhits");
+  TH1* h1 = (TH1*) f->Get("//TrkFragmentAna/trk/nhits");
   h1->GetYaxis()->SetRangeUser(0.1,2*h1->GetEntries());
   h1->Draw();
   
   c->cd(2);
   gPad->SetLogy(1);
-  TH1* h2 = (TH1*) f->Get("//TrkFragmentAna/evt_0/nbtot");
+  TH1* h2 = (TH1*) f->Get("//TrkFragmentAna/trk/nbtot");
   h2->GetYaxis()->SetRangeUser(0.1,2*h2->GetEntries());
   h2->Draw();
   
   c->cd(3);
   gPad->SetLogy(1);
-  TH1* h3 = (TH1*) f->Get("//TrkFragmentAna/evt_0/nfrag");
+  TH1* h3 = (TH1*) f->Get("//TrkFragmentAna/trk/nfrag");
   h3->GetYaxis()->SetRangeUser(0.1,2*h3->GetEntries());
   h3->GetXaxis()->SetRangeUser(0,19.9);
   h3->Draw();
   
   c->cd(4);
   gPad->SetLogy(1);
-  TH1* h4 = (TH1*) f->Get("//TrkFragmentAna/evt_0/fsize");
+  TH1* h4 = (TH1*) f->Get("//TrkFragmentAna/trk/fsize");
   h4->GetYaxis()->SetRangeUser(0.1,2*h4->GetEntries());
   h4->Draw();
   
   c->cd(5);
   gPad->SetLogy(1);
-  TH1* h5 = (TH1*) f->Get("//TrkFragmentAna/evt_0/error_code");
+  TH1* h5 = (TH1*) f->Get("//TrkFragmentAna/trk/error_code");
   h5->GetYaxis()->SetRangeUser(0.1,2*h5->GetEntries());
   h5->Draw();
   
   c->cd(6);
   gPad->SetLogy(1);
-  TH1* h6 = (TH1*) f->Get("//TrkFragmentAna/evt_0/nerr_tot");
+  TH1* h6 = (TH1*) f->Get("//TrkFragmentAna/trk/nerr_tot");
   h6->GetYaxis()->SetRangeUser(0.1,2*h6->GetEntries());
   h6->Draw();
   
@@ -84,7 +84,7 @@ int plot_nhits_per_panel(int RunNumber, int Station, int Dtc, const char* Fn = n
     c->cd(i+1);
     gPad->SetLogy(1);
 
-    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nhits",Station,Dtc,i));
+    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/trk/dtc_%02i_%i/roc_%i/nhits",Station,Dtc,i));
     h->Draw();
   }
   
@@ -104,7 +104,7 @@ int plot_nh_vs_ch_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel 
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_ch",Station,Dtc,i));
+    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/trk/dtc_%02i_%i/roc_%i/nh_vs_ch",Station,Dtc,i));
 
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
@@ -131,7 +131,7 @@ int plot_nh_vs_adc_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_adc_0",Station,Dtc,i));
+    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/trk/dtc_%02i_%i/roc_%i/nh_vs_adc_0",Station,Dtc,i));
 
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);

@@ -35,18 +35,26 @@ namespace mu2e {
 
   class TrkFragmentAna : public THistModule {
 
-    enum { kNChannels         = 96,
-           kMaxNLinks         =  6,
-           kMaxNHWfPerChannel = 10,
-           kMaxStations       = 2       // for now, just make it an array
+    enum {
+      kNChannels         = 96,
+      kMaxNLinks         =  6,
+      kMaxNHWfPerChannel = 10,
+      kMaxStations       =  2       // for now, just make it an array
     };
 
     enum {
-      kNBytesErrorBit     = 0x0001,
-      kNWfsErrorBit       = 0x0002,
+      kNEventHistSets    =  10,
+      kNStationHistSets  = 100       // for now, just make it an array
+    };
+
+    enum {
+      kNBytesErrorBit     = 0x0001,  // not very well defined
+      kNWfsErrorBit       = 0x0002,  // wrong number of ADC samples
       kLinkIDErrorBit     = 0x0004,  // link ID    error bit
       kChIDErrorBit       = 0x0008,  // channel ID error bit
       kNChHitsErrorBit    = 0x0010,  // nhits > kMaxNHWfPerChannel
+      kHitErrorBit        = 0x0100,  // hit error reported by the digi FPGA
+      kAdcPatternErrorBit = 0x0200,  // wrong ADC pattern
       
       kNErrorBits         = 5
     };
@@ -129,6 +137,8 @@ namespace mu2e {
       int                 corrupt   () { return (status & 0x04); }
       int                 timeout   () { return (status & 0x08); }
       int                 overflow  () { return (status & 0x10); }
+      
+      int                 error_code() { return (status & 0x1e); }
     };
 
     struct DtcDataBlock_t : public RocDataHeaderPacket_t {
@@ -190,6 +200,7 @@ namespace mu2e {
       TH1F*         npackets;
       TH1F*         nhits;
       TH1F*         valid;
+      TH1F*         error_code;  // ROC error code
 
       TH1F*         n_empty;
       TH1F*         n_invalid_dr;
@@ -242,10 +253,10 @@ namespace mu2e {
     };
 
     struct Hist_t {
-      EventHist_t   event;
-      StationHist_t stn[2];
-    } _Hist;
-
+      EventHist_t*   event  [kNEventHistSets  ];
+      StationHist_t* station[kNStationHistSets];
+    } _hist;
+    
     struct ChannelData_t {
       float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
       float    dt1r;                     // time dist btw this channel and an FPGA reference channel, TDC1, ns
@@ -272,6 +283,7 @@ namespace mu2e {
       int       n_corrupt;
       int       n_timeouts;
       int       n_overflows;
+      int       error_code;             // anything but not-empty a byte..
 
       int       nerr_tot;
       
@@ -363,6 +375,8 @@ namespace mu2e {
     float            _minPulseHeight;           // threshold for the charge integration;
     int              _nStations;
     int              _minNErrors;               // min number of errros for printout on bit3
+    int              _errorCode;                // errorCode to print
+    int              _validateAdcPatterns;      // 
 //-----------------------------------------------------------------------------
 // the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------
@@ -409,7 +423,7 @@ namespace mu2e {
     void         fill_dtc_histograms    (DtcHist_t*     Hist, StationData_t* Data, int IDtc);
     void         fill_event_histograms  (EventHist_t*   Hist, EventData_t*   Data);
     void         fill_roc_histograms    (RocHist_t*     Hist, RocData_t*     Data);
-
+    int          fill_station_histograms(StationHist_t* Hist, EventData_t*   Data);
                                         // returns -1 if in trouble
     int          fill_histograms();
 

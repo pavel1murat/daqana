@@ -44,9 +44,11 @@ physics : {
 	    trkfCollTag         : "daq:TRK"   # 
             nAdcPackets         : 1           # until the format is fixed
             minNErrors          : 500
+            errorCode           : 258
             debugBits           : {
 #                bit0:1                        ## event hex dump for all events
-                bit3:1                         ## 0x3 : events with nerr_tot > minNErrors + hex dump
+                bit2:1                         ## events with the given errorCode
+#                bit3:1                         ## 0x3 : events with nerr_tot > minNErrors + hex dump
             }
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event
