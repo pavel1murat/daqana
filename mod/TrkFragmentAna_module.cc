@@ -138,7 +138,8 @@ unsigned int correctedTDC(unsigned int TDC) {
     _minPulseHeight     (PSet.get<float>           ("minPulseHeight"     )),
     _minNErrors         (PSet.get<int>             ("minNErrors"         )),
     _errorCode          (PSet.get<int>             ("errorCode"          )),
-    _validateAdcPatterns(PSet.get<int>             ("validateAdcPatterns"))
+    _validateAdcPatterns(PSet.get<int>             ("validateAdcPatterns")),
+    _fillHistograms     (PSet.get<int>             ("fillHistograms"     ))
   {
     _activeLinks[0] = &_activeLinks_0;
     _activeLinks[1] = &_activeLinks_1;
@@ -367,7 +368,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     for (int i=0; i<kNEventHistSets; i++) book_event_histset[i] = 0;
 
     book_event_histset[ 0] = 1;		// all events
-    book_event_histset[ 1] = 0;	        // events with the error code = 0
+    book_event_histset[ 1] = 1;	        // events with the error code = 0
     char folder_name[100];
     for (int i=0; i<kNEventHistSets; i++) {
       if (book_event_histset[i] != 0) {
@@ -383,7 +384,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     for (int i=0; i<kNStationHistSets; i++) book_station_histset[i] = 0;
 
     book_station_histset[ 0] = 1;		// all events
-    book_station_histset[ 1] = 0;	        // events with the error code = 0
+    book_station_histset[ 1] = 1;	        // events with the error code = 0
 
     for (int ist=0; ist<kNStationHistSets; ist++) {
       if (book_station_histset[ist] != 0) {
@@ -448,7 +449,9 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // as a last step, book histograms - need to know the number of active links
 //-----------------------------------------------------------------------------
-  book_histograms(rn);
+  if (_fillHistograms > 0) {
+    book_histograms(rn);
+  }
 }
 
 //--------------------------------------------------------------------------------
@@ -694,13 +697,16 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // later, all error handling will move to validate_roc_data()
 //-----------------------------------------------------------------------------
-    fill_event_histograms(_hist.event[0],&_edata);
-    // if (_edata.error_code == 0) fill_event_histograms(_hist.event[1],&_edata);
+    if (_fillHistograms > 0) {
+      fill_event_histograms  (_hist.event[0],&_edata);
+      fill_station_histograms(_hist.station[0],&_edata);
 
+      if ((_fillHistograms > 1) and (_edata.error_code == 0)) {
+        fill_event_histograms  (_hist.event[1],&_edata);
+        fill_station_histograms(_hist.station[1],&_edata);
+      }
+    }
 
-    fill_station_histograms(_hist.station[0],&_edata);
-    // if (_edata.error_code == 0) fill_station_histograms(_hist.station[1],&_edata);
-    
     return 0;
   }
 

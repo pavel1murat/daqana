@@ -77,7 +77,7 @@ int plot_nhits_per_panel(int RunNumber, int Station, int Dtc, const char* Fn = n
 
   TFile* f = open_file(Fn,RunNumber);
 
-  TCanvas* c = new TCanvas(Form("c_%05i",_Figure),Form("c_%05i",_Figure),1700,950);
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+100*Dtc),Form("c_%05i",_Figure+100*Dtc),1700,950);
   c->Divide(3,2);
 
   for (int i=0; i<6; i++) {
@@ -119,12 +119,12 @@ int plot_nh_vs_ch_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel 
 //-----------------------------------------------------------------------------
 // use default readout map
 //-----------------------------------------------------------------------------
-int plot_nh_vs_adc_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel=-1, int MaxNHits = -1,
-                             const char* Fn = nullptr) {
+int plot_nh_vs_adc_per_panel(int RunNumber, int Station, int Dtc,
+                             int MaxChannel=-1, int MaxNHits = -1, const char* Fn = nullptr) {
 
   TFile* f = open_file(Fn,RunNumber);
 
-  TCanvas* c = new TCanvas(Form("c_%05i",_Figure),Form("c_%05i",_Figure),1700,950);
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+Dtc*100),Form("c_%05i",_Figure+Dtc*100),1700,950);
   c->Divide(3,2);
 
   for (int i=0; i<6; i++) {
@@ -136,8 +136,6 @@ int plot_nh_vs_adc_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
 
-    // h->SetFillColor(kBlue+2);
-    // h->Draw("box");
     h->Draw("");
   }
   
@@ -153,14 +151,14 @@ int plot_eflg_vs_evt_panels(int RunNumber, int Station, int Dtc, int MaxEvent,
 
   TFile* f = open_file(Fn,RunNumber);
 
-  TCanvas* c = new TCanvas(Form("c_%05i",_Figure),Form("c_%05i",_Figure),1700,950);
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+100*Dtc),Form("c_%05i",_Figure+100*Dtc),1700,950);
   c->Divide(3,2);
 
   for (int i=0; i<6; i++) {
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/trk/dtc_%02i_%i/roc_%i/eflg_vs_evt",Station,Dtc,i));
+    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/eflg_vs_evt",Station,Dtc,i));
                                         // dont' need the error bars
     int nbx = h->GetNbinsX();
     for (int ib=0; ib<nbx; ib++) {
@@ -191,7 +189,7 @@ int plot_eflg_vs_evt(int RunNumber, const char* Fn = nullptr) {
 
   gPad->SetLogy(0);
 
-  TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/trk/eflg_vs_evt"));
+  TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/evt_0/eflg_vs_evt"));
                                         // dont' need the error bars
   int nbx = h->GetNbinsX();
   for (int ib=0; ib<nbx; ib++) {
@@ -210,6 +208,38 @@ int plot_eflg_vs_evt(int RunNumber, const char* Fn = nullptr) {
 }
 
 
+
+//-----------------------------------------------------------------------------
+int plot_error_code(int RunNumber, int Station, int Dtc, const char* Fn = nullptr) {
+
+  TFile* f = open_file(Fn,RunNumber);
+
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+Dtc*100),Form("c_%05i",_Figure+Dtc*100),1700,950);
+  c->Divide(3,2);
+
+  for (int i=0; i<6; i++) {
+    c->cd(i+1);
+    gPad->SetLogx(1);
+
+    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/errcode",Station,Dtc,i));
+                                        // dont' need the error bars
+    // int nbx = h->GetNbinsX();
+    // for (int ib=0; ib<nbx; ib++) {
+    //   h->SetBinError(ib+1,0);
+    // }
+    
+    // h->SetMarkerStyle(20);
+    // h->SetMarkerSize(0.8);
+
+    // if (MaxEvent > 0) h->GetXaxis()->SetRangeUser(0,MaxEvent-0.0001);
+
+    h->Draw();
+  }
+
+  return 0;
+}
+
+
 //-----------------------------------------------------------------------------
 // if Fn = nullptr, use defaults
 //-----------------------------------------------------------------------------
@@ -222,6 +252,7 @@ int plot(int RunNumber, const char* Fn, int Figure, int Station = 0, int Dtc = 0
   else if (Figure == 4) plot_nh_vs_adc_per_panel(RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn);
   else if (Figure == 5) plot_eflg_vs_evt_panels (RunNumber, Station, Dtc, MaxEvent  ,Fn);
   else if (Figure == 6) plot_eflg_vs_evt        (RunNumber, Fn);
+  else if (Figure == 7) plot_error_code         (RunNumber, Station, Dtc, Fn);
   else {
     printf("ERROR: undefined figure %i\n",Figure);
   }

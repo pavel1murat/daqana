@@ -376,7 +376,8 @@ namespace mu2e {
     int              _nStations;
     int              _minNErrors;               // min number of errros for printout on bit3
     int              _errorCode;                // errorCode to print
-    int              _validateAdcPatterns;      // 
+    int              _validateAdcPatterns;      //
+    int              _fillHistograms;           // <=0 : don't
 //-----------------------------------------------------------------------------
 // the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------
