@@ -840,6 +840,13 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         }
         
         if (hit->ErrorFlags != 0) {  // 4 bits
+//-----------------------------------------------------------------------------
+// 2024-11-21 Richie: MSB to LSB: ewm overlap, missed last hit, fifo was full. 
+// 0x1: fifo was full      
+// 0x2: missed last hit
+// 0x4: ewm overlap   
+// 0x5: reserved      
+//-----------------------------------------------------------------------------
           if (DebugBit(0) == 1) {
             TLOG(TLVL_ERROR) << "dtc_id:" << dtc_id  << " link:" << rd->link
                              << " ih=" << ihit
@@ -1263,7 +1270,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     }
 
     if ((DebugBit(3) & 0x1) and (_edata.nerr_tot > _minNErrors)) {
-      print_message(Form("bit:003: fragment # %3i dtc_id:%i nnbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i\n",
+      print_message(Form("bit:003: fragment # %3i dtc_id:%i nnbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
                          ifrag,dtc_id,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
 
       if (DebugBit(3) & 0x2) print_fragment(&frag,nbytes/2);

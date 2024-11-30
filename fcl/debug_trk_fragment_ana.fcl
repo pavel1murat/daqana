@@ -55,6 +55,8 @@ physics : {
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event
             analyzeFragments    : 1
+            fillHistograms      : 0
+            
             minNBytes           : 0 ## 4800
             errorCode           : 1
             maxNBytes           : 10000
