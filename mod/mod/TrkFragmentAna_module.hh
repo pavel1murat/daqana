@@ -59,6 +59,11 @@ namespace mu2e {
       kNErrorBits         = 5
     };
 
+    enum {
+      kRocPattern1        = 1,
+      kDigiCheckerBoard   = 4
+    };
+
   public:
 
     struct WfParam_t {
@@ -378,6 +383,8 @@ namespace mu2e {
     int              _errorCode;                // errorCode to print
     int              _validateAdcPatterns;      //
     int              _fillHistograms;           // <=0 : don't
+    int              _fillWaveformHistograms;   // <=0 : don't
+    int              _rocDataFormat;            // digis, patterns, etc
 //-----------------------------------------------------------------------------
 // the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------
@@ -405,8 +412,10 @@ namespace mu2e {
     virtual void beginJob() override;
     virtual void endJob  () override;
     
-    virtual void analyze         (const art::Event& e) override;
-    void         analyze_fragment(const art::Event& e, const artdaq::Fragment* Fragment);
+    virtual void analyze             (const art::Event& e) override;
+    void         analyze_dtc_fragment(const art::Event& e, const artdaq::Fragment* Fragment);
+    void         analyze_roc_data    (RocDataHeaderPacket_t* Dh, RocData_t* Rd);
+    void         analyze_roc_patterns(RocDataHeaderPacket_t* Dh, RocData_t* Rd);
 
     void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int Ich);
 
@@ -419,6 +428,7 @@ namespace mu2e {
     
     void         book_histograms        (int RunNumber);
     void         debug                  (const art::Event& event);
+    int          dtcIndex               (int DtcID);
   
     void         fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data);
     void         fill_dtc_histograms    (DtcHist_t*     Hist, StationData_t* Data, int IDtc);
@@ -429,8 +439,7 @@ namespace mu2e {
     int          fill_histograms();
 
     int          init_event       (const art::Event& AnEvent);
-    int          validate_roc_data(RocDataHeaderPacket_t* Rdp);
-
+    
     // NWords: number of 2-byte words
     void         print_fragment     (const artdaq::Fragment* Fragment, int NWords);
     void         print_hit          (const TrackerDataDecoder::TrackerDataPacket* Hit);

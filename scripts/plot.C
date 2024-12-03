@@ -9,6 +9,7 @@
 int MaxNHits   (-1);
 int MaxChannel (-1);
 int MaxEvent   (-1);
+int MaxY       (-1);
 
 namespace {
   const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
@@ -67,6 +68,7 @@ int plot_totals(int RunNumber, const char* Fn = nullptr, int Print = 0) {
   c->cd(6);
   gPad->SetLogy(1);
   TH1* h6 = (TH1*) f->Get("//TrkFragmentAna/evt_0/nerr_tot");
+  h6->GetXaxis()->SetRangeUser(0.,50);
   h6->GetYaxis()->SetRangeUser(0.1,2*h6->GetEntries());
   h6->Draw();
 
@@ -173,6 +175,7 @@ int plot_eflg_vs_evt_panels(int RunNumber, int Station, int Dtc, int MaxEvent,
     h->SetMarkerStyle(20);
     h->SetMarkerSize(0.8);
 
+    if (MaxY     > 0) h->GetYaxis()->SetRangeUser(0,MaxY-0.0001);
     if (MaxEvent > 0) h->GetXaxis()->SetRangeUser(0,MaxEvent-0.0001);
 
     h->Draw("p");

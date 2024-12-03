@@ -9,12 +9,14 @@ daqana : {
 	TrkFragmentAna : { module_type:TrkFragmentAna
 	    @table::StntupleTModuleFclDefaults
 	    
-	    trkfCollTag         : "daq:TRK"   # 
-            analyzeFragments    : 1           ## set to 0 to print only
-            minNErrors          : 100
-            errorCode           : -1          ## nothing
-            validateAdcPatterns : -1          ## if >= 0 , pattern to validate
-            fillHistograms      : 2           ## on by default, < 0 : off
+	    trkfCollTag            : "daq:TRK"   # 
+            analyzeFragments       : 1           ## set to 0 to print only
+            minNErrors             : 100
+            errorCode              : -1          ## nothing
+            validateAdcPatterns    : -1          ## if >= 0 , pattern to validate
+            fillHistograms         : 2           ## on by default, < 0 : off
+            fillWaveformHistograms : 0           ## off by default, > 0 : on
+            rocDataFormat          : 4           ## digi checherboard
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
