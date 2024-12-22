@@ -56,7 +56,7 @@ namespace mu2e {
       kHitErrorBit        = 0x0100,  // hit error reported by the digi FPGA
       kAdcPatternErrorBit = 0x0200,  // wrong ADC pattern
       
-      kNErrorBits         = 5
+      kNErrorBits         = 7
     };
 
     enum {
@@ -218,7 +218,7 @@ namespace mu2e {
       TH1F*         eflg_vs_evt;
 
       TH2F*         nh_vs_ch;
-      TH2F*         nh_vs_adc1;
+      TH2F*         nh_vs_adc0;
 
       TH2F*         dt0r_vs_ch;
       TH2F*         dt1r_vs_ch;
@@ -260,7 +260,7 @@ namespace mu2e {
     struct Hist_t {
       EventHist_t*   event  [kNEventHistSets  ];
       StationHist_t* station[kNStationHistSets];
-    } _hist;
+    };
     
     struct ChannelData_t {
       float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
@@ -362,10 +362,13 @@ namespace mu2e {
     int              _diagLevel;
     int              _minNBytes;
     int              _maxNBytes;
-    int              _dataHeaderOffset;
+    //    int              _dataHeaderOffset;
     std::vector<int>  _activeLinks_0;
     std::vector<int>  _activeLinks_1;
     std::vector<int>*_activeLinks[2];         // active links - connected ROCs
+
+    std::vector<std::string> _panelName;    // 12 panel names
+
     std::vector<int> _refChCal;               // reference channel on CAL side FPGA
     std::vector<int> _refChHV;                // reference channel on HV  side FPGA
     art::InputTag    _trkfCollTag;
@@ -392,7 +395,7 @@ namespace mu2e {
     int              _referenceChannel[kMaxNLinks][2];
     
     int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
-    int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
+    // int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
     double           _gen_offset  [kNChannels];
 
     double           _freq;           // generator frequency, defined by the run number
@@ -403,24 +406,27 @@ namespace mu2e {
     //    int              _idtc;           // fragment number, today - proxy to the DTC ID
     int              _station;
 
+    Hist_t           _hist;
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
     explicit TrkFragmentAna(fhicl::ParameterSet const& pset);
     // explicit TrkFragmentAna(const art::EDAnalyzer::Table<Config>& config);
     virtual ~TrkFragmentAna() {}
     
+    virtual void analyze (const art::Event& e) override;
     virtual void beginRun(const art::Run& ARun) override;
 
     virtual void beginJob() override;
     virtual void endJob  () override;
     
-    virtual void analyze             (const art::Event& e) override;
     void         analyze_dtc_fragment(const art::Event& e, const artdaq::Fragment* Fragment);
     void         analyze_roc_data    (RocDataHeaderPacket_t* Dh, RocData_t* Rd);
     void         analyze_roc_patterns(RocDataHeaderPacket_t* Dh, RocData_t* Rd);
 
-    void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int Ich);
-
+    void         book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist,
+                                         int IDtc, int Link, int Ich);
     void         book_event_histograms  (art::TFileDirectory* Dir, int RunNumber, EventHist_t*   Hist);
-    
     void         book_dtc_histograms    (art::TFileDirectory* Dir, int RunNumber, DtcHist_t*     Hist,
                                          int IStation, int IDtc);
     void         book_roc_histograms    (art::TFileDirectory* Dir, int RunNumber, RocHist_t*     Hist,
@@ -444,6 +450,7 @@ namespace mu2e {
     void         print_fragment     (const artdaq::Fragment* Fragment, int NWords);
     void         print_hit          (const TrackerDataDecoder::TrackerDataPacket* Hit);
     void         print_message      (const char* Message);
+
     int          unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
   };
 }

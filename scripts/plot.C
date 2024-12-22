@@ -97,8 +97,8 @@ int plot_nhits_per_panel(int RunNumber, int Station, int Dtc, const char* Fn = n
 }
 
 //-----------------------------------------------------------------------------
-int plot_nh_vs_ch_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, int MaxNHits = -1,
-                            const char* Fn = nullptr, int Print = 0) {
+int plot_nh_vs_adc1_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, int MaxNHits = -1,
+                              const char* Fn = nullptr, int Print = 0) {
 
   TFile* f = open_file(Fn,RunNumber);
 
@@ -109,7 +109,7 @@ int plot_nh_vs_ch_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel 
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_ch",Station,Dtc,i));
+    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_adc1",Station,Dtc,i));
 
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
@@ -245,13 +245,13 @@ int plot(int RunNumber, const char* Fn, int Figure, int Station = 0, int Dtc = 0
   
   _Figure = Figure;
   
-  if      (Figure == 1) plot_totals             (RunNumber, Fn, Print);
-  else if (Figure == 2) plot_nhits_per_panel    (RunNumber, Station, Dtc, Fn, Print);
-  else if (Figure == 3) plot_nh_vs_ch_per_panel (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
-  else if (Figure == 4) plot_nh_vs_adc_per_panel(RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
-  else if (Figure == 5) plot_eflg_vs_evt_panels (RunNumber, Station, Dtc, MaxEvent  ,Fn, Print);
-  else if (Figure == 6) plot_eflg_vs_evt        (RunNumber, Fn, Print);
-  else if (Figure == 7) plot_error_code         (RunNumber, Station, Dtc, Fn, Print);
+  if      (Figure == 1) plot_totals              (RunNumber, Fn, Print);
+  else if (Figure == 2) plot_nhits_per_panel     (RunNumber, Station, Dtc, Fn, Print);
+  else if (Figure == 3) plot_nh_vs_adc1_per_panel(RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
+  else if (Figure == 4) plot_nh_vs_adc_per_panel (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
+  else if (Figure == 5) plot_eflg_vs_evt_panels  (RunNumber, Station, Dtc, MaxEvent  ,Fn, Print);
+  else if (Figure == 6) plot_eflg_vs_evt         (RunNumber, Fn, Print);
+  else if (Figure == 7) plot_error_code          (RunNumber, Station, Dtc, Fn, Print);
   else {
     printf("ERROR: undefined figure %i\n",Figure);
     return -1;

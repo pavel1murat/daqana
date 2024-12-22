@@ -1,6 +1,5 @@
 #!/usr/bin/bash
 
-dataset=$1
-     rn=$2
+rn=$1
 
-ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.$dataset.art/* | grep $rn | awk '{print $9}'
+ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.art/* | grep $rn | awk '{print $9}'

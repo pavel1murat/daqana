@@ -34,13 +34,17 @@ physics : {
             nADCPackets         : 1
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event
-            analyzeFragments    : 1
+            debugBits           : {
+                bit0:1                           ## print all errors
+            }
             minNBytes           : 0 ## 4800
             maxNBytes           : 10000
             nSamplesBL          : 10
             minPulseHeight      : 5.
 	    
 	    maxFileSize         : 2000        ## in MBytes
+            analyzeFragments    : 0
+            fillHistograms      : 0
 #------------------------------------------------------------------------------
 # run-dependent parameters
 #------------------------------------------------------------------------------
@@ -71,7 +75,7 @@ physics : {
 
     t1 : [  ]
 
-#    e1 : [ TrkFragmentAna, TrackerDQM ]
+    ## e1 : [ TrkFragmentAna, TrackerDQM ]
     e1 : [ TrkFragmentAna ]
     # e1 : []
 
