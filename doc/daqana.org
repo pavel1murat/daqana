@@ -7,7 +7,7 @@ source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
 muse setup -q $opt
 muse build
 #+end_src
-* printnting events in hex format :
+* printing events in hex format :                                            
 #+begin_src
 mu2e -c daqana/fcl/hex_dump.fcl -s your_file -n 10
 #end_src

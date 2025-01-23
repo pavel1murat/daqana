@@ -731,12 +731,12 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
     int nh    = Rd->channel[ich].nhits();
                                         // number of hits in a channel vs the channel number
     Hist->nh_vs_ch->Fill(ich,nh);
-    Hist->nh_vs_adc0->Fill(ind_1,nh);
+    Hist->nh_vs_adc0->Fill(ind_0,nh);
     
     for (int ihit=0; ihit<nh; ihit++) {
       Hist->nhits_vs_ich->Fill(ich);
       Hist->nhits_vs_adc[0]->Fill(ind_0);
-      Hist->nhits_vs_adc[1]->Fill(ind_1);
+      // Hist->nhits_vs_adc[1]->Fill(ind_1);
     }
   }
 }

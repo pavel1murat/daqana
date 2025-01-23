@@ -19,6 +19,13 @@ daqana : {
             rocDataFormat          : 4           ## digi checherboard, need when validating
             panelName              : [ "MN234","MN180","MN162","MN058","MN027","MN141",
                                        "MN016","MN012","MN033","MN019","MN011","MN032"]
+            debugPars              : {
+                dtcIndex           : 0
+                link               : 0
+                chID               : 32
+                tMin               : 0.98
+                tMax               : 1.04
+            }
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
@@ -35,12 +42,23 @@ daqana : {
 # currently redefined in beginRun
 #------------------------------------------------------------------------------
             dataHeaderOffset    : 24 ## 32
-            dumpDTCRegisters    :  0
 #------------------------------------------------------------------------------
+# run-dependent parameters
 # reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
 # reference channel number is run-dependent
 #------------------------------------------------------------------------------
-            referenceChannel    : 42
+            timeWindow          :   1000
+            pulserFrequency     :     60
+            maxFragmentSize     : 100000
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
+            minPulseHeight      : 5.
+            pulserFrequency     :     60
+            refChCal            : [ 91, 91, 91, 91, 91, 91 ]
+            refChHV             : [ 94, 94, 94, 94, 94, 94 ]
+            
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
@@ -77,8 +95,8 @@ daqana : {
 #------------------------------------------------------------------------------
             activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
             activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
-            refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
-            refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
+            refChCal            : [ 91 , 91, 91, 91, 91, 91 ]
+            refChHV             : [ 94 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop

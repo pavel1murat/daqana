@@ -282,6 +282,7 @@ namespace mu2e {
       int       npackets;
       int       valid;
       int       dtc_id;
+      int       dtcIndex;
       
       int       n_empty;
       int       n_invalid_dr;
@@ -344,6 +345,14 @@ namespace mu2e {
       std::vector<FragmentData_t> fragments;
     } _edata;
 
+    struct DebugPars_t {
+      int   dtcIndex;
+      int   link;
+      int   chID;
+      float tMin;
+      float tMax;
+    } _debugPars;
+
     // struct Config {
     //   fhicl::Atom<int>               diagLevel{fhicl::Name("diagLevel"), fhicl::Comment("diagnostic level")};
     //   fhicl::Atom<int>               parseTRK {fhicl::Name("parseTRK" ), fhicl::Comment("parseTRK"        )};
@@ -372,7 +381,6 @@ namespace mu2e {
     std::vector<int> _refChCal;               // reference channel on CAL side FPGA
     std::vector<int> _refChHV;                // reference channel on HV  side FPGA
     art::InputTag    _trkfCollTag;
-    int              _dumpDTCRegisters;
     int              _analyzeFragments;
     int              _maxFragmentSize;
     int              _pulserFrequency;          // in kHz, either 60 or 250

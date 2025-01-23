@@ -82,7 +82,6 @@ physics : {
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
-            # dumpDTCRegisters : 1 # DTC register dump
             # interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
             # rootMacro        : "display_001.C"
 	}

@@ -48,6 +48,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     
     if      (DtcID ==  0) dtc_index = 0;
     else if (DtcID ==  1) dtc_index = 1;
+    else if (DtcID == 14) dtc_index = 0;
     else if (DtcID == 15) dtc_index = 1;
     else if (DtcID == 18) dtc_index = 0;
     else if (DtcID == 19) dtc_index = 1;
@@ -145,14 +146,12 @@ unsigned int correctedTDC(unsigned int TDC) {
     _diagLevel             (PSet.get<int>             ("diagLevel"             )), 
     _minNBytes             (PSet.get<int>             ("minNBytes"             )), 
     _maxNBytes             (PSet.get<int>             ("maxNBytes"             )), 
-    //    _dataHeaderOffset      (PSet.get<int>             ("dataHeaderOffset"      )),
     _activeLinks_0         (PSet.get<std::vector<int>>("activeLinks_0"         )),
     _activeLinks_1         (PSet.get<std::vector<int>>("activeLinks_1"         )),
     _panelName             (PSet.get<std::vector<std::string>>("panelName"     )),
     _refChCal              (PSet.get<std::vector<int>>("refChCal"              )),
     _refChHV               (PSet.get<std::vector<int>>("refChHV"               )),
     _trkfCollTag           (PSet.get<std::string>     ("trkfCollTag"           )),
-    _dumpDTCRegisters      (PSet.get<int>             ("dumpDTCRegisters"      )),
     _analyzeFragments      (PSet.get<int>             ("analyzeFragments"      )),
     _maxFragmentSize       (PSet.get<int>             ("maxFragmentSize"       )),
     _pulserFrequency       (PSet.get<int>             ("pulserFrequency"       )),
@@ -168,6 +167,13 @@ unsigned int correctedTDC(unsigned int TDC) {
   {
     _activeLinks[0] = &_activeLinks_0;
     _activeLinks[1] = &_activeLinks_1;
+
+    fhicl::ParameterSet ps = PSet.get<fhicl::ParameterSet>("debugPars");
+    _debugPars.dtcIndex = ps.get<int>  ("dtcIndex");
+    _debugPars.link     = ps.get<int>  ("link"    );
+    _debugPars.chID     = ps.get<int>  ("chID"    );
+    _debugPars.tMin     = ps.get<float>("tMin"    );
+    _debugPars.tMax     = ps.get<float>("tMax"    );
 
     double f0(31.29e6);                   // 31.29 MHz
 
@@ -469,6 +475,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   else if (rn == 105066) offset = 10580;
   // 105067-1105070: four runs with the same settings, 2 ROCs, no data file for 105067 
   else if ((rn >= 105067) and (rn <= 105070)) offset = 0;
+  else if (rn == 105412) _nADCPackets = 2;
 //-----------------------------------------------------------------------------
 // add 20 ns to have the HV lanes distinct on the plot
 //-----------------------------------------------------------------------------
@@ -655,6 +662,19 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
         Hist->channel[ich].dt0->Fill(dt0);
         Hist->channel[ich].dt1->Fill(dt1);
         Hist->channel[ich].dt2->Fill(dt2);
+
+        if (DebugBit(11) == 1)
+          if ((Rd->link     == _debugPars.link    ) and
+              (ich          == _debugPars.chID    ) and
+              (Rd->dtcIndex == _debugPars.dtcIndex)     ) {
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+            if ((dt0 > _debugPars.tMin /*0.98*/) and (dt0 < _debugPars.tMax) /*1.04*/) {
+              print_message(Form("bit:011: DTC_ID:%02i link:%i ich:%02i  dt0::%10.3f",
+                                 Rd->dtcIndex,Rd->link,ich,dt0));
+            }
+          }
       }
     }
 //-----------------------------------------------------------------------------
@@ -851,6 +871,7 @@ int TrkFragmentAna::init_event(const art::Event& AnEvent) {
       int link      = dh->linkID;
       RocData_t* rd = &_edata.station[_station].roc[dtc_index][link];
       rd->dtc_id    = sh->dtcID;
+      rd->dtcIndex  = dtcIndex(sh->dtcID);
 //-----------------------------------------------------------------------------
 // check link number
 //-----------------------------------------------------------------------------
@@ -935,9 +956,10 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
       _edata.nerr_tot    += 1;
       _edata.n_nb_errors += 1;
       
-      TLOG(TLVL_DEBUG) << Form("event %i:%i:%i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
-                               AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
-                               kNBytesErrorBit,nbytes);
+      if (_diagLevel > 0) {
+        print_message(Form("ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
+                           kNBytesErrorBit,nbytes));
+      }
     }
 
     _edata.nfrag += 1;
@@ -984,20 +1006,6 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
   if (_analyzeFragments != 0) {
     fill_histograms();
-  }
-//-----------------------------------------------------------------------------
-// DTC registers
-//-----------------------------------------------------------------------------
-  if (_dumpDTCRegisters) {
-    auto h = AnEvent.getValidHandle<std::vector<artdaq::Fragment>>("daq:TRKDTC");
-
-    for (const artdaq::Fragment& frag : *h) {
-      int *buf  = (int*) (frag.dataBegin());
-      int nreg  = buf[0];
-      int fsize = frag.sizeBytes();
-      printf("%s: -------- DTC registers dump n(reg)=%5i size: %5i\n",__func__,nreg,fsize);
-      print_fragment(&frag,2+4*nreg);
-    }
   }
 //-----------------------------------------------------------------------------
 // finally, if requested, go into interactive mode, 
@@ -1053,7 +1061,8 @@ void TrkFragmentAna::print_hit(const TrackerDataDecoder::TrackerDataPacket* Hit)
   uint16_t* dat = (uint16_t*) Hit;
 
   int loc(0);
-  for (int i=0; i<16; i++) {
+  int nw = 8*(1+_nADCPackets);
+  for (int i=0; i<nw; i++) {
     printf(" 0x%04x", dat[i]);
     int res = (loc+1) % 8;
     if (res == 0) {
@@ -1081,10 +1090,10 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     int nbytes           = buf[0];
     int dtc_index        = dtcIndex(sh->dtcID);
     
-    if (DebugBit(0) == 1) {
+    if (DebugBit(0) & 0x1) {
       print_message(Form("bit:000: fragment# %2i DTC_ID:%02i dtc_index:%i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
                          ifrag,sh->dtcID,dtc_index,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
-      print_fragment(&frag,nbytes/2);
+      if (DebugBit(0) & 0x2) print_fragment(&frag,nbytes/2);
     }
 
     if ((DebugBit(3) & 0x1) and (_edata.nerr_tot > _minNErrors)) {
@@ -1093,6 +1102,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 
       if (DebugBit(3) & 0x2) print_fragment(&frag,nbytes/2);
     }
+
     ifrag++;
   }
 
@@ -1153,12 +1163,13 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 // 0x8: reserved      
 //-----------------------------------------------------------------------------
       if (DebugBit(0) == 1) {
-        TLOG(TLVL_ERROR) << "DTC_ID:" << Rd->dtc_id  << " link:" << Rd->link
+        print_message(Form(">>> ERROR in %s:%i",__func__,__LINE__));
+        std::cout << "DTC_ID:" << std::dec << Rd->dtc_id  << " link:" << Rd->link
           //                         << " first_address:0x" << std::hex << first_address 
-                         << " offset:0x" << std::hex << std::setw(4) << std::setfill('0') << offset_in_bytes
-                         << " ih=" << ihit
-                         << " HIT ERROR FLAG:0x" << std::hex << hit->ErrorFlags
-                         << std::endl;
+                  << " offset:0x" << std::hex << std::setw(4) << std::setfill('0') << offset_in_bytes
+                  << " ih=" << ihit
+                  << " HIT ERROR FLAG:0x" << std::hex << hit->ErrorFlags
+                  << std::endl;
         print_hit(hit);
       }
       _edata.error_code |= kHitErrorBit;
@@ -1171,12 +1182,13 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     if (hit->NumADCPackets != _nADCPackets) {
 // this is an error which doesn't allow to proceed looping over the hits
       if (DebugBit(0) != 0) {
-        TLOG(TLVL_ERROR) << "DTC:" << Rd->dtc_id  << " link:" << Rd->link
+        print_message(Form(">>> ERROR in %s:%i",__func__,__LINE__));
+        std::cout << "DTC_ID:" << std::dec << Rd->dtc_id  << " link:" << Rd->link
           //                         << " first_address:0x" << std::hex << first_address
-                         << " offset:0x" << std::hex << offset_in_bytes
-                         << " ih=" << ihit
-                         << " WRONG NUMBER OF ADC PACKETS: " << std::dec << hit->NumADCPackets
-                         << " BAIL OUT" << std::endl;
+                  << " offset:0x" << std::hex << offset_in_bytes
+                  << " ih=" << ihit
+                  << " WRONG NUMBER OF ADC PACKETS: " << std::dec << hit->NumADCPackets
+                  << " BAIL OUT" << std::endl;
         print_hit(hit);
       }
           
@@ -1201,10 +1213,11 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
       Rd->nerr_tot      += 1;
 
       if (DebugBit(0) != 0) {
-        TLOG(TLVL_ERROR) << Form("event %i:%i:%i : ",_edata._event->run(),_edata._event->subRun(),_edata._event->event())
-                         << Form("ERROR_CODE:0x%04x : ",kChIDErrorBit)
-                         << Form(" DTC_ID:%02i link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
-                                 Rd->dtc_id,link,offset_in_bytes,hit->StrawIndex);
+        print_message(Form(">> ERROR in %s:%i",__func__,__LINE__));
+        std::cout << Form("event %i:%i:%i : ",_edata._event->run(),_edata._event->subRun(),_edata._event->event())
+                  << Form("ERROR_CODE:0x%04x : ",kChIDErrorBit)
+                  << Form(" DTC_ID:%02i link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                          Rd->dtc_id,link,offset_in_bytes,hit->StrawIndex);
       }
     }
     else {

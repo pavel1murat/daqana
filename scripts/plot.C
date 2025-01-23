@@ -97,19 +97,19 @@ int plot_nhits_per_panel(int RunNumber, int Station, int Dtc, const char* Fn = n
 }
 
 //-----------------------------------------------------------------------------
-int plot_nh_vs_adc1_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, int MaxNHits = -1,
+int plot_nh_vs_ch_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, int MaxNHits = -1,
                               const char* Fn = nullptr, int Print = 0) {
 
   TFile* f = open_file(Fn,RunNumber);
 
-  TCanvas* c = new TCanvas(Form("c_%05i",_Figure),Form("c_%05i",_Figure),1700,950);
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+100*Dtc),Form("c_%05i",_Figure+100*Dtc),1700,950);
   c->Divide(3,2);
 
   for (int i=0; i<6; i++) {
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_adc1",Station,Dtc,i));
+    TH2* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_ch",Station,Dtc,i));
 
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
@@ -137,12 +137,13 @@ int plot_nh_vs_adc_per_panel(int RunNumber, int Station, int Dtc,
     c->cd(i+1);
     gPad->SetLogy(0);
 
-    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_adc_0",Station,Dtc,i));
+    TH1* h = (TH1*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh_vs_adc0",Station,Dtc,i));
 
     if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
     if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
 
-    h->Draw("");
+    h->SetFillColor(kBlue+2);
+    h->Draw("box");
   }
   
   _Canvas = c;
@@ -247,7 +248,7 @@ int plot(int RunNumber, const char* Fn, int Figure, int Station = 0, int Dtc = 0
   
   if      (Figure == 1) plot_totals              (RunNumber, Fn, Print);
   else if (Figure == 2) plot_nhits_per_panel     (RunNumber, Station, Dtc, Fn, Print);
-  else if (Figure == 3) plot_nh_vs_adc1_per_panel(RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
+  else if (Figure == 3) plot_nh_vs_ch_per_panel  (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
   else if (Figure == 4) plot_nh_vs_adc_per_panel (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
   else if (Figure == 5) plot_eflg_vs_evt_panels  (RunNumber, Station, Dtc, MaxEvent  ,Fn, Print);
   else if (Figure == 6) plot_eflg_vs_evt         (RunNumber, Fn, Print);

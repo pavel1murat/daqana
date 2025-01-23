@@ -1,9 +1,6 @@
 # -*- mode:tcl -*-
-# Run StrawAndCaloDigisFromFragments module to convert artdaq::Fragment collections
-# into TRK and CAL digi collections.
-# Usage: mu2e -c DAQ/test/generateDigiFromFragment.fcl -s <input art files> -n '-1'
-#
-#
+#------------------------------------------------------------------------------
+# prif fragments in hex 
 #-----------------------------------------------------------------------------
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
@@ -33,7 +30,7 @@ physics : {
 	    trkfCollTag         : "daq:TRK"   #
             nADCPackets         : 1
 #	    diagLevel           : 2           # print one line per event
-#	    diagLevel           : 3           # print the whole event
+	    diagLevel           : 3           # print the whole event
             debugBits           : {
                 bit0:1                           ## print all errors
             }
