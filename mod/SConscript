@@ -20,8 +20,7 @@ def local_build():
 
     helper.handle_dictionaries();
 
-    libs      = [ # 'murat_alg',
-                  # 'murat_obj',
+    libs      = [                
                   'Stntuple_loop',
                   'Stntuple_base',
                   'Stntuple_val',

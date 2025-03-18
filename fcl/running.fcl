@@ -1,0 +1,57 @@
+#include "Offline/fcl/minimalMessageService.fcl"
+
+#include "Offline/fcl/standardServices.fcl"
+
+
+
+process_name : myanalysis
+
+
+
+source : {
+
+   module_type : RootInput
+
+   fileNames   : @nil
+
+   maxEvents   : -1
+
+}
+
+
+
+
+
+physics : {
+
+
+
+  analyzers  : {
+
+    myAnalysis : {
+
+      module_type : CaloDigiAnalyzerExample
+
+      caloDigiModuleLabel : "CaloDigi"
+
+    }
+
+  }
+
+  
+
+  t1 : [ ]
+
+  e1 : [ myAnalysis ]
+
+
+
+  trigger_paths  : []
+
+  end_paths      : [e1]
+
+}
+
+
+
+services.scheduler.wantSummary: true
