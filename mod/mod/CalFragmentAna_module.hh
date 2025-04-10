@@ -46,7 +46,7 @@ namespace mu2e {
   public:
 
     struct WfParam_t {
-      int   fs;     // first sample above _minPulseHeight
+a      int   fs;     // first sample above _minPulseHeight
       float bl;     // baseline
       float ph;     // pulse height
       float q;      // Q(positive)

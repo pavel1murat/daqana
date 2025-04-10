@@ -50,8 +50,13 @@ daqana : {
             fillHistograms         : 2           ## on by default, < 0 : off
             fillWaveformHistograms : 0           ## off by default, > 0 : on
             rocDataFormat          : 4           ## digi checherboard, need when validating
-            panelName              : [ "MN234","MN180","MN162","MN058","MN027","MN141",
-                                       "MN016","MN012","MN033","MN019","MN011","MN032"]
+            #            panelName              : [ "MN234","MN180","MN162","MN058","MN027","MN141",
+            #                                       "MN016","MN012","MN033","MN019","MN011","MN032"]
+# after run 106500 (Mar 2025) : VST panel back to DTC0
+            panelName              : [
+                                      "MN016","MN012","MN019","MN033","MN011","MN032",
+                                      "MN234","MN180","MN058","MN162","MN027","MN141"
+                                     ]
             debugPars              : {
                 dtcIndex           : 0
                 link               : 0
