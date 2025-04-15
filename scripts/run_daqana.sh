@@ -8,7 +8,7 @@ input_files=/tmp/input_${setup}_00$rn.txt.$$
 #------------------------------------------------------------------------------
 # 1. make list of input files
 #------------------------------------------------------------------------------
-ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.$setup.art/* | grep $rn | awk '{print $9}' > $input_files
+ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.art/* | grep $rn | awk '{print $9}' > $input_files
 #------------------------------------------------------------------------------
 # 2. process input files
 #------------------------------------------------------------------------------

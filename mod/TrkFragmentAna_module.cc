@@ -35,8 +35,11 @@ unsigned int reverseBits(unsigned int num) {
 }
 
 //-----------------------------------------------------------------------------
+//  Richie fixed that
+//-----------------------------------------------------------------------------
 unsigned int correctedTDC(unsigned int TDC) {
-  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+  //  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+  uint32_t corrected_tdc = TDC;
   return corrected_tdc;
 }
 
@@ -66,26 +69,43 @@ unsigned int correctedTDC(unsigned int TDC) {
 //-----------------------------------------------------------------------------
   int TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
 
-    Wf[ 0] = reverseBits(Hit->ADC00);
-    Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
-    Wf[ 2] = reverseBits(Hit->ADC02);
+    // Wf[ 0] = reverseBits(Hit->ADC00);
+    // Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
+    // Wf[ 2] = reverseBits(Hit->ADC02);
+
+    Wf[ 0] = Hit->ADC00;
+    Wf[ 1] = Hit->ADC01A + (Hit->ADC01B << 6);
+    Wf[ 2] = Hit->ADC02;
 
     for (int i=0; i<_nADCPackets; i++) {
       TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
 
-      Wf[loc+ 1] = reverseBits(ahit->ADC0);
-      Wf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-      Wf[loc+ 3] = reverseBits(ahit->ADC2);
-      Wf[loc+ 4] = reverseBits(ahit->ADC3);
-      Wf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-      Wf[loc+ 6] = reverseBits(ahit->ADC5);
-      Wf[loc+ 7] = reverseBits(ahit->ADC6);
-      Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      Wf[loc+ 9] = reverseBits(ahit->ADC8);
-      Wf[loc+10] = reverseBits(ahit->ADC9);
-      Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-      Wf[loc+12] = reverseBits(ahit->ADC11);
+      // Wf[loc+ 1] = reverseBits(ahit->ADC0);
+      // Wf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
+      // Wf[loc+ 3] = reverseBits(ahit->ADC2);
+      // Wf[loc+ 4] = reverseBits(ahit->ADC3);
+      // Wf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
+      // Wf[loc+ 6] = reverseBits(ahit->ADC5);
+      // Wf[loc+ 7] = reverseBits(ahit->ADC6);
+      // Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
+      // Wf[loc+ 9] = reverseBits(ahit->ADC8);
+      // Wf[loc+10] = reverseBits(ahit->ADC9);
+      // Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
+      // Wf[loc+12] = reverseBits(ahit->ADC11);
+
+      Wf[loc+ 1] = ahit->ADC0;
+      Wf[loc+ 2] = ahit->ADC1A + (ahit->ADC1B << 6);
+      Wf[loc+ 3] = ahit->ADC2;
+      Wf[loc+ 4] = ahit->ADC3;
+      Wf[loc+ 5] = ahit->ADC4A + (ahit->ADC4B << 6);
+      Wf[loc+ 6] = ahit->ADC5;
+      Wf[loc+ 7] = ahit->ADC6;
+      Wf[loc+ 8] = ahit->ADC7A + (ahit->ADC7B << 6);
+      Wf[loc+ 9] = ahit->ADC8;
+      Wf[loc+10] = ahit->ADC9;
+      Wf[loc+11] = ahit->ADC10A + (ahit->ADC10B << 6);
+      Wf[loc+12] = ahit->ADC11;
     }
 //-----------------------------------------------------------------------------
 // waveform processing
@@ -1199,9 +1219,9 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
       break;
     }
 
-    int ich = hit->StrawIndex;
+    int ich = hit->StrawIndex & 0x7f; // 2025-04-10 for now, keep the panel ID out...
 
-    if (ich > 128) ich = ich-128;
+    //    if (ich > 128) ich = ich-128;
 
     if (ich > 95) {
       //-----------------------------------------------------------------------------
