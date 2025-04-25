@@ -4,22 +4,29 @@
 #ifndef __daqana_mod_CalFragmentAna_hh__
 #define __daqana_mod_CalFragmentAna_hh__
 
-// ROOT includes
 #include "TH1F.h"
-//#include "TFolder.h"
 
-#include "art/Framework/Core/EDAnalyzer.h"
+#ifndef __CLING__
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileDirectory.h"
 #include "art_root_io/TFileService.h"
 #include "fhiclcpp/ParameterSet.h"
+#else
+namespace art {
+  class TFileDirectory;
+};
+
+namespace fhiclcpp {
+  class ParameterSet;
+}
+#endif
 
 #include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
-#include "Stntuple/mod/mod/THistModule.hh"
+#include "Stntuple/mod/THistModule.hh"
 
 #include <iostream>
 #include <memory>

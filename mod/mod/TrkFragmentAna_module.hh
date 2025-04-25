@@ -15,7 +15,14 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileDirectory.h"
 #include "art_root_io/TFileService.h"
+
+#ifndef __CLING__
 #include "fhiclcpp/ParameterSet.h"
+#else
+namespace fhiclcpp {
+  class ParameterSet;
+};
+#endif
 
 #include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 #include "artdaq-core/Data/Fragment.hh"
@@ -25,7 +32,7 @@
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 
 // #include "Stntuple/print/TAnaDump.hh"
-#include "Stntuple/mod/mod/THistModule.hh"
+#include "Stntuple/mod/THistModule.hh"
 
 #include <iostream>
 #include <memory>
