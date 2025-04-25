@@ -43,6 +43,8 @@ namespace mu2e {
       kMaxStations       =  2       // for now, just make it an array
     };
 
+    int kEvtMax{5000000};
+    
     enum {
       kNEventHistSets    =  10,
       kNStationHistSets  = 100       // for now, just make it an array
@@ -199,6 +201,7 @@ namespace mu2e {
 
       TH1F*         nerr_vs_evt;
       TH1F*         eflg_vs_evt;
+      TH1F*         nevt_vs_evt;
     };
 
     struct RocHist_t {
@@ -217,6 +220,10 @@ namespace mu2e {
       TH1F*         nerr_tot;
       TH1F*         nerr_vs_evt;
       TH1F*         eflg_vs_evt;
+      TH1F*         nht_vs_evt;
+      TH1F*         nhm_vs_evt;
+      TH1F*         ntmo_vs_evt;        // N(timeouts) vs event
+      TH1F*         novr_vs_evt;        // N(buffer overflows) vs event
 
       TH2F*         nh_vs_ch;
       TH2F*         nh_vs_adc0;
@@ -287,8 +294,8 @@ namespace mu2e {
       
       int       n_empty;
       int       n_invalid_dr;
-      int       n_corrupt;
-      int       n_timeouts;
+      int       n_corrupt;              // 
+      int       n_timeouts;             // 0 or 1
       int       n_overflows;
       int       error_code;             // anything but not-empty a byte..
 

@@ -303,7 +303,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->t1  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_1"  ,Link,I),Form("run %06i: link %i %6s ch %02i t1[1]  ",RunNumber,Link,name,I),1000,-20., 80.);  // ns
     Hist->tot [0] = Dir->make<TH1F>(Form("ch_%i_%02i_tot0"  ,Link,I),Form("run %06i: link %i %6s ch %02i tot[0]" ,RunNumber,Link,name,I), 100, 0., 100.);
     Hist->tot [1] = Dir->make<TH1F>(Form("ch_%i_%02i_tot1"  ,Link,I),Form("run %06i: link %i %6s ch %02i tot[1]" ,RunNumber,Link,name,I), 100, 0., 100.);
-    Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i %6s ch %02i pmp"    ,RunNumber,Link,name,I), 100, 0.,  10.);
+    Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i %6s ch %02i pmp"    ,RunNumber,Link,name,I), 100, 0.,1000.);
     Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i %6s ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,name,I) ,500, -25,25);
     Hist->dt01[1] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_1",Link,I),Form("run %06i: link %i %6s ch %02i T0(i)-T1(i) [1],ns",RunNumber,Link,name,I) ,500, -2500,2500);
     Hist->dt0     = Dir->make<TH1F>(Form("ch_%i_%02i_dt0"   ,Link,I),Form("run %06i: link %i %6s ch %02i T0(i+1)-T0(i)",RunNumber,Link,name,I)      ,50000,  0.,50);
@@ -337,7 +337,7 @@ unsigned int correctedTDC(unsigned int TDC) {
 
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, RocHist_t* Hist, int Station, int Dtc, int Link) {
-
+    
     int ipanel        = 6*Dtc+Link;
     const char* name  = _panelName[ipanel].data();
     
@@ -354,8 +354,12 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->n_overflows     = Dir->make<TH1F>("nover"          , Form("run %06i: %6s N(overflows)" ,RunNumber,name),  100, 0.,    100.);
 
     Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"       , Form("run %06i: %6s link %02i:%i:%i N errors"     ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   2000.);
-    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i N err vs evt" ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   5000000.);
-    Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i eflag vs evt" ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   5000000.);
+    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i N err vs evt" ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
+    Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i eflag vs evt" ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
+    Hist->nht_vs_evt      = Dir->make<TH1F>("nht_vs_evt"     , Form("run %06i: %6s link %02i:%i:%i nht vs evt"   ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
+    Hist->nhm_vs_evt      = Dir->make<TH1F>("nhm_vs_evt"     , Form("run %06i: %6s link %02i:%i:%i nhm vs evt"   ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
+    Hist->ntmo_vs_evt     = Dir->make<TH1F>("ntmo_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i ntmp vs evt"  ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
+    Hist->novr_vs_evt     = Dir->make<TH1F>("novr_vs_evt"    , Form("run %06i: %6s link %02i:%i:%i novr vs evt"  ,RunNumber,name,Station,Dtc,Link), 1000, 0.,   kEvtMax);
 
     Hist->nh_vs_ch        = Dir->make<TH2F>("nh_vs_ch"  ,      Form("run %06i: %6s link %02i:%i:%i nh vs ch"     ,RunNumber,name,Station,Dtc,Link),  100,0.,100., 50,0,50);
     Hist->nh_vs_adc0      = Dir->make<TH2F>("nh_vs_adc0",      Form("run %06i: %6s link %02i:%i:%i nh vs adc0"   ,RunNumber,name,Station,Dtc,Link),  100,0.,100., 50,0,50);
@@ -408,8 +412,9 @@ unsigned int correctedTDC(unsigned int TDC) {
 
     Hist->error_code      = Dir->make<TH1F>("error_code" , Form("run %06i: error code"   ,RunNumber),  512, 0.,    512.);
     Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: N errors"     ,RunNumber), 1000, 0.,   2000.);
-    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: N err vs evt" ,RunNumber), 1000, 0.,   5000000.);
-    Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt", Form("run %06i: eflag vs evt" ,RunNumber), 1000, 0.,   5000000.);
+    Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: N err vs evt" ,RunNumber), 1000, 0.,   kEvtMax);
+    Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt", Form("run %06i: eflag vs evt" ,RunNumber), 1000, 0.,   kEvtMax);
+    Hist->nevt_vs_evt     = Dir->make<TH1F>("nevt_vs_evt", Form("run %06i: nevt vs evt"  ,RunNumber), 1000, 0.,   kEvtMax);
   }
 
 //-----------------------------------------------------------------------------
@@ -516,8 +521,23 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
   }
 
 //-----------------------------------------------------------------------------
+// make <nhits>_vs_evt for each link
+//----------------------------------------------------------------------------- 
   void TrkFragmentAna::endJob() {
     printf("[mu2e::TrkFragmentAna] pointer to the module: 0x%8p\n",(void*) this);
+
+    EventHist_t* eh = _hist.event[0];
+
+    for (int ist=0; ist<kMaxStations; ist++) {
+      for (int idtc=0; idtc<2; idtc++) {
+        for (int ir=0; ir<_nActiveLinks[idtc]; ir++) {
+          int link = _activeLinks[idtc]->at(ir);
+
+          RocHist_t* rh = &_hist.station[ist]->dtc[idtc].roc[link];
+          rh->nhm_vs_evt->Divide(rh->nht_vs_evt,eh->nevt_vs_evt);
+        }
+      }
+    }
   }
 
 //-----------------------------------------------------------------------------
@@ -532,9 +552,12 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
     
+    int evn = _edata._event->event();
+
     Hist->nbytes->Fill      (Rd->nbytes);
     Hist->npackets->Fill    (Rd->npackets);
     Hist->nhits->Fill       (Rd->nhits);
+    Hist->nht_vs_evt->Fill  (evn,Rd->nhits);
     Hist->valid->Fill       (Rd->valid);
     Hist->error_code->Fill  (Rd->error_code);
 
@@ -548,6 +571,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     Hist->nerr_vs_evt->Fill (_edata._event->event(),Rd->nerr_tot);
     int eflg = (Rd->nerr_tot > 0);
     Hist->eflg_vs_evt->Fill (_edata._event->event(),eflg        );
+    Hist->ntmo_vs_evt->Fill (_edata._event->event(),Rd->n_timeouts);
+    Hist->novr_vs_evt->Fill (_edata._event->event(),Rd->n_overflows);
 
     if (Rd->nhits > 0) {
       Hist->dt0r01->Fill  (Rd->dt0r01);
@@ -620,7 +645,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
           
           chd->wp.push_back(wpar);
 //-----------------------------------------------------------------------------
-// fill waveform histograms only for the firstkMaxNHWfPerChannel  channels
+// fill waveform histograms only for the first kMaxNHWfPerChannel hits
 //-----------------------------------------------------------------------------
           if (ih < kMaxNHWfPerChannel) {
             hch->raw_wf[ih]->Reset();
@@ -740,9 +765,11 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       Hist->fsize->Fill(fsize);
     }
 
-    Hist->nerr_vs_evt->Fill  (Ed->_event->event(),Ed->nerr_tot);
+    int evn = Ed->_event->event();
+    Hist->nerr_vs_evt->Fill  (evn,Ed->nerr_tot);
     int eflg = (Ed->nerr_tot > 0);
-    Hist->eflg_vs_evt->Fill  (Ed->_event->event(),eflg        );
+    Hist->eflg_vs_evt->Fill  (evn,eflg        );
+    Hist->nevt_vs_evt->Fill  (evn);
   }
 
 //-----------------------------------------------------------------------------
@@ -753,7 +780,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     for (int idtc=0; idtc<2; idtc++) {
       for (int ir=0; ir<_nActiveLinks[idtc]; ir++) {
         int link = _activeLinks[idtc]->at(ir);
-        fill_roc_histograms(&Hist->dtc[idtc].roc[link],&Data->station[0].roc[idtc][link]);
+        fill_roc_histograms(&Hist->dtc[idtc].roc[ir],&Data->station[0].roc[idtc][link]);
       }
     }
     
@@ -1010,13 +1037,13 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  if (_diagLevel > 1) {
-    if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
-      TLOG(TLVL_DEBUG) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
-                               AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
-                               _edata.nfrag, _edata.nbtot);
-    }
-  }
+  // if (_diagLevel > 1) {
+  //   if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
+  //     TLOG(TLVL_DEBUG) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
+  //                              AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
+  //                              _edata.nfrag, _edata.nbtot);
+  //   }
+  // }
 //-----------------------------------------------------------------------------
 // print debug information
 //-----------------------------------------------------------------------------
