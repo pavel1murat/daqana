@@ -161,7 +161,7 @@ unsigned int correctedTDC(unsigned int TDC) {
 // ======================================================================
 
   TrkFragmentAna::TrkFragmentAna(fhicl::ParameterSet const& PSet) : 
-    THistModule            (PSet                      ,"TrkFragmentAna"        ) ,
+    THistModule            (PSet,PSet.get<fhicl::ParameterSet>("THistModule"),"TrkFragmentAna") ,
 
     _diagLevel             (PSet.get<int>             ("diagLevel"             )), 
     _minNBytes             (PSet.get<int>             ("minNBytes"             )), 
@@ -393,6 +393,10 @@ unsigned int correctedTDC(unsigned int TDC) {
       art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
       book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Dtc,Link,i);
     }
+
+    if (_fillWaveformHistograms) { 
+      Hist->pheight = Dir->make<TH1F>(Form("ph")            ,Form("run %06i: link %i %6s wf pulse height",RunNumber,Link,name),500,0,500);
+    }
   }
 
 //-----------------------------------------------------------------------------
@@ -535,6 +539,12 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 
           RocHist_t* rh = &_hist.station[ist]->dtc[idtc].roc[link];
           rh->nhm_vs_evt->Divide(rh->nht_vs_evt,eh->nevt_vs_evt);
+
+          if (_fillWaveformHistograms) { 
+            for (int ich=0; ich<96; ich++) {
+              rh->pheight->Add(rh->channel[ich].pheight);
+            }
+          }
         }
       }
     }

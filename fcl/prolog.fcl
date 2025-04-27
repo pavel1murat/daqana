@@ -7,7 +7,7 @@ daqana : {
 # analysis of the TRK DAQ fragments
 #------------------------------------------------------------------------------
 	CalFragmentAna : { module_type:CalFragmentAna
-	    @table::StntupleTModuleFclDefaults
+	    THistModule: { @table::StntupleTHistModule }
 	    
 	    calCollTag             : "daq:TRK"   # 
             analyzeFragments       : 1           ## set to 0 to print only
@@ -40,7 +40,7 @@ daqana : {
 	}
 
 	TrkFragmentAna : { module_type:TrkFragmentAna
-	    @table::StntupleTModuleFclDefaults
+	    THistModule: { @table::StntupleTHistModule }
 	    
 	    trkfCollTag            : "daq:TRK"   # 
             analyzeFragments       : 1           ## set to 0 to print only

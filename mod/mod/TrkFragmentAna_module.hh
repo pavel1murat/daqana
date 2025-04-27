@@ -258,6 +258,8 @@ namespace mu2e {
       TProfile*     qt_vs_ich;
       TProfile*     qtq_vs_ich;
 
+      TH1F*         pheight;          // pulse height for all straws, filled in the end of the job
+
       ChannelHist_t channel[kNChannels];
     };
 

@@ -27,7 +27,7 @@ namespace mu2e {
 
   // Constructor implementation
   CalFragmentAna::CalFragmentAna(fhicl::ParameterSet const& PSet) : 
-    THistModule(PSet, "CalFragmentAna"),
+    THistModule            (PSet,PSet.get<fhicl::ParameterSet>("THistModule","{}"),"CalFragmentAna") ,
     _diagLevel             (PSet.get<int>             ("diagLevel"             )), 
     _minNBytes             (PSet.get<int>             ("minNBytes"             )), 
     _maxNBytes             (PSet.get<int>             ("maxNBytes"             )), 
