@@ -67,11 +67,7 @@ unsigned int correctedTDC(unsigned int TDC) {
   }
 
 //-----------------------------------------------------------------------------
-  int TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
-
-    // Wf[ 0] = reverseBits(Hit->ADC00);
-    // Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
-    // Wf[ 2] = reverseBits(Hit->ADC02);
+  int TrkFragmentAna::unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf) {
 
     Wf[ 0] = Hit->ADC00;
     Wf[ 1] = Hit->ADC01A + (Hit->ADC01B << 6);
@@ -80,19 +76,6 @@ unsigned int correctedTDC(unsigned int TDC) {
     for (int i=0; i<_nADCPackets; i++) {
       TrackerDataDecoder::TrackerADCPacket* ahit = (TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
-
-      // Wf[loc+ 1] = reverseBits(ahit->ADC0);
-      // Wf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-      // Wf[loc+ 3] = reverseBits(ahit->ADC2);
-      // Wf[loc+ 4] = reverseBits(ahit->ADC3);
-      // Wf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-      // Wf[loc+ 6] = reverseBits(ahit->ADC5);
-      // Wf[loc+ 7] = reverseBits(ahit->ADC6);
-      // Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      // Wf[loc+ 9] = reverseBits(ahit->ADC8);
-      // Wf[loc+10] = reverseBits(ahit->ADC9);
-      // Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-      // Wf[loc+12] = reverseBits(ahit->ADC11);
 
       Wf[loc+ 1] = ahit->ADC0;
       Wf[loc+ 2] = ahit->ADC1A + (ahit->ADC1B << 6);
@@ -107,20 +90,25 @@ unsigned int correctedTDC(unsigned int TDC) {
       Wf[loc+11] = ahit->ADC10A + (ahit->ADC10B << 6);
       Wf[loc+12] = ahit->ADC11;
     }
+    return 0;
+  }
+
+
+//-----------------------------------------------------------------------------
+  int TrkFragmentAna::process_adc_waveform(float* Wf, WfParam_t* Wp) {
 //-----------------------------------------------------------------------------
 // waveform processing
 // 1. determine the baseline
 //-----------------------------------------------------------------------------
     Wp->bl = 0;
-    for (int i=0; i<_nSamplesBL; i++) {
+    for (int i=0; i<_nSamplesBL; ++i) {
       Wp->bl += Wf[i];
     }
     Wp->bl = Wp->bl/_nSamplesBL;
 //-----------------------------------------------------------------------------
 // 2. subtract the baseline and calculate the charge
 //-----------------------------------------------------------------------------
-    int nsamples = 15+12*(Hit->NumADCPackets-1);
-    for (int i=0; i<nsamples; i++) {
+    for (int i=0; i<_nSamples; i++) {
       Wf[i] = Wf[i]-Wp->bl;
     }
 
@@ -129,7 +117,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     Wp->q  = 0;
     Wp->qt = 0;
     Wp->ph = -1;
-    for (int i=_nSamplesBL; i<nsamples; i++) {
+    for (int i=_nSamplesBL; i<_nSamples; ++i) {
       if (Wf[i] > _minPulseHeight) {
         if (tail == 0) {
                                         // first sample above the threshold
@@ -152,7 +140,8 @@ unsigned int correctedTDC(unsigned int TDC) {
 // done
 //-----------------------------------------------------------------------------
     if (Wp->q < 100) {
-      TLOG(TLVL_DEBUG+1) << "event=" << _edata._event->run() << ":" << _edata._event->subRun() << ":" << _edata._event->event() 
+      TLOG(TLVL_DEBUG+1) << "event=" << _edata._event->run() << ":"
+                         << _edata._event->subRun() << ":" << _edata._event->event() 
                          << " Q=" << Wp->q;
     }
     return 0;
@@ -175,7 +164,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     _analyzeFragments      (PSet.get<int>             ("analyzeFragments"      )),
     _maxFragmentSize       (PSet.get<int>             ("maxFragmentSize"       )),
     _pulserFrequency       (PSet.get<int>             ("pulserFrequency"       )),
-    _nADCPackets           (PSet.get<int>             ("nADCPackets"           )),
+    _nADCPackets           (-1), // PSet.get<int>             ("nADCPackets"           )),
     _nSamplesBL            (PSet.get<int>             ("nSamplesBL"            )),
     _minPulseHeight        (PSet.get<float>           ("minPulseHeight"        )),
     _minNErrors            (PSet.get<int>             ("minNErrors"            )),
@@ -344,6 +333,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->nbytes          = Dir->make<TH1F>("nbytes"  ,        Form("run %06i: %6s link_%02i:%i:%i n bytes"      ,RunNumber,name,Station,Dtc,Link),10000,    0., 10000.);
     Hist->npackets        = Dir->make<TH1F>("npackets",        Form("run %06i: %6s link %02i:%i:%i n packets"    ,RunNumber,name,Station,Dtc,Link), 1000,    0.,  1000.);
     Hist->nhits           = Dir->make<TH1F>("nhits"   ,        Form("run %06i: %6s link %02i:%i:%i n hits"       ,RunNumber,name,Station,Dtc,Link),  300,    0.,   300.);
+    Hist->nh100           = Dir->make<TH1F>("nh100"   ,        Form("run %06i: %6s link %02i:%i:%i nhits(PH>100)",RunNumber,name,Station,Dtc,Link),  100,    0.,   100.);
     Hist->valid           = Dir->make<TH1F>("valid"   ,        Form("run %06i: %6s link %02i:%i:%i valid"        ,RunNumber,name,Station,Dtc,Link),    2,    0.,     2.);
     Hist->error_code      = Dir->make<TH1F>("errcode" ,        Form("run %06i: %6s link %02i:%i:%i errcode"      ,RunNumber,name,Station,Dtc,Link),  512,    0.,   512.);
 
@@ -567,6 +557,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
     Hist->nbytes->Fill      (Rd->nbytes);
     Hist->npackets->Fill    (Rd->npackets);
     Hist->nhits->Fill       (Rd->nhits);
+    Hist->nh100->Fill       (Rd->nh100);
     Hist->nht_vs_evt->Fill  (evn,Rd->nhits);
     Hist->valid->Fill       (Rd->valid);
     Hist->error_code->Fill  (Rd->error_code);
@@ -647,21 +638,18 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // assume that nsamples is known and try to process the waveform        
 //-----------------------------------------------------------------------------
         if (_fillWaveformHistograms) {
-          int   nsamples = 15+12*(_nADCPackets-1);
           float wform[50];
+          unpack_adc_waveform(hit,wform);  // waveform has alredy been processed
           
-          WfParam_t wpar;
-          unpack_adc_waveform(hit,wform,&wpar);
-          
-          chd->wp.push_back(wpar);
+          WfParam_t* wpar = &chd->wp[ih];
 //-----------------------------------------------------------------------------
 // fill waveform histograms only for the first kMaxNHWfPerChannel hits
 //-----------------------------------------------------------------------------
           if (ih < kMaxNHWfPerChannel) {
             hch->raw_wf[ih]->Reset();
             hch->wf    [ih]->Reset();
-            for (int is=0; is<nsamples; is++) {
-              hch->raw_wf[ih]->Fill(is,wform[is]+wpar.bl);
+            for (int is=0; is<_nSamples; is++) {
+              hch->raw_wf[ih]->Fill(is,wform[is]+wpar->bl);
               hch->wf    [ih]->Fill(is,wform[is]);
             }
             // also set bin errors to zero
@@ -686,19 +674,19 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // reconstructed waveform parameters
 //-----------------------------------------------------------------------------
-          hch->fsample->Fill(wpar.fs);
-          hch->bline->Fill(wpar.bl);
-          hch->pheight->Fill(wpar.ph);
-          hch->q->Fill(wpar.q);
-          hch->qt->Fill(wpar.qt);
-          hch->qtq->Fill(wpar.qt/(wpar.q+1e-12));
+          hch->fsample->Fill(wpar->fs);
+          hch->bline->Fill(wpar->bl);
+          hch->pheight->Fill(wpar->ph);
+          hch->q->Fill(wpar->q);
+          hch->qt->Fill(wpar->qt);
+          hch->qtq->Fill(wpar->qt/(wpar->q+1e-12));
         
-          Hist->fs_vs_ich->Fill(ich,wpar.fs);
-          Hist->bl_vs_ich->Fill(ich,wpar.bl);
-          Hist->ph_vs_ich->Fill(ich,wpar.ph);
-          Hist->q_vs_ich->Fill(ich,wpar.q);
-          Hist->qt_vs_ich->Fill(ich,wpar.qt);
-          Hist->qtq_vs_ich->Fill(ich,wpar.qt/(wpar.q+1e-12));
+          Hist->fs_vs_ich->Fill(ich,wpar->fs);
+          Hist->bl_vs_ich->Fill(ich,wpar->bl);
+          Hist->ph_vs_ich->Fill(ich,wpar->ph);
+          Hist->q_vs_ich->Fill(ich,wpar->q);
+          Hist->qt_vs_ich->Fill(ich,wpar->qt);
+          Hist->qtq_vs_ich->Fill(ich,wpar->qt/(wpar->q+1e-12));
         }
       }
 //-----------------------------------------------------------------------------
@@ -1183,26 +1171,40 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
         
   Rd->nbytes    = Dh->byteCount;
   Rd->npackets  = Dh->packetCount;
+  Rd->nhits     = 0;
+  Rd->nh100     = 0;
 //-----------------------------------------------------------------------------
 // for now, assume that all hits in the run have the same number of packets per hit
 // take that from the first hit
 //-----------------------------------------------------------------------------
-  Rd->nhits     = Dh->packetCount/(_nADCPackets+1);         //  printf("nhits : %3i\n",nhits);
   Rd->valid     = Dh->valid;
   Rd->dt0r01    = -1.e12;
   Rd->dt1r01    = -1.e12;
   
+  if (Rd->npackets == 0)                return ;
+//-----------------------------------------------------------------------------
+// some hits are present
+//-----------------------------------------------------------------------------
+  short* first_address = (short*) Dh;
+
+  if (_nADCPackets < 0) {
+    mu2e::TrackerDataDecoder::TrackerDataPacket* h0;
+    h0           = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (Dh+1);
+    _nADCPackets = h0->NumADCPackets;
+    _nSamples    = 3+12*_nADCPackets;
+    _np_per_hit  = _nADCPackets+1;
+  }
+  
+  Rd->nhits     = Dh->packetCount/_np_per_hit;         //  printf("nhits : %3i\n",nhits);
   _edata.nhtot += Rd->nhits;
   _edata.valid += Dh->valid*10;
 
-  short* first_address = (short*) Dh;
-  
   for (int ihit=0; ihit<Rd->nhits; ihit++) {
 //-----------------------------------------------------------------------------
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
     TrackerDataDecoder::TrackerDataPacket* hit ;
-    int offset          = ihit*(8+8*_nADCPackets);   // in 2-byte words
+    int offset          = ihit*8*_np_per_hit;   // in 2-byte words
     int offset_in_bytes = offset*2;
     hit     = (TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
 
@@ -1258,12 +1260,11 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 
     int ich = hit->StrawIndex & 0x7f; // 2025-04-10 for now, keep the panel ID out...
 
-    //    if (ich > 128) ich = ich-128;
-
     if (ich > 95) {
-      //-----------------------------------------------------------------------------
-      // non existing channel ID : flag an error, don't save the hit, but continue
-      //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// non existing channel ID : flag an error, don't save the hit, but continue
+// didn't happen so far
+//-----------------------------------------------------------------------------
       _edata.error_code |= kChIDErrorBit;
       _edata.nerr_tot   += 1;
       Rd->error_code    |= kChIDErrorBit;
@@ -1280,6 +1281,20 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     else {
       ChannelData_t* chd = &Rd->channel[ich];
       chd->hit.push_back(hit);
+      if (_fillWaveformHistograms) {
+//-----------------------------------------------------------------------------
+// if filling of the wafeform histograms is requested, unpack and process the waveform
+//-----------------------------------------------------------------------------
+        WfParam_t wpar;
+        float wform[50]; // assume not more than 3 ADC packets
+        unpack_adc_waveform(hit,wform);
+        
+        process_adc_waveform(wform,&wpar);
+      
+        chd->wp.push_back(wpar);
+
+        if (wpar.ph > 100) Rd->nh100 += 1;
+      }
     }
 //-----------------------------------------------------------------------------
 // hit pattern words should repeat

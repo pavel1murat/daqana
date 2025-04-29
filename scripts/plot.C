@@ -176,6 +176,31 @@ int plot_ph_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, 
   return 0;
 }
 
+int plot_nh100_per_panel(int RunNumber, int Station, int Dtc, int MaxChannel = -1, int MaxNHits = -1,
+                         const char* Fn = nullptr, int Print = 0) {
+
+  TFile* f = open_file(Fn,RunNumber);
+
+  TCanvas* c = new TCanvas(Form("c_%05i",_Figure+100*Dtc),Form("c_%05i",_Figure+100*Dtc),1700,950);
+  c->Divide(3,2);
+
+  for (int i=0; i<6; i++) {
+    c->cd(i+1);
+    gPad->SetLogy(1);
+
+    TH1* h = (TH2*) f->Get(Form("//TrkFragmentAna/stn_%02i/dtc%i/roc%i/nh100",Station,Dtc,i));
+    h->GetXaxis()->SetRangeUser(0,18.8);
+
+    // if (MaxChannel > 0) h->GetXaxis()->SetRangeUser(0,MaxChannel-0.0001);
+    // if (MaxNHits   > 0) h->GetYaxis()->SetRangeUser(0,MaxNHits-0.0001);
+
+    h->Draw("");
+  }
+  
+  _Canvas = c;
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // use default readout map
 //-----------------------------------------------------------------------------
@@ -309,6 +334,7 @@ int plot(int RunNumber, const char* Fn, int Figure, int Station = 0, int Dtc = 0
   else if (Figure == 7) plot_error_code          (RunNumber, Station, Dtc, Fn, Print);
   else if (Figure == 8) plot_nh_vs_ich_per_panel (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
   else if (Figure == 9) plot_ph_per_panel        (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
+  else if (Figure ==10) plot_nh100_per_panel     (RunNumber, Station, Dtc, MaxChannel,MaxNHits,Fn, Print);
   else {
     printf("ERROR: undefined figure %i\n",Figure);
     return -1;

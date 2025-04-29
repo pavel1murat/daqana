@@ -215,6 +215,7 @@ namespace mu2e {
       TH1F*         nbytes;
       TH1F*         npackets;
       TH1F*         nhits;
+      TH1F*         nh100;              // requires waveform processing
       TH1F*         valid;
       TH1F*         error_code;  // ROC error code
 
@@ -295,6 +296,7 @@ namespace mu2e {
       int       link;
       int       size;
       int       nhits;
+      int       nh100;                  // nhits with PH>100
       int       nbytes;
       int       npackets;
       int       valid;
@@ -404,6 +406,8 @@ namespace mu2e {
 
     int              _timeWindow;               // time window (spacing between the two EWMs for a given run)
     int              _nADCPackets;              // number of waveform packets
+    int              _nSamples;
+    int              _np_per_hit;
     int              _nSamplesBL;               // number of first samples used to determine the baseline
     float            _minPulseHeight;           // threshold for the charge integration;
     int              _nStations;
@@ -476,7 +480,8 @@ namespace mu2e {
     void         print_hit          (const TrackerDataDecoder::TrackerDataPacket* Hit);
     void         print_message      (const char* Message);
 
-    int          unpack_adc_waveform(TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp);
+    int          unpack_adc_waveform (TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf);
+    int          process_adc_waveform(float* Wf, WfParam_t* Wp);
   };
 }
 #endif
