@@ -87,7 +87,7 @@ physics : {
 #     }
 # }
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "trk_fragment_ana.%06r.hist"
+services.TFileService.fileName                   : "/dev/null" ## "trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
 source.fileNames : [ ]

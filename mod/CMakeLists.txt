@@ -6,7 +6,7 @@ set (lib    "daqana_${subpkg}"     )
 include_directories(
   $ENV{ROOTSYS}/include/root
   $ENV{SPACK_VIEW}/include
-  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/
   ${CMAKE_CURRENT_SOURCE_DIR}/${subpkg}
 )
 

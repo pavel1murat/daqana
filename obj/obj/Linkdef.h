@@ -9,4 +9,5 @@
 #
 #pragma link C++  class  DaqEvent;
 #pragma link C++  class  DaqStrawDigi;
+#pragma link C++  class  DaqStrawHit;
 #endif

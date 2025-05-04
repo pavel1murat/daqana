@@ -147,5 +147,17 @@ daqana : {
             port                : 8877
             plotWaveforms       : [ -1, -1]  ## nothing
         }
+
+        MakeDigiNtuple: { module_type: MakeDigiNtuple
+            makeSD       : 1
+            makeSH       : 1
+            sdCollTag    : "makeSD"
+            shCollTag    : "makeSH"
+            outputDir    : "./"
+            ewLength     : 1000
+            saveWaveforms: 0
+            debugMode    : 0
+            debugBits    : [ "bit0:0", "bit1:0" ]
+        }
     }
 }
