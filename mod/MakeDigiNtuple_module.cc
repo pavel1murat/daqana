@@ -18,6 +18,8 @@
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 
+#include "Offline/DAQ/inc/TrkPanelMap_t.hh"
+
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/obj/DaqStrawDigi.hh"
 
@@ -93,20 +95,21 @@ public:
   DaqEvent*                _event;
   const art::Event*        _art_event;
 
-  int              _nstrawdigis;
-  int              _nstrawhits;
-  int              _ncalodigis;
-  int              _ncrvdigis;
-  int              _nstmdigis;
-
-  TFile*           _file;
-  TTree*           _tree;
-  TBranch*         _branch;
+  int                     _nstrawdigis;
+  int                     _nstrawhits;
+  int                     _ncalodigis;
+  int                     _ncrvdigis;
+  int                     _nstmdigis;
+                          
+  TFile*                  _file;
+  TTree*                  _tree;
+  TBranch*                _branch;
+  const TrkPanelMap_t*    _panel_map[36][6];   // indexing - offline: [plane][panel]
 
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
   const mu2e::StrawHitCollection*              _shc;
-
+  
 }; // MakeDigiNtuple
 
 // ======================================================================
@@ -128,7 +131,6 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
 
   _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
-
 //-----------------------------------------------------------------------------
 // parse debug bits
 //-----------------------------------------------------------------------------
@@ -142,6 +144,14 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _debugBit[index]  = value;
     
     print_(std::format("... StrawDigisFromArtdaqFragments: bit={:4d} is set to {}\n",index,_debugBit[index]));
+  }
+//-----------------------------------------------------------------------------
+// initialize the panel map
+//-----------------------------------------------------------------------------
+  for (const TrkPanelMap_t* tpm = TrkPanelMap_data.begin(); tpm != TrkPanelMap_data.end(); ++tpm) {
+    int plane = tpm->plane;
+    int panel = tpm->panel;
+    _panel_map[plane][panel] = tpm;
   }
 }
 
@@ -309,9 +319,15 @@ int mu2e::MakeDigiNtuple::fillSD() {
 int mu2e::MakeDigiNtuple::fillSH() {
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
-
+    int pln = sh->strawId().plane();
+    int pnl = sh->strawId().panel();
+    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    
+   
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
     nt_sh->sid         = sh->strawId().asUint16();
+    nt_sh->zface       = tpm->zface;
+    nt_sh->mnid        = tpm->mnid;
     nt_sh->time        = sh->time(mu2e::StrawEnd::cal);
     nt_sh->dt          = sh->dt();
     nt_sh->tot0        = sh->TOT(mu2e::StrawEnd::cal);
