@@ -274,6 +274,9 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
+
+  _event->sd->Clear();
+  
   for (int i=0; i<_nstrawdigis; i++) {
     const mu2e::StrawDigi*            sd    = &_sdc->at(i);
     const mu2e::StrawDigiADCWaveform* sdawf = &_sdawfc->at(i);
@@ -317,12 +320,22 @@ int mu2e::MakeDigiNtuple::fillSD() {
 
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSH() {
+
+  for (int i=0; i<2; i++) {
+    for (int k=0; k<6; k++) {
+      _event->nsh[i][k] = 0;
+    }
+  }
+
+  _event->sh->Clear();
+
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
     int pln = sh->strawId().plane();
     int pnl = sh->strawId().panel();
     const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
-    
+
+    _event->nsh[tpm->dtc][tpm->link] += 1;
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
     nt_sh->sid         = sh->strawId().asUint16();
@@ -376,11 +389,13 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // fill ntuple
 //-----------------------------------------------------------------------------
-  _event->run = ArtEvent.run();
-  _event->srn = ArtEvent.subRun();
-  _event->evn = ArtEvent.event();
-  _event->sd->Clear();
-  
+  _event->run    = ArtEvent.run();
+  _event->srn    = ArtEvent.subRun();
+  _event->evn    = ArtEvent.event();
+  _event->nshtot = _nstrawhits;
+
+
+
   //   DaqEvent::fgSd.clear();
   if (_debugMode > 0) {
     print_(std::format("_nstrawdigis:{}",_nstrawdigis));

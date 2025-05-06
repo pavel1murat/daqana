@@ -85,7 +85,7 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD : 1
+            makeSD : 0
             makeSH : 1
         }
     }

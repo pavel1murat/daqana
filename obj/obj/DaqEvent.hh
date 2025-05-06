@@ -12,9 +12,10 @@ public:
   int            run;
   int            srn;                   // subrun number
   int            evn;                   // event number
-  int            nsd;                  // number of straw digis in event
+  int            nsd;                   // number of straw digis in event
   TClonesArray*  sd;
-  int            nsh;                  // number of straw digis in event
+  int            nshtot;                // total number of straw digis in event
+  int            nsh[2][6];             // by [dtc][link]
   TClonesArray*  sh;
   // int            ncalodigis;         // number of calo digis
   // TClonesArray*  calodigis;
