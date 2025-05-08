@@ -85,7 +85,7 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD : 0
+            makeSD : 1
             makeSH : 1
         }
     }
@@ -108,5 +108,5 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "make_digi_ntuple_%06r.root"
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.dnt"
 services.scheduler.wantSummary   : true

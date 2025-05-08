@@ -43,7 +43,7 @@ outputs:  {
     defaultOutput :  {
         module_type   :  RootOutput
         SelectEvents  : [ @sequence::TRIGGER_PATH]
-        fileName      :   "make_straw_hits_%06r.art"
+        fileName      :   "rec.mu2e.trk.vst00s001r001n000.%06r_%06s.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -99,7 +99,7 @@ physics : {
             UError                : 20.                 ## 10.0 # mm
             MinimumTime           : 0                   ## 410.0 # ns
             MaximumTime           : 100000              ## 1700.0 # ns
-            MinimumEnergy         : 0.00001             ## 0.0001 # MeV
+            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
             MaximumEnergy         : 0.006               ## 0.0045 # MeV
             MinimumRadius         : 300.                ## 380.0 # mm
             MaximumRadius         : 1000.               ## 700.0 # mm
