@@ -18,7 +18,7 @@
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 
-#include "Offline/DAQ/inc/TrkPanelMap_t.hh"
+#include "daqana/mod/TrkPanelMap_t.hh"
 
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/obj/DaqStrawDigi.hh"
