@@ -1,11 +1,15 @@
 #+startup:fold -*- buffer-read-only:t -*-
 * ------------------------------------------------------------------------------
-* setup (in the working directory)                                           
+* setup in the spack-based environment                                           
 #+begin_src
-opt=debug      # or "prof"
-source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
-muse setup -q $opt
-muse build
+pushd spack-repos
+git clone https://github.com/pavel1murat/spack_packages murat-spack
+spack repo add murat-spack
+popd
+spack add     daqana@main
+spack develop daqana@main
+spack concretize -f
+spack install daqana
 #+end_src
 * printing events in hex format :                                            
 #+begin_src
@@ -27,5 +31,20 @@ rs = new TRocSim("a",281)
 rs->Run(100000)
 rs->SaveHistograms("rocsim.000281.hist")
 gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
-#+end_src 
+#+end_src
+* TODO make digi ntuples 
+* DNT ntuple datasets and the dataset naming            
+  following the Mu2e naming conventions, the names look like this :
+
+      nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root
+
+ 'vst00' : 5 character-long placeholder
+ 's000'  : marks strip from the rAW
+ 'r000'  : marks reconstruction configuration
+ 'n001'  : marks ntupling configuration
+
+ public location: 
+
+** vst00s000r000n001 : digi ntuple with DIGI and SH branches
+** vst00s000r000n002 : digi ntuple with the SH branch only
 * ------------------------------------------------------------------------------

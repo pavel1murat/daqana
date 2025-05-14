@@ -1,20 +1,24 @@
 #!/usr/bin/bash
 # setup: tstation, roctower, ...
 # ------------------------------------------------------------------------------
-#      setup=$1
-         rn=$1
-input_files=/tmp/input_00$rn.txt.$$
-    logfile=trk_fragment_ana.$rn.log ;
+    rn=$1
+nfiles=1000 ; if [ ".$2" != "." ] ; then nfiles=$2 ; fi
+
+echo rn:$rn nfiles:$nfiles
+
+input_file_list=/tmp/input_00$rn.txt.$$
+        logfile=trk_fragment_ana.$rn.log ;
 #------------------------------------------------------------------------------
 # 1. make list of input files
 #------------------------------------------------------------------------------
-ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/* | grep $rn | awk '{print $9}' > $input_files
+export DATA_DIR=/data/tracker/vst/mu2etrk_daquser_001/data
+ls -al $DATA_DIR/* | grep $rn | awk '{print $9}' | sort | head -n $nfiles > $input_file_list
 #------------------------------------------------------------------------------
 # 2. process input files
 #------------------------------------------------------------------------------
-echo "input files: " >| $logfile
-cat  $input_files    >> $logfile
+echo "input file_list: " >| $logfile
+cat  $input_file_list    >> $logfile
 
-input_fcl=daqana/fcl/trk_fragment_ana_`printf "%06i" $rn`.fcl
+input_fcl=$SPACK_ENV/daqana/fcl/trk_fragment_ana_`printf "%06i" $rn`.fcl
 
-mu2e -c $input_fcl -S $input_files >| $logfile 2>&1 &
+mu2e -c $input_fcl -S $input_file_list >> $logfile 2>&1 &

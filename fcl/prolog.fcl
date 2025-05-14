@@ -159,5 +159,12 @@ daqana : {
             debugMode    : 0
             debugBits    : [ "bit0:0", "bit1:0" ]
         }
+
+        StationAna: { module_type: StationAna
+	    THistModule: { @table::StntupleTHistModule }   ## base class
+            shCollTag    : "makeSH"
+            debugMode    : 0
+            # debugBits    : [ "bit0:0", "bit1:0" ]
+        }
     }
 }

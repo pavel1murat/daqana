@@ -17,11 +17,11 @@
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
+#include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
 #include "daqana/mod/TrkPanelMap_t.hh"
 
 #include "daqana/obj/DaqEvent.hh"
-#include "daqana/obj/DaqStrawDigi.hh"
 
 #include <iostream>
 #include <string>
@@ -49,12 +49,14 @@ public:
   struct Config {
     fhicl::Atom<art::InputTag>   sdCollTag    {fhicl::Name("sdCollTag"    ), fhicl::Comment("straw digi coll tag"       ),""};
     fhicl::Atom<art::InputTag>   shCollTag    {fhicl::Name("shCollTag"    ), fhicl::Comment("straw hit  coll tag"       ),""};
+    fhicl::Atom<art::InputTag>   tcCollTag    {fhicl::Name("tcCollTag"    ), fhicl::Comment("time cluster coll tag"     ),""};
     fhicl::Atom<int>             debugMode    {fhicl::Name("debugMode"    ), fhicl::Comment("debug mode"                ),0};
     fhicl::Sequence<std::string> debugBits    {fhicl::Name("debugBits"    ), fhicl::Comment("debug bits"                )};
     fhicl::Atom<std::string>     outputDir    {fhicl::Name("outputDir"    ), fhicl::Comment("output directory"          )};
     fhicl::Atom<int>             saveWaveforms{fhicl::Name("saveWaveforms"), fhicl::Comment("save StrawDigiADCWaveforms"),0};
     fhicl::Atom<int>             makeSD       {fhicl::Name("makeSD"       ), fhicl::Comment("make straw digi branch"     ),1};
     fhicl::Atom<int>             makeSH       {fhicl::Name("makeSH"       ), fhicl::Comment("make straw hit branch"      ),1};
+    fhicl::Atom<int>             makeTC       {fhicl::Name("makeTC"       ), fhicl::Comment("make time cluster branch"   ),1};
     fhicl::Atom<int>             ewLength     {fhicl::Name("ewLength"     ), fhicl::Comment("event window length, in units of 25 ns"),1000};
   };
 
@@ -68,6 +70,7 @@ public:
 
   int      fillSD();
   int      fillSH();
+  int      fillTC();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
 //-----------------------------------------------------------------------------
@@ -81,11 +84,13 @@ public:
   std::vector<std::string> _debugBits;
   int                      _debugBit[100];
   art::InputTag            _sdCollTag;          // straw digi collection tag
-  art::InputTag            _shCollTag;          // straw hit  collection tag
+  art::InputTag            _shCollTag;          // straw hit collection tag
+  art::InputTag            _tcCollTag;          // time cluster collection tag
   std::string              _outputDir;
   int                      _saveWaveforms;
   int                      _makeSD;
   int                      _makeSH;
+  int                      _makeTC;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   
   int                      _n_adc_samples;
@@ -97,6 +102,8 @@ public:
 
   int                     _nstrawdigis;
   int                     _nstrawhits;
+  int                     _ntimeclusters;
+  
   int                     _ncalodigis;
   int                     _ncrvdigis;
   int                     _nstmdigis;
@@ -109,6 +116,7 @@ public:
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
   const mu2e::StrawHitCollection*              _shc;
+  const mu2e::TimeClusterCollection*           _tcc;
   
 }; // MakeDigiNtuple
 
@@ -120,10 +128,12 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _debugBits    (config().debugBits    ()),
     _sdCollTag    (config().sdCollTag    ()),
     _shCollTag    (config().shCollTag    ()),
+    _tcCollTag    (config().tcCollTag    ()),
     _outputDir    (config().outputDir    ()),
     _saveWaveforms(config().saveWaveforms()),
     _makeSD       (config().makeSD       ()),
     _makeSH       (config().makeSH       ()),
+    _makeTC       (config().makeTC       ()),
     _ewLength     (config().ewLength     ()),
     _art_event    (nullptr)
 {
@@ -164,7 +174,7 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
   }
   std::cout << " " << location.file_name() << ":" << location.line()
     //            << location.function_name()
-            << ": " << Message << std::endl;
+            << ": " << Message;
 }
 
 //-----------------------------------------------------------------------------
@@ -220,8 +230,9 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   art::Handle<mu2e::StrawDigiADCWaveformCollection> sdawfch;
   art::Handle<mu2e::StrawHitCollection>             shch;
 
-  _nstrawdigis = 0;
-  _nstrawhits  = 0;
+  _nstrawdigis   = 0;
+  _nstrawhits    = 0;
+  _ntimeclusters = 0;
   // _ncalodigis  = 0;
   // _ncrvdigis   = 0;
   // _nstmdigis   = 0;
@@ -246,7 +257,8 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _nstrawdigis = _sdc->size();
   }
   else {
-    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out",_sdCollTag.encode().data()));
+    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
+                       _sdCollTag.encode().data()));
     return -1;
   }
 
@@ -255,8 +267,20 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _sdawfc = sdawfch.product();
   }
   else {
-    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out",
+    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
                        _sdCollTag.encode().data()));
+    return -1;
+  }
+
+  art::Handle<mu2e::TimeClusterCollection>             tcch;
+  ok =  ArtEvent.getByLabel(_tcCollTag,tcch);
+  if (ok) { 
+    _tcc           = tcch.product();
+    _ntimeclusters = _tcc->size();
+  }
+  else {
+    print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
+                       _tcCollTag.encode().data()));
     return -1;
   }
 //-----------------------------------------------------------------------------
@@ -335,14 +359,15 @@ int mu2e::MakeDigiNtuple::fillSH() {
     int pnl = sh->strawId().panel();
     const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
 
-    _event->nsh[tpm->dtc][tpm->link] += 1;
+    int pcie_addr = tpm->dtc % 2; // convention
+    _event->nsh[pcie_addr][tpm->link] += 1;
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
     nt_sh->sid         = sh->strawId().asUint16();
     nt_sh->zface       = tpm->zface;
     nt_sh->mnid        = tpm->mnid;
     nt_sh->time        = sh->time(mu2e::StrawEnd::cal);
-    nt_sh->dt          = sh->dt();
+    nt_sh->dt          = sh->dt();      // cal-hv
     nt_sh->tot0        = sh->TOT(mu2e::StrawEnd::cal);
     nt_sh->tot1        = sh->TOT(mu2e::StrawEnd::hv );
     nt_sh->edep        = sh->energyDep();
@@ -355,6 +380,36 @@ int mu2e::MakeDigiNtuple::fillSH() {
                nt_sh->time, nt_sh->dt,
                nt_sh->tot0, nt_sh->tot1,
                nt_sh->edep);
+      }
+    }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillTC() {
+
+  _event->tc->Clear();
+
+  for (int i=0; i<_ntimeclusters; i++) {
+    const mu2e::TimeCluster* tc = &_tcc->at(i);
+   
+    DaqTimeCluster* nt_tc = new ((*_event->tc)[i]) DaqTimeCluster();
+
+    nt_tc->nsh  = tc->nStrawHits();
+    nt_tc->nch  = tc->nhits();
+    nt_tc->t0   = tc->t0().t0();
+//-----------------------------------------------------------------------------
+    // to calculate tmin and tmax need to loop over the hits, not now
+    if (_debugMode  > 0) {
+      if (_debugBit[2] != 0) {
+        printf("%8i %5i %5i %12.2f %12.2f %12.2f\n",
+               _event->evn,
+               nt_tc->nsh,
+               nt_tc->nch,
+               nt_tc->t0,
+               nt_tc->tmin,
+               nt_tc->tmax);
       }
     }
   }
@@ -378,7 +433,6 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // clear event
 //-----------------------------------------------------------------------------
-  _event->nsd = _nstrawdigis;
   // _event->ncalodigis  = _ncalodigis;
   // _event->ncrvdigis   = _ncrvdigis;
   // _event->nstmdigis   = _nstmdigis;
@@ -392,9 +446,10 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->run    = ArtEvent.run();
   _event->srn    = ArtEvent.subRun();
   _event->evn    = ArtEvent.event();
+                                        // defined in getData()
+  _event->nsd    = _nstrawdigis;
   _event->nshtot = _nstrawhits;
-
-
+  _event->ntc    = _ntimeclusters;
 
   //   DaqEvent::fgSd.clear();
   if (_debugMode > 0) {
@@ -403,6 +458,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 
   if (_makeSD) fillSD();
   if (_makeSH) fillSH();
+  if (_makeTC) fillTC();
 
   //  _event->sd = DaqEvent::fgSd.data();
 

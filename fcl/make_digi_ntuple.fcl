@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------
 # run interactively, stop after each event to display waveforms
 #
-# Usage: mu2e -c daqana/fcl/trk_fragment_ana_001.fcl -s <input art file> [-n 10]
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
@@ -75,7 +75,21 @@ physics : {
 
         makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
             diagLevel     :  0 ## 10
-            saveWaveforms :  1
+            saveWaveforms :  true
+            geography: [
+                        { minnesota:"MN219"  panel:0  plane:0 },
+                        { minnesota:"MN247"  panel:1  plane:0 },
+                        { minnesota:"MN235"  panel:2  plane:0 },
+                        { minnesota:"MN101"  panel:3  plane:0 },
+                        { minnesota:"MN253"  panel:4  plane:0 },
+                        { minnesota:"MN213"  panel:5  plane:0 },
+                        { minnesota:"MN273"  panel:0  plane:1 },
+                        { minnesota:"MN262"  panel:1  plane:1 },
+                        { minnesota:"MN224"  panel:2  plane:1 },
+                        { minnesota:"MN248"  panel:3  plane:1 },
+                        { minnesota:"MN261"  panel:4  plane:1 },
+                        { minnesota:"MN276"  panel:5  plane:1 }
+                       ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -108,5 +122,5 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.dnt"
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.scheduler.wantSummary   : true
