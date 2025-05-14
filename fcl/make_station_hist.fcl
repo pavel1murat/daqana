@@ -1,0 +1,129 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# run interactively, stop after each event to display waveforms
+#
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+#-----------------------------------------------------------------------------
+# BEGIN_PROLOG
+#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+#   PDG_ID              : 0                                    # 0: ignore PDG_ID
+# END_PROLOG
+
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/DAQ/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+process_name : MakeStationHist
+
+services : @local::Services.SimAndReco
+
+services.scheduler.wantSummary                   : true
+
+services.DbService : @local::DbEmpty
+services.SeedService.baseSeed         : 8
+services.SeedService.maxUniqueEngines : 100
+
+services.ProditionsService.alignedTracker.useDb : false
+services.ProditionsService.alignedTrackerSim.useDb : false
+services.ProditionsService.strawElectronics.useDb : false
+services.ProditionsService.fullReadoutStraw.useDb : false
+services.ProditionsService.strawDrift.useDb : false
+services.ProditionsService.strawPhysics.useDb : false
+services.ProditionsService.strawResponse.useDb : false
+services.ProditionsService.trackerStatus.Settings.useDb : false
+
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "trk_fragment_ana.art"
+
+#        outputCommands: [
+#                         "drop *_*_*_*",
+#                         "keep *_*_*_*"
+#                        ]
+    }
+}
+
+physics : {
+    
+    producers : {
+        EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+            SpillType:          0   ## offspill
+            RecoFromMCTruth: false  ## default
+            RecoFromMCTruthErr: 0   ## default
+            InitialPhaseShift:  0   ## optional, set it to zero just in case
+        }
+
+        makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
+            diagLevel     :  0 ## 10
+            saveWaveforms :  true
+            geography: [
+                        { minnesota:"MN219"  panel:0  plane:0 },
+                        { minnesota:"MN247"  panel:1  plane:0 },
+                        { minnesota:"MN235"  panel:2  plane:0 },
+                        { minnesota:"MN101"  panel:3  plane:0 },
+                        { minnesota:"MN253"  panel:4  plane:0 },
+                        { minnesota:"MN213"  panel:5  plane:0 },
+                        { minnesota:"MN273"  panel:0  plane:1 },
+                        { minnesota:"MN262"  panel:1  plane:1 },
+                        { minnesota:"MN224"  panel:2  plane:1 },
+                        { minnesota:"MN248"  panel:3  plane:1 },
+                        { minnesota:"MN261"  panel:4  plane:1 },
+                        { minnesota:"MN276"  panel:5  plane:1 }
+                       ]
+        }
+        
+        makeSH: { @table::TrkHitReco.producers.makeSH }
+    }
+    
+    filters   : {                       }
+    
+    analyzers : {
+        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeSD : 1
+            makeSH : 1
+        }
+        StationAna : { @table::daqana.analyzers.StationAna
+            shCollTag : "makeSH"
+        }
+    }
+
+    p1 : [ EWMProducer, makeSD, makeSH ]
+
+    e1 : [ StationAna ] ## , defaultOutput ]
+    # e1 : []
+
+    trigger_paths  : [ p1 ]
+    end_paths      : [ e1 ]
+}
+
+# services.TimeTracker : {
+#     dbOutput : {
+#         filename  : "trk_fragment_ana.sqlite3"
+#         overwrite : true
+#     }
+# }
+#------------------------------------------------------------------------------
+# assume we're on mu2edaq22
+#------------------------------------------------------------------------------
+services.TFileService.fileName   : "hst.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.scheduler.wantSummary   : true
