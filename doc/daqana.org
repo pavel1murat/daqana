@@ -33,7 +33,7 @@ rs->SaveHistograms("rocsim.000281.hist")
 gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
 #+end_src
 * TODO make digi ntuples 
-* DNT ntuple datasets and the dataset naming            
+* ntuple datasets and the dataset naming (MakeDigiNtuple)           
   following the Mu2e naming conventions, the names look like this :
 
       nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root
@@ -43,8 +43,41 @@ gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
  'r000'  : marks reconstruction configuration
  'n001'  : marks ntupling configuration
 
- public location: 
+ public location:
+* data datasets                                                              
+** vst00s001r001n000 : "filter_straw_hits" - 1 hit - don't keep reco objects                          
+*** format:                                                                  
+#+begin_src 
+15-May-2025 12:10:37 CDT  Initiating request to open input file "/data/tracker/vst/vst00s001r001n000/rec.mu2e.trk.vst00s001r001n000.107235_000001.art"
+15-May-2025 12:10:38 CDT  Opened input file "/data/tracker/vst/vst00s001r001n000/rec.mu2e.trk.vst00s001r001n000.107235_000001.art"
+Begin processing the 1st record. run: 107235 subRun: 1 event: 23 at 15-May-2025 12:10:38 CDT
+Found 13 data products in this Event
+Data products: 
+           Friendly Class Name    Module Label   Instance Name     Process Name     Product ID
+               mu2e::StrawHits          makeSH                  FilterStrawHits   312877791
+      mu2e::ComboHitCollection          makeSH                  FilterStrawHits   374529355
+             artdaq::Fragments             daq             TRK    EventBuilder0   458011548
+mu2e::IntensityInfoTrackerHits          makeSD                  FilterStrawHits  1227005254
+artdaq::detail::RawEventHeader             daq  RawEventHeader    EventBuilder0  1431734951
+              mu2e::StrawDigis          makeSD                  FilterStrawHits  2346282421
+       mu2e::EventWindowMarker     EWMProducer                  FilterStrawHits  2356638852
+       mu2e::ProtonBunchTimeMC     EWMProducer                  FilterStrawHits  2521251335
+           art::TriggerResults  TriggerResults                  FilterStrawHits  2647656643
+mu2e::IntensityInfoTrackerHits          makeSH                  FilterStrawHits  2850786593
+         mu2e::ProtonBunchTime     EWMProducer                  FilterStrawHits  3014782760
+artdaq::detail::RawEventHeader             daq  RawEventHeader             DL01  3508921449
+   mu2e::StrawDigiADCWaveforms          makeSD                  FilterStrawHits  4159692027
 
-** vst00s000r000n001 : digi ntuple with DIGI and SH branches
-** vst00s000r000n002 : digi ntuple with the SH branch only
+Found 0 data products in this SubRun
+Found 0 data products in this Run
+15-May-2025 12:10:38 CDT  Closed input file "/data/tracker/vst/vst00s001r001n000/rec.mu2e.trk.vst00s001r001n000.107235_000001.art"
+Art has completed and will exit with status 0.
+#+end_src
+* ntuple datasets                                                            
+
+| dsid              | format                                           | comments |
+|-------------------+--------------------------------------------------+----------|
+| vst00s000r000n001 | digi ntuples with DIGI and SH branches           |          |
+|-------------------+--------------------------------------------------+----------|
+| vst00s000r000n002 | "MakeDigiNtuple" ntuples with the SH branch only |          |
 * ------------------------------------------------------------------------------

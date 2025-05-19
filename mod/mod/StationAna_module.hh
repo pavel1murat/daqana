@@ -63,6 +63,7 @@ namespace mu2e {
       TH1F* nsht;
       TH1F* nshg;
       TH1F* nshdt;
+      TH1F* nsht_vs_evt;
     };
 
     struct StrawHist_t {
@@ -78,6 +79,7 @@ namespace mu2e {
 
     struct PanelHist_t {
       TH1F*         nsht;
+      TH1F*         nsht_vs_evt;
       TH1F*         occup;
       TH1F*         tcal;
       TH1F*         dtch;
@@ -130,15 +132,16 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
     int              _debugMode;
     int              _debugBit[100];
-
-    art::InputTag                   _shCollTag;
+    art::InputTag    _shCollTag;
+    float            _maxDt;
+    float            _minEDep;
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
     const mu2e::StrawHitCollection* _shc;
     int                             _n_straw_hits;
-//-----------------------------------------------------------------------------
-// the rest, use the same reference channels for different DTCs - the ROC FW is the same
-//-----------------------------------------------------------------------------
-    Hist_t               _hist;
-    int                  _initialized;
+    Hist_t                          _hist;
+    int                             _initialized;
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------

@@ -73,7 +73,7 @@ physics : {
             InitialPhaseShift:  0   ## optional, set it to zero just in case
         }
 
-        makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
+        makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
             saveWaveforms :  true
             geography: [
@@ -125,5 +125,5 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "hst.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.TFileService.fileName   : "hst.mu2e.trk.vst00s000r000n000.%06r_%06s.root"
 services.scheduler.wantSummary   : true

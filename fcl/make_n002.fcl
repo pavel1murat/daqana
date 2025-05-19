@@ -1,18 +1,11 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# run interactively, stop after each event to display waveforms
+# make digi ntuple witl straw hits and time clusters
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
-# BEGIN_PROLOG
-#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
-#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
-#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
-#   PDG_ID              : 0                                    # 0: ignore PDG_ID
-# END_PROLOG
-
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
 
@@ -64,7 +57,7 @@ outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
         fileName      :   "trk_fragment_ana.art"
-
+#        SelectEvents  : [ @sequence::TRIGGER_PATHS ]
 #        outputCommands: [
 #                         "drop *_*_*_*",
 #                         "keep *_*_*_*"
@@ -82,7 +75,7 @@ physics : {
             InitialPhaseShift:  0   ## optional, set it to zero just in case
         }
 
-        makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
+        makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
             saveWaveforms :  true
             geography     : [ @sequence::station_00_geography ]
@@ -119,7 +112,7 @@ physics : {
             runDisplay                 : 0
             useCCs                     : 1
             recoverCCs                 : 1
-            chCollLabel                : "makePH" ## "flagPH"
+            chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
             chCollLabel2               : "makeSH"
             tcCollLabel                : "TimeClusterFinderDe"
             ccCollLabel                : "CaloClusterMaker"
@@ -144,20 +137,20 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD : 0
-            makeSH : 1
-            makeTC : 1
+            makeSD    : 0
+            makeSH    : 1
+            makeTC    : 1
             tcCollTag : "TZClusterFinder"
         }
     }
 
     p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, makePH, TZClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
-    trigger_paths  : [ p2 ]
+    trigger_paths  : [ p2 ] 
     end_paths      : [ e1 ]
 }
 

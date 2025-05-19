@@ -7,12 +7,11 @@
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
-  OUTPUT_DIR : /data/tracker/vst/mu2etrk_daquser_001.vst00s000r000n001"
 #   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
 #   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
 #   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
 #   PDG_ID              : 0                                    # 0: ignore PDG_ID
-# END_PROLOG
+END_PROLOG
 
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
@@ -74,26 +73,11 @@ physics : {
             InitialPhaseShift:  0   ## optional, set it to zero just in case
         }
 
-        makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
-            diagLevel     :  0 ## 10
+        makeSD: { @table::DAQ.producers.makeSD
+            debugMode     :  1 ## 10
+            debugBits     : ["bit0:1"]
             saveWaveforms :  true
-            geography: [
-                        { minnesota:"MN219"  panel:0  plane:0 },
-                        { minnesota:"MN247"  panel:1  plane:0 },
-                        { minnesota:"MN235"  panel:2  plane:0 },
-
-                        { minnesota:"MN101"  panel:3  plane:0 },
-                        { minnesota:"MN253"  panel:4  plane:0 },
-                        { minnesota:"MN213"  panel:5  plane:0 },
-
-                        { minnesota:"MN273"  panel:0  plane:1 },
-                        { minnesota:"MN262"  panel:1  plane:1 },
-                        { minnesota:"MN224"  panel:2  plane:1 },
-
-                        { minnesota:"MN248"  panel:3  plane:1 },
-                        { minnesota:"MN261"  panel:4  plane:1 },
-                        { minnesota:"MN276"  panel:5  plane:1 }
-                       ]
+            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -105,6 +89,7 @@ physics : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
             makeSD : 1
             makeSH : 1
+            makeTC : 0
         }
     }
 
@@ -126,5 +111,5 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : @local::OUTPUT_DIR/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.TFileService.fileName   :   "/data/tracker/vst/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.scheduler.wantSummary   : true

@@ -164,7 +164,9 @@ daqana : {
 	    THistModule: { @table::StntupleTHistModule }   ## base class
             shCollTag    : "makeSH"
             debugMode    : 0
-            # debugBits    : [ "bit0:0", "bit1:0" ]
+            debugBits    : [ "bit0:0", "bit1:0" ]
+            maxDt        : 100                        ## ns
+            minEDep      : 0.0006                     ##
         }
     }
 }

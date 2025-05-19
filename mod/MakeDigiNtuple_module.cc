@@ -111,6 +111,8 @@ public:
   TFile*                  _file;
   TTree*                  _tree;
   TBranch*                _branch;
+
+  int                     _hist_booked;
   const TrkPanelMap_t*    _panel_map[36][6];   // indexing - offline: [plane][panel]
 
   const mu2e::StrawDigiCollection*             _sdc;
@@ -141,6 +143,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
 
   _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
+  _hist_booked         = 0;
 //-----------------------------------------------------------------------------
 // parse debug bits
 //-----------------------------------------------------------------------------
@@ -180,27 +183,31 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 
-  art::ServiceHandle<art::TFileService> tfs;
-  TH1::AddDirectory(kFALSE);
+  if (_hist_booked == 0) {
+                                        // make sure we do it only once
+    art::ServiceHandle<art::TFileService> tfs;
+    TH1::AddDirectory(kFALSE);
 
   
-  //  _file = new TFile(Form("%s/make_digi_ntuple_%06i.root",outputDir_.data(),ArtRun.run()),"RECREATE");
-  TTree::SetMaxTreeSize(8000000000LL);
+    //  _file = new TFile(Form("%s/make_digi_ntuple_%06i.root",outputDir_.data(),ArtRun.run()),"RECREATE");
+    TTree::SetMaxTreeSize(8000000000LL);
 
   //  _tree = new TTree("digis","digis");
-  _tree = tfs->make<TTree>("digis","digis");
+    _tree = tfs->make<TTree>("digis","digis");
 
-  _event = new DaqEvent();
+    _event = new DaqEvent();
 
-  _branch = _tree->Branch("evt","DaqEvent",_event,32000,99);
-  _branch->SetAutoDelete(kFALSE);
-
-  if (_branch) { 
+    _branch = _tree->Branch("evt","DaqEvent",_event,32000,99);
+    _branch->SetAutoDelete(kFALSE);
+    
+    if (_branch) { 
     // _event->strawdigis = new TClonesArray("DaqStrawDigi",100);
     // _event->strawdigis->BypassStreamer(kFALSE);          // the whole point is to split everything
     // _event->calodigis  = new TClonesArray("DaqStrawDigi",100);
     // _event->crvdigis   = new TClonesArray("DaqStrawDigi",100);
     // _event->stmdigis   = new TClonesArray("DaqStrawDigi",100);
+    }
+    _hist_booked = 1;
   }
 }
 
@@ -272,16 +279,18 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     return -1;
   }
 
-  art::Handle<mu2e::TimeClusterCollection>             tcch;
-  ok =  ArtEvent.getByLabel(_tcCollTag,tcch);
-  if (ok) { 
-    _tcc           = tcch.product();
-    _ntimeclusters = _tcc->size();
-  }
-  else {
-    print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
+  if (_makeTC != 0) {
+    art::Handle<mu2e::TimeClusterCollection>             tcch;
+    ok =  ArtEvent.getByLabel(_tcCollTag,tcch);
+    if (ok) { 
+      _tcc           = tcch.product();
+      _ntimeclusters = _tcc->size();
+    }
+    else {
+      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
                        _tcCollTag.encode().data()));
-    return -1;
+      return -1;
+    }
   }
 //-----------------------------------------------------------------------------
 // calorimeter
