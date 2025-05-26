@@ -73,8 +73,7 @@ physics : {
             InitialPhaseShift:  0   ## optional, set it to zero just in case
         }
 
-        makeSD: { @table::DAQ.producers.StrawDigisFromArtdaqFragments
-            diagLevel     :  0 ## 10
+        makeSD: { @table::DAQ.producers.makeSD
             saveWaveforms :  true
             geography: [
                         { minnesota:"MN219"  panel:0  plane:0 },
@@ -124,3 +123,7 @@ physics : {
 #------------------------------------------------------------------------------
 services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.scheduler.wantSummary   : true
+
+
+physics.producers.makeSD.debugMode : 1
+physics.producers.makeSD.debugBits : [ "bit0:1" ]

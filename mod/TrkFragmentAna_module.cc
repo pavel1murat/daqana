@@ -19,6 +19,7 @@
 #define TRACE_NAME "TrkFragmentAna"
 
 #include "daqana/mod/TrkFragmentAna_module.hh"
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_EventHeader.h"
 
 namespace mu2e {
 //-----------------------------------------------------------------------------
@@ -872,7 +873,7 @@ int TrkFragmentAna::init_event(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragment* Fragment) {
 
-    short* fdata = (short*) Fragment->dataBegin();
+    short* fdata = (short*) Fragment->dataBegin() + sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
 
     _edata.fragments.push_back(FragmentData_t());
 //-----------------------------------------------------------------------------
@@ -1129,7 +1130,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 
   int ifrag = 0;
   for (const artdaq::Fragment& frag : *handle) {
-    ushort* buf          = (ushort*) (frag.dataBegin());
+    ushort* buf          = (ushort*) (frag.dataBeginBytes()+sizeof(DTCLib::DTC_EventHeader));
     int fsize            = frag.sizeBytes();
     SubEventHeader_t* sh = (SubEventHeader_t*) buf;
     int nbytes           = buf[0];
