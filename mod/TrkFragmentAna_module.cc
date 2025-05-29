@@ -650,8 +650,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
             hch->raw_wf[ih]->Reset();
             hch->wf    [ih]->Reset();
             for (int is=0; is<_nSamples; is++) {
-              hch->raw_wf[ih]->Fill(is,wform[is]+wpar->bl);
-              hch->wf    [ih]->Fill(is,wform[is]);
+              hch->raw_wf[ih]->Fill(is,wform[is]);
+              hch->wf    [ih]->Fill(is,wform[is]-wpar->bl);
             }
             // also set bin errors to zero
             int nb =  hch->wf[ih]->GetNbinsX();
