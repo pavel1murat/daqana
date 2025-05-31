@@ -74,21 +74,8 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            saveWaveforms :  true
-            geography: [
-                        { minnesota:"MN219"  panel:0  plane:0 },
-                        { minnesota:"MN247"  panel:1  plane:0 },
-                        { minnesota:"MN235"  panel:2  plane:0 },
-                        { minnesota:"MN101"  panel:3  plane:0 },
-                        { minnesota:"MN253"  panel:4  plane:0 },
-                        { minnesota:"MN213"  panel:5  plane:0 },
-                        { minnesota:"MN273"  panel:0  plane:1 },
-                        { minnesota:"MN262"  panel:1  plane:1 },
-                        { minnesota:"MN224"  panel:2  plane:1 },
-                        { minnesota:"MN248"  panel:3  plane:1 },
-                        { minnesota:"MN261"  panel:4  plane:1 },
-                        { minnesota:"MN276"  panel:5  plane:1 }
-                       ]
+            saveWaveforms :  true 
+            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -125,5 +112,5 @@ services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.roo
 services.scheduler.wantSummary   : true
 
 
-physics.producers.makeSD.debugMode : 1
+physics.producers.makeSD.debugMode : 0 ## 1
 physics.producers.makeSD.debugBits : [ "bit0:1" ]

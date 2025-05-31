@@ -7,22 +7,31 @@
 class DaqStrawDigi : public TObject {
 public:
   int    sid;
+  int    mnid;                          // 
   int    tdc0;
   int    tdc1;
   int    tot0;
   int    tot1;
   int    pmp;
   int    flag;
+  int    fs;
+  float  bl;
+  float  ph;
   int    ns;        // N(ADC samples)
-  //  short* adc;       // [ns] ns shorts
+  short* adc;       //[ns] ns shorts
+  
 
   DaqStrawDigi();
   DaqStrawDigi(int ns);
-
-void     Init(int Ns);
   virtual ~DaqStrawDigi();
 
-ClassDef(DaqStrawDigi,1);
+  void     Init(int Ns);
+
+  int      Straw() {return (sid      ) & 0x7f; }
+  int      Panel() {return (sid >>  7) & 0x07; } 
+  int      Plane() {return (sid >> 10) & 0x3f; } 
+
+  ClassDef(DaqStrawDigi,1);
 };
 
 #endif

@@ -38,6 +38,8 @@ namespace fhiclcpp {
 #include <memory>
 #include <string>
 
+#include "daqana/mod/WfParam_t.hh"
+
 // ======================================================================
 namespace mu2e {
 
@@ -76,13 +78,13 @@ namespace mu2e {
 
   public:
 
-    struct WfParam_t {
-      int   fs;                         // first sample above _minPulseHeight
-      float bl;                         // baseline
-      float ph;                         // pulse height
-      float q;                          // Q(positive)
-      float qt;                         // Q(tail)
-    };
+    // struct WfParam_t {
+    //   int   fs;                         // first sample above _minPulseHeight
+    //   float bl;                         // baseline
+    //   float ph;                         // pulse height
+    //   float q;                          // Q(positive)
+    //   float qt;                         // Q(tail)
+    // };
 //-----------------------------------------------------------------------------
 // subevent header is 3 packets
 //-----------------------------------------------------------------------------

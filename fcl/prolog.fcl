@@ -149,15 +149,17 @@ daqana : {
         }
 
         MakeDigiNtuple: { module_type: MakeDigiNtuple
-            makeSD       : 1
-            makeSH       : 1
-            sdCollTag    : "makeSD"
-            shCollTag    : "makeSH"
-            outputDir    : "./"
-            ewLength     : 1000
-            saveWaveforms: 0
-            debugMode    : 0
-            debugBits    : [ "bit0:0", "bit1:0" ]
+            makeSD         : 1
+            makeSH         : 1
+            sdCollTag      : "makeSD"
+            shCollTag      : "makeSH"
+            outputDir      : "./"
+            ewLength       : 1000
+            saveWaveforms  : 0
+            debugMode      : 0
+            debugBits      : [ "bit0:0", "bit1:0" ]
+            nSamplesBL     : 6
+            minPulseHeight : 5.
         }
 
         StationAna: { module_type: StationAna

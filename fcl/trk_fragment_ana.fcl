@@ -5,9 +5,20 @@
 #
 #
 #-----------------------------------------------------------------------------
-#include "Stntuple/fcl/stntuple_prologs.fcl"
+# BEGIN_PROLOG
+#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+#   PDG_ID              : 0                                    # 0: ignore PDG_ID
+# END_PROLOG
+
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/TrkReco/fcl/prolog.fcl"
+
+#include "Stntuple/fcl/prolog.fcl"
 #include "daqana/fcl/prolog.fcl"
-#include "Stntuple/fcl/stntuple_templates.fcl"
 
 process_name : TrkFragmentAna
 
@@ -16,7 +27,7 @@ source : {
    fileNames   : @nil
 
    # firstEvent  : 500
-   maxEvents   : -1
+    maxEvents   : -1
 #   inputCommands: ["keep *",
 #                   "drop *Mu2eEventHeader*_*_*_*"]
 }
@@ -30,55 +41,50 @@ physics : {
     
     analyzers : {
 	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
-	    trkfCollTag         : "daq:TRK"   #
-            nADCPackets         : 1
-#	    diagLevel           : 2           # print one line per event
-#	    diagLevel           : 3           # print the whole event
-            analyzeFragments    : 1
-            minNBytes           : 0 ## 4800
-            maxNBytes           : 10000
-            nSamplesBL          : 10
-            minPulseHeight      : 5.
+	    trkfCollTag         : "daq:DTCEVT"   ## 
+            diagLevel           : 0              ## no debug  printout
+#	    diagLevel           : 2              ## print one line per wrong size event
+            #	    diagLevel           : 3           ## event dump (all events)
+            fillWaveformHistograms : 1
+            minNBytes           : 4800
+            maxNBytes           : 6000
 	    
-	    maxFileSize         : 2000        ## in MBytes
+	    interactiveMode     : 0
+	    maxFileSize         : 2000   # in MBytes
 #------------------------------------------------------------------------------
-# run-dependent parameters
+# run-dependent parameters 
 #------------------------------------------------------------------------------
-            timeWindow          :   1000
-            pulserFrequency     :     60
-            maxFragmentSize     : 100000
-#------------------------------------------------------------------------------
+            maxFragmentSize     : 10000
+            timeWindow          :   200
+            pulserFrequency     :   500
+            nADCPackets         :     2
+            activeLinks         : [ 0 ]   ## links : 0x01
+#-------------------.-----------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
-            # interactiveMode  : 1  ## 1:stop on every event, 2:stop in the end
-            # rootMacro        : "display_001.C"
+            interactiveMode     : 0       ## 1:stop on every event, 2:stop in the end
+	    rootMacro           : ""      ## "display_001.C"
+            
+# after run 106500 (Mar 2025) : VST panel back to DTC0
+            panelName              : [
+                                      "MN261", "MN248", "MN224", "MN262", "MN273", "MN276",
+                                      "MN253", "MN101", "MN219", "MN213", "MN235", "MN247"
+                                     ]
 	}
-
-        TrackerDQM : { @table::daqana.analyzers.TrackerDQM
-            fillHistograms : 1
-        }
     }
 
     t1 : [  ]
-
-#    e1 : [ TrkFragmentAna, TrackerDQM ]
-    e1 : [ TrkFragmentAna ]
-    # e1 : []
+    e1 : [ TrkFragmentAna]
 
     trigger_paths  : [ t1 ]
     end_paths      : [ e1 ]
 }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 services.TFileService.fileName                   : "trk_fragment_ana.%06r.hist"
 services.scheduler.wantSummary                   : true
 
-source.fileNames : [ ]
+source.fileNames : [ 
+"/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.105023_00000001.art" 
+                   ]

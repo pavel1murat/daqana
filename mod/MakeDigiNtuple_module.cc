@@ -22,9 +22,15 @@
 #include "daqana/mod/TrkPanelMap_t.hh"
 
 #include "daqana/obj/DaqEvent.hh"
+#include "daqana/mod/WfParam_t.hh"
+
+#include <regex>
+#include <ranges>
+#include <string>
+#include <vector>
+#include <algorithm>
 
 #include <iostream>
-#include <string>
 #include <memory>
 
 #include "TH1.h"
@@ -41,23 +47,28 @@ namespace mu2e {
   class MakeDigiNtuple;
 }
 
+using namespace fhicl;
+
 // ======================================================================
 class mu2e::MakeDigiNtuple : public art::EDAnalyzer {
 
 public:
 
   struct Config {
-    fhicl::Atom<art::InputTag>   sdCollTag    {fhicl::Name("sdCollTag"    ), fhicl::Comment("straw digi coll tag"       ),""};
-    fhicl::Atom<art::InputTag>   shCollTag    {fhicl::Name("shCollTag"    ), fhicl::Comment("straw hit  coll tag"       ),""};
-    fhicl::Atom<art::InputTag>   tcCollTag    {fhicl::Name("tcCollTag"    ), fhicl::Comment("time cluster coll tag"     ),""};
-    fhicl::Atom<int>             debugMode    {fhicl::Name("debugMode"    ), fhicl::Comment("debug mode"                ),0};
-    fhicl::Sequence<std::string> debugBits    {fhicl::Name("debugBits"    ), fhicl::Comment("debug bits"                )};
-    fhicl::Atom<std::string>     outputDir    {fhicl::Name("outputDir"    ), fhicl::Comment("output directory"          )};
-    fhicl::Atom<int>             saveWaveforms{fhicl::Name("saveWaveforms"), fhicl::Comment("save StrawDigiADCWaveforms"),0};
-    fhicl::Atom<int>             makeSD       {fhicl::Name("makeSD"       ), fhicl::Comment("make straw digi branch"     ),1};
-    fhicl::Atom<int>             makeSH       {fhicl::Name("makeSH"       ), fhicl::Comment("make straw hit branch"      ),1};
-    fhicl::Atom<int>             makeTC       {fhicl::Name("makeTC"       ), fhicl::Comment("make time cluster branch"   ),1};
-    fhicl::Atom<int>             ewLength     {fhicl::Name("ewLength"     ), fhicl::Comment("event window length, in units of 25 ns"),1000};
+    
+    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"       ),""};
+    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"       ),""};
+    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"     ),""};
+    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                ),0};
+    Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                )};
+    Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"          )};
+    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms"),0};
+    Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     ),1};
+    Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
+    Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   ),1};
+    Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
+    Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
+    Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
   };
 
   // --- C'tor/d'tor:
@@ -67,6 +78,8 @@ public:
   int      getData(const art::Event& ArtEvent);
   
   void     print_(const std::string&  Message, const std::source_location& location = std::source_location::current());
+
+  int      process_adc_waveform(float* Wf, WfParam_t* Wp);
 
   int      fillSD();
   int      fillSH();
@@ -92,6 +105,9 @@ public:
   int                      _makeSH;
   int                      _makeTC;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
+  int                      _nSamplesBL;
+  int                      _minPulseHeight;
+    
   
   int                      _n_adc_samples;
   double                   _tdc_bin;            // TDC bin, in us
@@ -137,9 +153,11 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _makeSH       (config().makeSH       ()),
     _makeTC       (config().makeTC       ()),
     _ewLength     (config().ewLength     ()),
+    _nSamplesBL   (config().nSamplesBL   ()),
+    _minPulseHeight(config().minPulseHeight   ()),
     _art_event    (nullptr)
 {
-  if (_saveWaveforms == 0) _n_adc_samples = 0;
+  _n_adc_samples = -1;
 
   _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
@@ -168,6 +186,16 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
   }
 }
 
+std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> result;
+    std::regex re(delimiter);
+    std::sregex_token_iterator it(str.begin(), str.end(), re, -1);
+    std::sregex_token_iterator end;
+    while (it != end) {
+        result.push_back(*it++);
+    }
+    return result;
+}
 
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_location& location) {
@@ -175,7 +203,12 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
     std::cout << std::format(" event:{}:{}:{}",
                              _art_event->run(),_art_event->subRun(),_art_event->event());
   }
-  std::cout << " " << location.file_name() << ":" << location.line()
+
+
+  std::vector<std::string> ss = splitString(location.file_name(),"/");
+  // int sz = ss.size();
+  
+  std::cout << " " << ss.back() << ":" << location.line()
     //            << location.function_name()
             << ": " << Message;
 }
@@ -306,17 +339,79 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 }
 
 //-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::process_adc_waveform(float* Wf, WfParam_t* Wp) {
+//-----------------------------------------------------------------------------
+// waveform processing
+// 1. determine the baseline
+//-----------------------------------------------------------------------------
+  Wp->bl = 0;
+  for (int i=0; i<_nSamplesBL; ++i) {
+    Wp->bl += Wf[i];
+  }
+  Wp->bl = Wp->bl/_nSamplesBL;
+//-----------------------------------------------------------------------------
+// 2. subtract the baseline and calculate the charge
+//-----------------------------------------------------------------------------
+  for (int i=0; i<_n_adc_samples; i++) {
+    Wf[i] = Wf[i]-Wp->bl;
+  }
+
+  int   tail  = 0;
+  Wp->fs = -1;
+  Wp->q  = 0;
+  Wp->qt = 0;
+  Wp->ph = -1;
+  for (int i=_nSamplesBL; i<_n_adc_samples; ++i) {
+    if (Wf[i] > _minPulseHeight) {
+      if (tail == 0) {
+                                        // first sample above the threshold
+        if (Wp->fs < 0) Wp->fs = i;
+
+        Wp->q += Wf[i];
+        if (Wf[i] > Wp->ph) {
+          Wp->ph = Wf[i];
+        }
+      }
+    }
+    else if (Wf[i] < 0) {
+      if (Wp->ph > 0) {
+        tail  = 1;
+      }
+      if (tail == 1) Wp->qt -= Wf[i];
+    }
+  }
+//-----------------------------------------------------------------------------
+// done
+//-----------------------------------------------------------------------------
+  // if (Wp->q < 100) {
+  //   TLOG(TLVL_DEBUG+1) << "event=" << _art_event->run() << ":"
+  //                      << _art_event->subRun() << ":" << _art_event->event() 
+  //                      << " Q=" << Wp->q;
+  // }
+  return 0;
+}
+  
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
 
-  _event->sd->Clear();
+  _event->sd->Delete();
   
   for (int i=0; i<_nstrawdigis; i++) {
     const mu2e::StrawDigi*            sd    = &_sdc->at(i);
     const mu2e::StrawDigiADCWaveform* sdawf = &_sdawfc->at(i);
     int ns = sdawf->samples().size();
+                                        // one-time initializatiion
+    if (_n_adc_samples == -1) _n_adc_samples = ns;
 
     DaqStrawDigi* nt_sd = new ((*_event->sd)[i]) DaqStrawDigi(ns);
     nt_sd->sid          = sd->strawId().asUint16();
+ 
+    int pln = sd->strawId().plane();
+    int pnl = sd->strawId().panel();
+    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+
+    nt_sd->mnid         = tpm->mnid;
+    
     nt_sd->tdc0         = sd->TDC(mu2e::StrawEnd::cal);
     nt_sd->tdc1         = sd->TDC(mu2e::StrawEnd::hv );
     nt_sd->tot0         = sd->TOT(mu2e::StrawEnd::cal);
@@ -326,9 +421,23 @@ int mu2e::MakeDigiNtuple::fillSD() {
 //-----------------------------------------------------------------------------
 // store the waveform
 //-----------------------------------------------------------------------------
-    // for (int is=0; is<ns; is++) {
-    //   nt_sd.adc[is] = sdawf->samples()[is];
-    // }
+    for (int is=0; is<ns; is++) {
+      nt_sd->adc[is] = sdawf->samples()[is];
+    }
+//-----------------------------------------------------------------------------
+// process the waveform and store teh waveform parameters
+//-----------------------------------------------------------------------------
+    float wf[100];
+    for (int is=0; is<ns; is++) {
+      wf[is] = sdawf->samples()[is];
+    }
+
+    WfParam_t wp;
+    process_adc_waveform(wf,&wp);
+    
+    nt_sd->fs = wp.fs;
+    nt_sd->bl = wp.bl;
+    nt_sd->ph = wp.ph;
 
     if (_debugMode  > 0) {
       if (_debugBit[1] != 0) {

@@ -31,13 +31,13 @@ services.DbService : @local::DbEmpty
 services.SeedService.baseSeed         : 8
 services.SeedService.maxUniqueEngines : 100
 
-services.ProditionsService.alignedTracker.useDb : false
-services.ProditionsService.alignedTrackerSim.useDb : false
-services.ProditionsService.strawElectronics.useDb : false
-services.ProditionsService.fullReadoutStraw.useDb : false
-services.ProditionsService.strawDrift.useDb : false
-services.ProditionsService.strawPhysics.useDb : false
-services.ProditionsService.strawResponse.useDb : false
+services.ProditionsService.alignedTracker.useDb         : false
+services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.strawElectronics.useDb       : false
+services.ProditionsService.fullReadoutStraw.useDb       : false
+services.ProditionsService.strawDrift.useDb             : false
+services.ProditionsService.strawPhysics.useDb           : false
+services.ProditionsService.strawResponse.useDb          : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
 
 
@@ -67,17 +67,18 @@ physics : {
     
     producers : {
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
-            SpillType:          0   ## offspill
-            RecoFromMCTruth: false  ## default
+            SpillType         : 0   ## offspill
+            RecoFromMCTruth   : false  ## default
             RecoFromMCTruthErr: 0   ## default
-            InitialPhaseShift:  0   ## optional, set it to zero just in case
+            InitialPhaseShift : 0   ## optional, set it to zero just in case
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            debugMode     :  1 ## 10
-            debugBits     : ["bit0:1"]
-            saveWaveforms :  true
-            geography     : [ @sequence::station_00_geography ]
+            debugMode        : 0 ## 10
+            debugBits        : ["bit0:1"]
+            saveWaveforms    : true
+            geography        : [ @sequence::station_00_geography ]
+            dtcHeaderPresent : false
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -87,9 +88,10 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD : 1
-            makeSH : 1
-            makeTC : 0
+            makeSD        : 1
+            makeSH        : 1
+            makeTC        : 0
+            saveWaveforms : 1
         }
     }
 
