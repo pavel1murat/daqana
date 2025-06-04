@@ -49,10 +49,10 @@ namespace mu2e {
       kNChannels         = 96,
       kMaxNLinks         =  6,
       kMaxNHWfPerChannel = 10,
-      kMaxStations       =  2       // for now, just make it an array
+      kMaxStations       =  1       // for now, just make it an array
     };
 
-    int kEvtMax{5000000};
+    int kEvtMax{10000000};
     
     enum {
       kNEventHistSets    =  10,
@@ -389,7 +389,7 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // talk-to parameters
 //-----------------------------------------------------------------------------
-    int              _diagLevel;
+    int              _debugMode;
     int              _minNBytes;
     int              _maxNBytes;
     //    int              _dataHeaderOffset;
@@ -419,6 +419,7 @@ namespace mu2e {
     int              _fillHistograms;           // <=0 : don't
     int              _fillWaveformHistograms;   // <=0 : don't
     int              _rocDataFormat;            // digis, patterns, etc
+    int              _dtcHeaderPresent;         // true for runs > 106546
 //-----------------------------------------------------------------------------
 // the rest, use the same reference channels for different DTCs - the ROC FW is the same
 //-----------------------------------------------------------------------------

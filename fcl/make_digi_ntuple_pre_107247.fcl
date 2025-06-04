@@ -6,12 +6,12 @@
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
-BEGIN_PROLOG
+# BEGIN_PROLOG
 #   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
 #   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
 #   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
 #   PDG_ID              : 0                                    # 0: ignore PDG_ID
-END_PROLOG
+# END_PROLOG
 
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
@@ -31,13 +31,13 @@ services.DbService : @local::DbEmpty
 services.SeedService.baseSeed         : 8
 services.SeedService.maxUniqueEngines : 100
 
-services.ProditionsService.alignedTracker.useDb         : false
-services.ProditionsService.alignedTrackerSim.useDb      : false
-services.ProditionsService.strawElectronics.useDb       : false
-services.ProditionsService.fullReadoutStraw.useDb       : false
-services.ProditionsService.strawDrift.useDb             : false
-services.ProditionsService.strawPhysics.useDb           : false
-services.ProditionsService.strawResponse.useDb          : false
+services.ProditionsService.alignedTracker.useDb : false
+services.ProditionsService.alignedTrackerSim.useDb : false
+services.ProditionsService.strawElectronics.useDb : false
+services.ProditionsService.fullReadoutStraw.useDb : false
+services.ProditionsService.strawDrift.useDb : false
+services.ProditionsService.strawPhysics.useDb : false
+services.ProditionsService.strawResponse.useDb : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
 
 
@@ -67,18 +67,15 @@ physics : {
     
     producers : {
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
-            SpillType         : 0   ## offspill
-            RecoFromMCTruth   : false  ## default
+            SpillType:          0   ## offspill
+            RecoFromMCTruth: false  ## default
             RecoFromMCTruthErr: 0   ## default
-            InitialPhaseShift : 0   ## optional, set it to zero just in case
+            InitialPhaseShift:  0   ## optional, set it to zero just in case
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            debugMode        : 0 ## 10
-            debugBits        : ["bit0:1"]
-            saveWaveforms    : true
-            geography        : [ @sequence::station_00_geography ]
-            # dtcHeaderPresent : false
+            saveWaveforms :  true 
+            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -88,10 +85,9 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD        : 1
-            makeSH        : 1
-            makeTC        : 0
-            saveWaveforms : 1
+            makeSD          : 1
+            makeSH          : 1
+            makeTC          : 0
         }
     }
 
@@ -113,5 +109,10 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "/data/tracker/vst/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.scheduler.wantSummary   : true
+
+
+physics.producers.makeSD.debugMode       : 0 ## 1
+physics.producers.makeSD.debugBits       : [ "bit0:1" ]
+physics.producers.makeSD.dtcHeaderPresent: false

@@ -75,21 +75,9 @@ physics : {
 
         makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
+            debugBits     : [ "bit0:0" ]        ## 3
             saveWaveforms :  true
-            geography: [
-                        { minnesota:"MN219"  panel:0  plane:0 },
-                        { minnesota:"MN247"  panel:1  plane:0 },
-                        { minnesota:"MN235"  panel:2  plane:0 },
-                        { minnesota:"MN101"  panel:3  plane:0 },
-                        { minnesota:"MN253"  panel:4  plane:0 },
-                        { minnesota:"MN213"  panel:5  plane:0 },
-                        { minnesota:"MN273"  panel:0  plane:1 },
-                        { minnesota:"MN262"  panel:1  plane:1 },
-                        { minnesota:"MN224"  panel:2  plane:1 },
-                        { minnesota:"MN248"  panel:3  plane:1 },
-                        { minnesota:"MN261"  panel:4  plane:1 },
-                        { minnesota:"MN276"  panel:5  plane:1 }
-                       ]
+            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -101,6 +89,7 @@ physics : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
             makeSD : 1
             makeSH : 1
+            makeTC : 0
         }
         StationAna : { @table::daqana.analyzers.StationAna
             shCollTag : "makeSH"

@@ -153,7 +153,7 @@ unsigned int correctedTDC(unsigned int TDC) {
   TrkFragmentAna::TrkFragmentAna(fhicl::ParameterSet const& PSet) : 
     THistModule            (PSet,PSet.get<fhicl::ParameterSet>("THistModule"),"TrkFragmentAna") ,
 
-    _diagLevel             (PSet.get<int>             ("diagLevel"             )), 
+    _debugMode             (PSet.get<int>             ("debugMode"             )), 
     _minNBytes             (PSet.get<int>             ("minNBytes"             )), 
     _maxNBytes             (PSet.get<int>             ("maxNBytes"             )), 
     _activeLinks_0         (PSet.get<std::vector<int>>("activeLinks_0"         )),
@@ -165,7 +165,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     _analyzeFragments      (PSet.get<int>             ("analyzeFragments"      )),
     _maxFragmentSize       (PSet.get<int>             ("maxFragmentSize"       )),
     _pulserFrequency       (PSet.get<int>             ("pulserFrequency"       )),
-    _nADCPackets           (-1), // PSet.get<int>             ("nADCPackets"           )),
+    _nADCPackets           (-1),
     _nSamplesBL            (PSet.get<int>             ("nSamplesBL"            )),
     _minPulseHeight        (PSet.get<float>           ("minPulseHeight"        )),
     _minNErrors            (PSet.get<int>             ("minNErrors"            )),
@@ -173,7 +173,8 @@ unsigned int correctedTDC(unsigned int TDC) {
     _validateAdcPatterns   (PSet.get<int>             ("validateAdcPatterns"   )),
     _fillHistograms        (PSet.get<int>             ("fillHistograms"        )),
     _fillWaveformHistograms(PSet.get<int>             ("fillWaveformHistograms")),
-    _rocDataFormat         (PSet.get<int>             ("rocDataFormat"         ))
+    _rocDataFormat         (PSet.get<int>             ("rocDataFormat"         )),
+    _dtcHeaderPresent      (PSet.get<int>             ("dtcHeaderPresent"      ))
   {
     _activeLinks[0] = &_activeLinks_0;
     _activeLinks[1] = &_activeLinks_1;
@@ -285,8 +286,8 @@ unsigned int correctedTDC(unsigned int TDC) {
     const char* name = _panelName[ipanel].data();
     
     Hist->nhits   = Dir->make<TH1F>(Form("ch_%i_%02i_nhits" ,Link,I),Form("run %06i: link %i %6s ch %02i nhits"  ,RunNumber,Link,name,I), 50, -0.5, 49.5);
-    Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i %6s ch %02i time[0]",RunNumber,Link,name,I),1000, 0., 100.);  // us
-    Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i %6s ch %02i time[0]",RunNumber,Link,name,I),1000, 0., 100.);  // us
+    Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i %6s ch %02i time[0]",RunNumber,Link,name,I),1500, 0., 300.);  // us
+    Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i %6s ch %02i time[0]",RunNumber,Link,name,I),1500, 0., 300.);  // us
     Hist->t0  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_0"  ,Link,I),Form("run %06i: link %i %6s ch %02i t0[0]  ",RunNumber,Link,name,I),1000,-20., 80.);  // ns
     Hist->t0  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_1"  ,Link,I),Form("run %06i: link %i %6s ch %02i t0[1]  ",RunNumber,Link,name,I),1000,-20., 80.);  // ns
     Hist->t1  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_0"  ,Link,I),Form("run %06i: link %i %6s ch %02i t1[0]  ",RunNumber,Link,name,I),1000,-20., 80.);  // ns
@@ -873,7 +874,8 @@ int TrkFragmentAna::init_event(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
   void TrkFragmentAna::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragment* Fragment) {
 
-    short* fdata = (short*) Fragment->dataBegin() + sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
+    short* fdata = (short*) Fragment->dataBegin();
+    if (_dtcHeaderPresent) fdata += sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
 
     _edata.fragments.push_back(FragmentData_t());
 //-----------------------------------------------------------------------------
@@ -984,7 +986,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  if (_diagLevel > 0) {
+  if (_debugMode > 0) {
     printf(" Event : %06i:%08i%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
   }
   
@@ -1002,7 +1004,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
       _edata.nerr_tot    += 1;
       _edata.n_nb_errors += 1;
       
-      if (_diagLevel > 0) {
+      if (_debugMode > 0) {
         print_message(Form("ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
                            kNBytesErrorBit,nbytes));
       }
@@ -1011,7 +1013,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
     _edata.nfrag += 1;
     _edata.nbtot += nbytes;        // including the artdaq part
 
-    if (_diagLevel > 2) {
+    if (_debugMode > 2) {
       printf("%s\n",Form("---------- fragment # %2i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x\n",
                          ifrag,nbytes,fsize,_edata.error_code));
       print_fragment(&frag,nbytes/2);
@@ -1036,7 +1038,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  // if (_diagLevel > 1) {
+  // if (_debugMode > 1) {
   //   if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
   //     TLOG(TLVL_DEBUG) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
   //                              AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
@@ -1130,7 +1132,10 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 
   int ifrag = 0;
   for (const artdaq::Fragment& frag : *handle) {
-    ushort* buf          = (ushort*) (frag.dataBeginBytes()+sizeof(DTCLib::DTC_EventHeader));
+
+    ushort* buf          = (ushort*) frag.dataBeginBytes();
+    if (_dtcHeaderPresent) buf += sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
+
     int fsize            = frag.sizeBytes();
     SubEventHeader_t* sh = (SubEventHeader_t*) buf;
     int nbytes           = buf[0];

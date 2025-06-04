@@ -41,7 +41,8 @@ physics : {
     
     analyzers : {
 	TrkFragmentAna : { @table::daqana.analyzers.TrkFragmentAna
-	    trkfCollTag         : "daq:DTCEVT"   ##
+	    trkfCollTag         : "daq:TRK"   ##
+            dtcHeaderPresent    : 0
             debugMode           : 0              ## no debug  printout
             #	    diagLevel           : 3           ## event dump (all events)
             fillWaveformHistograms : 1
@@ -84,5 +85,5 @@ services.TFileService.fileName                   : "hst.mu2e.vst00s000r000n000.t
 services.scheduler.wantSummary                   : true
 
 source.fileNames : [ 
-"/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.105023_00000001.art" 
+"/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.105023_000001.art" 
                    ]

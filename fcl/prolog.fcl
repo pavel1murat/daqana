@@ -48,6 +48,7 @@ daqana : {
             errorCode              : -1          ## nothing
             validateAdcPatterns    : -1          ## if >= 0 , pattern to validate
             fillHistograms         : 2           ## on by default, < 0 : off
+            dtcHeaderPresent       : 1           ##
             fillWaveformHistograms : 0           ## off by default, > 0 : on
             rocDataFormat          : 4           ## digi checherboard, need when validating
             #            panelName              : [ "MN234","MN180","MN162","MN058","MN027","MN141",

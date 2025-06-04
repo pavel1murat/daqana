@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-# setup: tstation, roctower, ...
+# setup: 
 # ------------------------------------------------------------------------------
     rn=$1
 nfiles=1000 ; if [ ".$2" != "." ] ; then nfiles=$2 ; fi
@@ -19,6 +19,7 @@ ls -al $DATA_DIR/* | grep $rn | awk '{print $9}' | sort | head -n $nfiles > $inp
 echo "input file_list: " >| $logfile
 cat  $input_file_list    >> $logfile
 
-input_fcl=$SPACK_ENV/daqana/fcl/trk_fragment_ana_`printf "%06i" $rn`.fcl
+# input_fcl=$SPACK_ENV/daqana/fcl/trk_fragment_ana_`printf "%06i" $rn`.fcl
+input_fcl=$SPACK_ENV/daqana/fcl/trk_fragment_ana.fcl
 
 mu2e -c $input_fcl -S $input_file_list >> $logfile 2>&1 &
