@@ -22,7 +22,7 @@
 #include "daqana/mod/TrkPanelMap_t.hh"
 
 namespace {
-  const TrkPanelMap_t* _panel_map[36][6];   // indexing - offline: [plane][panel]
+  const TrkPanelMap_t* _panel_map[200][6];   // indexing - offline: [plane][panel]
 };
 
 namespace mu2e {

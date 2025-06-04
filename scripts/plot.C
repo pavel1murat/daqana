@@ -12,7 +12,8 @@ int MaxEvent   (-1);
 int MaxY       (-1);
 
 namespace {
-  const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
+  //  const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
+  const char* HistDir   = "/data/tracker/vst/hist" ;
   int         _Figure   = 0;
   TCanvas*    _Canvas(nullptr);
 };
@@ -20,7 +21,8 @@ namespace {
 TFile* open_file(const char* Fn, int RunNumber) {
   TFile* f(nullptr);
   
-  if (Fn == nullptr) f = TFile::Open(Form("%s/trk_fragment_ana.%06i.hist",HistDir,RunNumber));
+  //  if (Fn == nullptr) f = TFile::Open(Form("%s/trk_fragment_ana.%06i.hist",HistDir,RunNumber));
+  if (Fn == nullptr) f = TFile::Open(Form("%s/hst.mu2e.vst00s000r000n000.trk_fragment_ana.%06i_000001.root",HistDir,RunNumber));
   else               f = TFile::Open(Fn);
 
   return f;

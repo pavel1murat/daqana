@@ -129,7 +129,7 @@ public:
   TBranch*                _branch;
 
   int                     _hist_booked;
-  const TrkPanelMap_t*    _panel_map[36][6];   // indexing - offline: [plane][panel]
+  const TrkPanelMap_t*    _panel_map[200][6];   // indexing - offline: [plane][panel]
 
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
