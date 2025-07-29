@@ -74,10 +74,11 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            diagLevel     :  0 ## 10
-            debugBits     : [ "bit0:0" ]        ## 3
-            saveWaveforms :  true
-            geography     : [ @sequence::station_00_geography ]
+            diagLevel       :  0 ## 10
+            debugBits       : [ "bit0:0" ]        ## 3
+            saveWaveforms   :  true
+            geography       : [ @sequence::station_00_geography ]
+            dtcHeaderPresent: true
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -93,6 +94,7 @@ physics : {
         }
         StationAna : { @table::daqana.analyzers.StationAna
             shCollTag : "makeSH"
+            minEDep   : 0.001          ## default : 0.0006
         }
     }
 

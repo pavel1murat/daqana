@@ -2,8 +2,8 @@
 # ------------------------------------------------------------------------------
 # example: make_station_hist.sh vst 107236
 #------------------------------------------------------------------------------
-    idsid=$1
-       rn=$2
+idsid=$1
+   rn=$2
 
 echo idsid:$idsid rn:$rn
 
@@ -17,6 +17,7 @@ ls -al $DATA_DIR/* | grep $rn | awk '{print $9}' | sort >| $input_file_list
 #------------------------------------------------------------------------------
 # 2. process input files
 #------------------------------------------------------------------------------
+# input_fcl=$SPACK_ENV/daqana/fcl/make_station_hist_$thr.fcl
 input_fcl=$SPACK_ENV/daqana/fcl/make_station_hist.fcl
 
 

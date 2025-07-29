@@ -170,6 +170,7 @@ namespace mu2e {
       TH1F*         tot [2];
       TH1F*         pmp;
       TH1F*         dt01[2];            // T0-T1 for each hit, with different binning
+      TH1F*         dt0150;             // T0-T1 for each hit, for ph>50
       TH1F*         dt0;                // T0 distance between the two consequtive pulses
       TH1F*         dt1;                // T1 distance between the two consequtive pulses
       TH1F*         dt2;                // T2 = (dt1+dt2)/2
@@ -373,6 +374,8 @@ namespace mu2e {
       float tMin;
       float tMax;
     } _debugPars;
+
+    std::vector<int> _debugChannels;
 
     // struct Config {
     //   fhicl::Atom<int>               diagLevel{fhicl::Name("diagLevel"), fhicl::Comment("diagnostic level")};

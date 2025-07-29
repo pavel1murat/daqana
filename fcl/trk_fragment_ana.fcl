@@ -45,8 +45,10 @@ physics : {
             debugMode           : 0              ## no debug  printout
             #	    diagLevel           : 3           ## event dump (all events)
             fillWaveformHistograms : 1
-            minNBytes           : 4800
-            maxNBytes           : 6000
+            minNBytes           : 0
+            maxNBytes           : 10000
+            nSamplesBL          : 8
+            minPulseHeight      : 5.
 	    
 	    interactiveMode     : 0
 	    maxFileSize         : 2000   # in MBytes

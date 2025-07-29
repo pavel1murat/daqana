@@ -1,5 +1,9 @@
 #!/usr/bin/bash
-
+#------------------------------------------------------------------------------
+# list files of a given run stored in the data area:
+# call signature: ./list_files <run_number>
+#------------------------------------------------------------------------------
 rn=$1
 
-ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.art/* | grep $rn | awk '{print $9}'
+# ls -al /exp/mu2e/data/projects/vst/datasets/raw.mu2e.trkvst.art/* | grep $rn | awk '{print $9}'
+ls -al $DAQ_OUTPUT_TOP/data/* | grep $rn | awk '{print $9}'

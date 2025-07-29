@@ -1,13 +1,13 @@
 #!/usr/bin/bash
-# setup: 
+# call signature: make_trk_fragment_ana_hist.sh 
 # ------------------------------------------------------------------------------
-    rn=$1
+    rn=`printf "%06i" $1`
 nfiles=1000 ; if [ ".$2" != "." ] ; then nfiles=$2 ; fi
 
 echo rn:$rn nfiles:$nfiles
 
 input_file_list=/tmp/input_00$rn.txt.$$
-        logfile=trk_fragment_ana.$rn.log ;
+        logfile=vst00s000r000n000.trk_fragment_ana.$rn.log ;
 #------------------------------------------------------------------------------
 # 1. make list of input files
 #------------------------------------------------------------------------------

@@ -14,6 +14,8 @@
 //         0x01: events with the total number of errors > _minNErrors
 //         0x10: total event dump
 // bit 04: print problematic hits
+// bit 05: print all hits
+// bit 06: print hits in pulsed channels 
 ///////////////////////////////////////////////////////////////////////////////
 #include "TRACE/tracemf.h"
 #define TRACE_NAME "TrkFragmentAna"
@@ -174,7 +176,8 @@ unsigned int correctedTDC(unsigned int TDC) {
     _fillHistograms        (PSet.get<int>             ("fillHistograms"        )),
     _fillWaveformHistograms(PSet.get<int>             ("fillWaveformHistograms")),
     _rocDataFormat         (PSet.get<int>             ("rocDataFormat"         )),
-    _dtcHeaderPresent      (PSet.get<int>             ("dtcHeaderPresent"      ))
+    _dtcHeaderPresent      (PSet.get<int>             ("dtcHeaderPresent"      )),
+    _debugChannels         (PSet.get<std::vector<int>>("debugChannels"         ))
   {
     _activeLinks[0] = &_activeLinks_0;
     _activeLinks[1] = &_activeLinks_1;
@@ -297,6 +300,7 @@ unsigned int correctedTDC(unsigned int TDC) {
     Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i %6s ch %02i pmp"    ,RunNumber,Link,name,I), 100, 0.,1000.);
     Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i %6s ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,name,I) ,500, -25,25);
     Hist->dt01[1] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_1",Link,I),Form("run %06i: link %i %6s ch %02i T0(i)-T1(i) [1],ns",RunNumber,Link,name,I) ,500, -2500,2500);
+    Hist->dt0150  = Dir->make<TH1F>(Form("ch_%i_%02i_dt0150",Link,I),Form("run %06i: link %i %6s ch %02i T0(i)-T1(i) ph>50, ns",RunNumber,Link,name,I) ,500, -25,25);
     Hist->dt0     = Dir->make<TH1F>(Form("ch_%i_%02i_dt0"   ,Link,I),Form("run %06i: link %i %6s ch %02i T0(i+1)-T0(i)",RunNumber,Link,name,I)      ,50000,  0.,50);
     Hist->dt1     = Dir->make<TH1F>(Form("ch_%i_%02i_dt1"   ,Link,I),Form("run %06i: link %i %6s ch %02i T1(i+1)-T1(i)",RunNumber,Link,name,I)      ,50000,  0.,50);
     Hist->dt2     = Dir->make<TH1F>(Form("ch_%i_%02i_dt2"   ,Link,I),Form("run %06i: link %i %6s ch %02i T2(i+1)-T2(i)",RunNumber,Link,name,I)      ,50000,  0.,50);
@@ -626,7 +630,7 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 
         hch->dt01[0]->Fill(t0_ns-t1_ns); // in ns
         hch->dt01[1]->Fill(t0_ns-t1_ns); // in ns
-
+        
         hch->t0  [0]->Fill(t0_ns);
         hch->t0  [1]->Fill(t1_ns);
 
@@ -641,9 +645,13 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
         if (_fillWaveformHistograms) {
           float wform[50];
-          unpack_adc_waveform(hit,wform);  // waveform has alredy been processed
+          unpack_adc_waveform(hit,wform);  // waveform has already been processed
           
           WfParam_t* wpar = &chd->wp[ih];
+
+          if (wpar->ph > 50) {
+            hch->dt0150 ->Fill(t0_ns-t1_ns); // in ns
+          }
 //-----------------------------------------------------------------------------
 // fill waveform histograms only for the first kMaxNHWfPerChannel hits
 //-----------------------------------------------------------------------------
@@ -797,11 +805,11 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // later, all error handling will move to analyze_roc_data()
 //-----------------------------------------------------------------------------
     if (_fillHistograms > 0) {
-      fill_event_histograms  (_hist.event[0],&_edata);
+      fill_event_histograms  (_hist.event  [0],&_edata);
       fill_station_histograms(_hist.station[0],&_edata);
 
       if ((_fillHistograms > 1) and (_edata.error_code == 0)) {
-        fill_event_histograms  (_hist.event[1],&_edata);
+        fill_event_histograms  (_hist.event  [1],&_edata);
         fill_station_histograms(_hist.station[1],&_edata);
       }
     }
@@ -987,7 +995,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 // proxy for event histograms
 //-----------------------------------------------------------------------------
   if (_debugMode > 0) {
-    printf(" Event : %06i:%08i%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
+    printf(" Event : %06i:%08i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
   }
   
   int ifrag = 0;
@@ -1048,7 +1056,7 @@ void TrkFragmentAna::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // print debug information
 //-----------------------------------------------------------------------------
-  debug(AnEvent);
+  if (_debugMode > 0) debug(AnEvent);
 //-----------------------------------------------------------------------------
 // event data un(re)packed , fill histograms
 //-----------------------------------------------------------------------------
@@ -1165,11 +1173,12 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 }
 
 //-----------------------------------------------------------------------------
-  void TrkFragmentAna::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
+void TrkFragmentAna::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
 // for a given FPGA, a reference channel is the first channel in the readout order
 //-----------------------------------------------------------------------------
   ChannelData_t* ref_ch[2];
+
 
   int link      = Dh->linkID;
   ref_ch[0]     = &Rd->channel[_referenceChannel[link][0]];
@@ -1179,6 +1188,8 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
   Rd->npackets  = Dh->packetCount;
   Rd->nhits     = 0;
   Rd->nh100     = 0;
+
+  if (_debugMode > 0) print_message(Form("-- START %s link:%i nbytes:%5i",__func__,link,Rd->nbytes));
 //-----------------------------------------------------------------------------
 // for now, assume that all hits in the run have the same number of packets per hit
 // take that from the first hit
@@ -1214,7 +1225,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     int offset_in_bytes = offset*2;
     hit     = (TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
 
-    if (DebugBit(5) != 0) {
+    if ((DebugBit(5) & 0x1) != 0) {
       printf("offset : 0x%04x\n",offset);
       print_hit(hit);
     }
@@ -1268,7 +1279,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 
     if (ich > 95) {
 //-----------------------------------------------------------------------------
-// non existing channel ID : flag an error, don't save the hit, but continue
+// non-existing channel ID : flag an error, don't save the hit, but continue
 // didn't happen so far
 //-----------------------------------------------------------------------------
       _edata.error_code |= kChIDErrorBit;
@@ -1292,7 +1303,7 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
 // if filling of the wafeform histograms is requested, unpack and process the waveform
 //-----------------------------------------------------------------------------
         WfParam_t wpar;
-        float wform[50]; // assume not more than 3 ADC packets
+        float wform[50];                       // assume not more than 3 ADC packets
         unpack_adc_waveform(hit,wform);
         
         process_adc_waveform(wform,&wpar);
@@ -1300,6 +1311,25 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
         chd->wp.push_back(wpar);
 
         if (wpar.ph > 100) Rd->nh100 += 1;
+
+        if ((_debugMode > 0) and ((DebugBit(5) & 0x2) != 0)) {
+//-----------------------------------------------------------------------------
+// check channels
+//-----------------------------------------------------------------------------
+          print_message(Form("ich = %3i wpar.bl: %6.2f wpar.ph = %6.2f wpar.fs:%i",ich,wpar.bl, wpar.ph, wpar.fs));
+        }
+        if ((_debugMode > 0) and (DebugBit(6) != 0)) {
+//-----------------------------------------------------------------------------
+// check channels
+//-----------------------------------------------------------------------------
+          int nch = _debugChannels.size();
+          for (int i=0; i<nch; i++) {
+            int dch = _debugChannels[i];
+            if (ich == dch) {
+              print_message(Form("ich = %3i wpar.bl: %6.2f wpar.ph = %6.2f wpar.fs:%i",ich,wpar.bl, wpar.ph, wpar.fs));
+            }
+          }
+        }
       }
     }
 //-----------------------------------------------------------------------------
@@ -1410,6 +1440,8 @@ void TrkFragmentAna::debug(const art::Event& AnEvent) {
     Rd->dt0r01 = (t0r0-t0r1)*_tdc_bin_ns;        // convert to ns  
     Rd->dt1r01 = (t1r0-t1r1)*_tdc_bin_ns;        // convert to ns  
   }
+  
+  if (_debugMode > 0) print_message(Form("-- END %s",__func__));
 }
 
 //-----------------------------------------------------------------------------

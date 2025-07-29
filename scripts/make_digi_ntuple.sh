@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # call format: make_digi_ntuples.sh input_dsid ntuple_format run_number [nfiles]
 # example:
-#             make_digi_ntuples.sh vst n002 107236 1
+#             make_digi_ntuple.sh vst n001 107236 1
 #------------------------------------------------------------------------------
     idsid=$1
 ntuple_id=$2   # ie 'n002'
@@ -17,7 +17,7 @@ input_file_list=/tmp/make_digi_ntuples_input.$rn.txt.$$
 # 1. make list of input files
 #------------------------------------------------------------------------------
 export DATA_DIR=/data/tracker/vst/mu2etrk_daquser_001/data
-ls -al $DATA_DIR/* | grep $rn | awk '{print $9}' | sort | head -n $nfiles > $input_file_list
+ls -al $DATA_DIR/* | awk '{print $9}' | grep $rn | sort | head -n $nfiles > $input_file_list
 #------------------------------------------------------------------------------
 # 2. process input files
 #------------------------------------------------------------------------------

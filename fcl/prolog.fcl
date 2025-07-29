@@ -66,6 +66,10 @@ daqana : {
                 tMax               : 1.04
             }
 #------------------------------------------------------------------------------
+# if debugBit(5) > 0, print small pulses for these channels
+#------------------------------------------------------------------------------
+            debugChannels          : []
+#------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
 #------------------------------------------------------------------------------
@@ -170,6 +174,11 @@ daqana : {
             debugBits    : [ "bit0:0", "bit1:0" ]
             maxDt        : 100                        ## ns
             minEDep      : 0.0006                     ##
+        }
+
+        FileCatalog: { module_type: FileCatalog
+	    THistModule: { @table::StntupleTHistModule }   ## base class
+            debugMode    : 0
         }
     }
 }

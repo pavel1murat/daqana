@@ -64,6 +64,7 @@ namespace mu2e {
       TH1F* nshg;
       TH1F* nshdt;
       TH1F* nsht_vs_evt;
+      TH1F* max_edep;
     };
 
     struct StrawHist_t {
@@ -121,6 +122,7 @@ namespace mu2e {
       int                nsht;
       int                nshg;
       int                nshdt;
+      float              max_edep;
       int                run_number;
       int                srn_number;
       int                evt_number;
