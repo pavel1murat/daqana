@@ -1,0 +1,97 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# run interactively, stop after each event to display waveforms
+#
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+#-----------------------------------------------------------------------------
+# BEGIN_PROLOG
+#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+#   PDG_ID              : 0                                    # 0: ignore PDG_ID
+# END_PROLOG
+
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/DAQ/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+process_name : MakeStationHist
+
+services : @local::Services.SimAndReco
+
+services.scheduler.wantSummary                   : true
+
+services.DbService : @local::DbEmpty
+services.SeedService.baseSeed         : 8
+services.SeedService.maxUniqueEngines : 100
+
+services.ProditionsService.alignedTracker.useDb : false
+services.ProditionsService.alignedTrackerSim.useDb : false
+services.ProditionsService.strawElectronics.useDb : false
+services.ProditionsService.fullReadoutStraw.useDb : false
+services.ProditionsService.strawDrift.useDb : false
+services.ProditionsService.strawPhysics.useDb : false
+services.ProditionsService.strawResponse.useDb : false
+services.ProditionsService.trackerStatus.Settings.useDb : false
+
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "dummy.art"
+
+#        outputCommands: [
+#                         "drop *_*_*_*",
+#                         "keep *_*_*_*"
+#                        ]
+    }
+}
+
+physics : {
+    
+    producers : {
+    }
+    
+    filters   : {                       }
+    
+    analyzers : {
+        FileCatalog : { @table::daqana.analyzers.FileCatalog
+            debugMode : 1
+        }
+    }
+
+    p1 : [ ]
+
+    e1 : [ FileCatalog ] ## , defaultOutput ]
+    # e1 : []
+
+    trigger_paths  : [ p1 ]
+    end_paths      : [ e1 ]
+}
+
+# services.TimeTracker : {
+#     dbOutput : {
+#         filename  : "trk_fragment_ana.sqlite3"
+#         overwrite : true
+#     }
+# }
+#------------------------------------------------------------------------------
+# assume we're on mu2edaq22
+#------------------------------------------------------------------------------
+services.scheduler.wantSummary   : true
