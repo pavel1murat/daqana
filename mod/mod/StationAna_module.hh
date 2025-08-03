@@ -91,6 +91,7 @@ namespace mu2e {
       TH1F*         dtchg;
       TH1F*         edepg;
       StrawHist_t   straw[96];
+      StrawHist_t   str1 [96];          // nhits = 1
     };
 
     struct PanelHistSet_t {

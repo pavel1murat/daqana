@@ -394,8 +394,6 @@ int mu2e::MakeDigiNtuple::process_adc_waveform(float* Wf, WfParam_t* Wp) {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
 
-  _event->sd->Delete();
-  
   for (int i=0; i<_nstrawdigis; i++) {
     const mu2e::StrawDigi*            sd    = &_sdc->at(i);
     const mu2e::StrawDigiADCWaveform* sdawf = &_sdawfc->at(i);
@@ -408,7 +406,13 @@ int mu2e::MakeDigiNtuple::fillSD() {
  
     int pln = sd->strawId().plane();
     int pnl = sd->strawId().panel();
+    int ich = sd->strawId().straw();
     const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+
+    // works for one station, not more...
+
+    int pcie_addr = tpm->dtc % 2; // convention
+    _event->nsd[pcie_addr][tpm->link][ich] += 1;
 
     nt_sd->mnid         = tpm->mnid;
     
@@ -463,14 +467,6 @@ int mu2e::MakeDigiNtuple::fillSD() {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSH() {
 
-  for (int i=0; i<2; i++) {
-    for (int k=0; k<6; k++) {
-      _event->nsh[i][k] = 0;
-    }
-  }
-
-  _event->sh->Clear();
-
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
     int pln = sh->strawId().plane();
@@ -506,8 +502,6 @@ int mu2e::MakeDigiNtuple::fillSH() {
 
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTC() {
-
-  _event->tc->Clear();
 
   for (int i=0; i<_ntimeclusters; i++) {
     const mu2e::TimeCluster* tc = &_tcc->at(i);
@@ -551,6 +545,8 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // clear event
 //-----------------------------------------------------------------------------
+  _event->Clear();
+  
   // _event->ncalodigis  = _ncalodigis;
   // _event->ncrvdigis   = _ncrvdigis;
   // _event->nstmdigis   = _nstmdigis;
@@ -565,7 +561,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->srn    = ArtEvent.subRun();
   _event->evn    = ArtEvent.event();
                                         // defined in getData()
-  _event->nsd    = _nstrawdigis;
+  _event->nsdtot = _nstrawdigis;
   _event->nshtot = _nstrawhits;
   _event->ntc    = _ntimeclusters;
 
@@ -581,7 +577,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   //  _event->sd = DaqEvent::fgSd.data();
 
   if (_debugMode > 0) {
-    print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsd));
+    print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsdtot));
   }
 
   _tree->Fill();

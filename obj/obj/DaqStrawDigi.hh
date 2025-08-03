@@ -20,16 +20,15 @@ public:
   int    ns;        // N(ADC samples)
   short* adc;       //[ns] ns shorts
   
-
   DaqStrawDigi();
   DaqStrawDigi(int ns);
   virtual ~DaqStrawDigi();
 
   void     Init(int Ns);
 
-  int      Straw() {return (sid      ) & 0x7f; }
-  int      Panel() {return (sid >>  7) & 0x07; } 
-  int      Plane() {return (sid >> 10) & 0x3f; } 
+  int      straw() {return (sid      ) & 0x7f; }
+  int      panel() {return (sid >>  7) & 0x07; } 
+  int      plane() {return (sid >> 10) & 0x3f; } 
 
   ClassDef(DaqStrawDigi,1);
 };

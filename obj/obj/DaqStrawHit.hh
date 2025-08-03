@@ -17,11 +17,11 @@ public:
 
   DaqStrawHit();
                                         // low 7 bits
-  int Straw  () { return (sid >>  0) & 0x007f ; }
-  int Panel  () { return (sid >>  7) & 0x0007 ; }
-  int Face   () { return (sid >>  7) & 0x0001 ; }
-  int Plane  () { return (sid >> 10) & 0x003f ; }
-  int Station() { return (sid >> 11) & 0x001f ; }
+  int straw  () { return (sid >>  0) & 0x007f ; }
+  int panel  () { return (sid >>  7) & 0x0007 ; }
+  int face   () { return (sid >>  7) & 0x0001 ; }
+  int plane  () { return (sid >> 10) & 0x003f ; }
+  int station() { return (sid >> 11) & 0x001f ; }
   
   virtual ~DaqStrawHit();
 

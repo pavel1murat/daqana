@@ -9,7 +9,7 @@
 #include "TH2.h"
 
 //-----------------------------------------------------------------------------
-// assume the hist files are stored in teh default directory
+// assume the hist files are stored in the default directory
 //-----------------------------------------------------------------------------
 int init(int* Index) {
   int adc_index_1[96] = {

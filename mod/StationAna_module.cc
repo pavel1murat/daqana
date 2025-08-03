@@ -49,12 +49,12 @@ namespace mu2e {
     
     Hist->nsht   = Dir->make<TH1F>(Form("ch_%02i_nhits",I),Form("run %06i: MN%3i ch %02i nhits"  ,RunNumber,Mnid,I), 300,  -0.5, 299.5);
     Hist->tcal    = Dir->make<TH1F>(Form("ch_%02i_tcal" ,I),Form("run %06i: MN%3i ch %02i edep "  ,RunNumber,Mnid,I),1000,   0 , 100000);
-    Hist->dtch    = Dir->make<TH1F>(Form("ch_%02i_dtch" ,I),Form("run %06i: MN%3i ch %02i dtCH "  ,RunNumber,Mnid,I), 400, -100, 100);
+    Hist->dtch    = Dir->make<TH1F>(Form("ch_%02i_dtch" ,I),Form("run %06i: MN%3i ch %02i dtCH "  ,RunNumber,Mnid,I),1000, -100, 100);
     Hist->edep    = Dir->make<TH1F>(Form("ch_%02i_edep" ,I),Form("run %06i: MN%3i ch %02i edep "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
 
     Hist->nshg    = Dir->make<TH1F>(Form("ch_%02i_nhitsg",I),Form("run %06i: MN%3i ch %02i nhitsG"  ,RunNumber,Mnid,I),  300,  -0.5, 299.5);
     Hist->tcalg    = Dir->make<TH1F>(Form("ch_%02i_tcalg" ,I),Form("run %06i: MN%3i ch %02i tcalG "  ,RunNumber,Mnid,I),1000,   0 , 100000);
-    Hist->dtchg    = Dir->make<TH1F>(Form("ch_%02i_dtchg" ,I),Form("run %06i: MN%3i ch %02i dtCHG "  ,RunNumber,Mnid,I), 400, -100, 100);
+    Hist->dtchg    = Dir->make<TH1F>(Form("ch_%02i_dtchg" ,I),Form("run %06i: MN%3i ch %02i dtCHG "  ,RunNumber,Mnid,I),1000, -100, 100);
     Hist->edepg    = Dir->make<TH1F>(Form("ch_%02i_edepg" ,I),Form("run %06i: MN%3i ch %02i edepG "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
   }
 
@@ -63,13 +63,13 @@ namespace mu2e {
     
     Hist->nsht    = Dir->make<TH1F>(Form("nsht" ),Form("run %06i: MN%3i nshT"  ,RunNumber,Mnid), 300,  -0.5, 299.5);
     Hist->tcal    = Dir->make<TH1F>(Form("tcal" ),Form("run %06i: MN%3i tcal"  ,RunNumber,Mnid), 1000, 0, 100000);
-    Hist->dtch    = Dir->make<TH1F>(Form("dtch" ),Form("run %06i: MN%3i dtch"  ,RunNumber,Mnid), 400, -100, 100);
+    Hist->dtch    = Dir->make<TH1F>(Form("dtch" ),Form("run %06i: MN%3i dtch"  ,RunNumber,Mnid), 1000, -100, 100);
     Hist->edep    = Dir->make<TH1F>(Form("edep" ),Form("run %06i: MN%3i edep"  ,RunNumber,Mnid), 500, -0.002, 0.008);
     Hist->occup   = Dir->make<TH1F>(Form("occup"),Form("run %06i: MN%3i occup" ,RunNumber,Mnid), 100,  0,   100);
 
     Hist->nshg    = Dir->make<TH1F>(Form("nshg"  ),Form("run %06i: MN%3i nshG"  ,RunNumber,Mnid), 100,  -0.5,  99.5);
     Hist->tcalg   = Dir->make<TH1F>(Form("tcalg" ),Form("run %06i: MN%3i tcalG"  ,RunNumber,Mnid), 1000, 0, 100000);
-    Hist->dtchg   = Dir->make<TH1F>(Form("dtchg" ),Form("run %06i: MN%3i dtchG"  ,RunNumber,Mnid), 400, -100, 100);
+    Hist->dtchg   = Dir->make<TH1F>(Form("dtchg" ),Form("run %06i: MN%3i dtchG"  ,RunNumber,Mnid), 1000, -100, 100);
     Hist->edepg   = Dir->make<TH1F>(Form("edepg" ),Form("run %06i: MN%3i edepG"  ,RunNumber,Mnid), 500, -0.002, 0.008);
     Hist->occupg  = Dir->make<TH1F>(Form("occupg"),Form("run %06i: MN%3i occupG" ,RunNumber,Mnid), 100,  0,   100);
 
