@@ -3,10 +3,10 @@
 
 #include "daqana/obj/DaqEvent.hh"
 
-ClassImp(DaqEvent)
+// ClassImp(DaqEvent)
 
 //-----------------------------------------------------------------------------
-DaqEvent::DaqEvent() : TObject() {
+DaqEvent::DaqEvent() { // : TObject() {
   nsdtot = 0; sd = new TClonesArray("DaqStrawDigi"  ,100);
   nshtot = 0; sh = new TClonesArray("DaqStrawHit"   ,100);
   ntc    = 0; tc = new TClonesArray("DaqTimeCluster", 10);

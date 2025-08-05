@@ -17,6 +17,7 @@
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
+#include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
 #include "daqana/mod/TrkPanelMap_t.hh"
@@ -24,6 +25,7 @@
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/mod/WfParam_t.hh"
 
+#include <ostream>
 #include <regex>
 #include <ranges>
 #include <string>
@@ -118,6 +120,7 @@ public:
 
   int                     _nstrawdigis;
   int                     _nstrawhits;
+  int                     _ncombohits;
   int                     _ntimeclusters;
   
   int                     _ncalodigis;
@@ -134,6 +137,7 @@ public:
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
   const mu2e::StrawHitCollection*              _shc;
+  const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
   
 }; // MakeDigiNtuple
@@ -174,7 +178,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
     
-    print_(std::format("... StrawDigisFromArtdaqFragments: bit={:4d} is set to {}\n",index,_debugBit[index]));
+    print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
 //-----------------------------------------------------------------------------
 // initialize the panel map
@@ -210,7 +214,7 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
   
   std::cout << " " << ss.back() << ":" << location.line()
     //            << location.function_name()
-            << ": " << Message;
+            << ": " << Message << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -269,6 +273,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   art::Handle<mu2e::StrawDigiCollection>            sdch;
   art::Handle<mu2e::StrawDigiADCWaveformCollection> sdawfch;
   art::Handle<mu2e::StrawHitCollection>             shch;
+  art::Handle<mu2e::ComboHitCollection>             chch;
 
   _nstrawdigis   = 0;
   _nstrawhits    = 0;
@@ -297,7 +302,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _nstrawdigis = _sdc->size();
   }
   else {
-    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
+    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out",
                        _sdCollTag.encode().data()));
     return -1;
   }
@@ -307,7 +312,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _sdawfc = sdawfch.product();
   }
   else {
-    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
+    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out",
                        _sdCollTag.encode().data()));
     return -1;
   }
@@ -320,8 +325,22 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntimeclusters = _tcc->size();
     }
     else {
-      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
+      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out",
                        _tcCollTag.encode().data()));
+      return -1;
+    }
+//-----------------------------------------------------------------------------
+// assume that chCollTag == _shCollTag
+//-----------------------------------------------------------------------------
+    art::Handle<mu2e::ComboHitCollection>             chch;
+    ok =  ArtEvent.getByLabel(_shCollTag,chch);
+    if (ok) { 
+      _chc           = chch.product();
+      _ncombohits    = _chc->size();
+    }
+    else {
+      print_(std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out",
+                       _shCollTag.encode().data()));
       return -1;
     }
   }
@@ -467,13 +486,19 @@ int mu2e::MakeDigiNtuple::fillSD() {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSH() {
 
+  if (_debugMode > 0) {
+    if (_debugBit[1] != 0) {
+      printf("evn    sid  pln  pnl mnid    time    dt   tot0 tot1   edep\n");
+      printf("---------------------------------------------------------\n");
+    }
+  }
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
     int pln = sh->strawId().plane();
     int pnl = sh->strawId().panel();
     const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
 
-    int pcie_addr = tpm->dtc % 2; // convention
+    int pcie_addr = tpm->dtc % 2;                      // convention
     _event->nsh[pcie_addr][tpm->link] += 1;
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
@@ -488,9 +513,9 @@ int mu2e::MakeDigiNtuple::fillSH() {
 
     if (_debugMode  > 0) {
       if (_debugBit[1] != 0) {
-        printf("%8i %5i %12.4f %12.4f %6.1f %6.1f %7.4f\n",
+        printf("%8i %5i %3i %3i %3i %12.4f %12.4f %6.1f %6.1f %7.4f\n",
                _event->evn,
-               (int) nt_sh->sid,
+               (int) nt_sh->sid, pln, pnl, nt_sh->mnid,
                nt_sh->time, nt_sh->dt,
                nt_sh->tot0, nt_sh->tot1,
                nt_sh->edep);
@@ -503,14 +528,55 @@ int mu2e::MakeDigiNtuple::fillSH() {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTC() {
 
-  for (int i=0; i<_ntimeclusters; i++) {
-    const mu2e::TimeCluster* tc = &_tcc->at(i);
+  for (int itc=0; itc<_ntimeclusters; itc++) {
+    const mu2e::TimeCluster* tc = &_tcc->at(itc);
    
-    DaqTimeCluster* nt_tc = new ((*_event->tc)[i]) DaqTimeCluster();
+    DaqTimeCluster* nt_tc = new ((*_event->tc)[itc]) DaqTimeCluster();
 
-    nt_tc->nsh  = tc->nStrawHits();
-    nt_tc->nch  = tc->nhits();
-    nt_tc->t0   = tc->t0().t0();
+    nt_tc->nsh     = tc->nStrawHits();
+    nt_tc->nch     = tc->nhits();
+    nt_tc->t0      = tc->t0().t0();
+
+    for (int ih=0; ih<nt_tc->nch; ih++) {
+      StrawHitIndex hit_index   = tc->hits().at(ih);
+      const mu2e::ComboHit *hit = &_chc->at(hit_index);
+      int plane = hit->strawId().plane();
+      int panel = hit->strawId().panel();
+      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
+      int zface = tpm->zface;
+
+      int loc = 6*plane+panel;
+      
+      if (nt_tc->_nh_panel[loc] == 0) nt_tc->npanels++;
+      nt_tc->_nh_panel[loc]++;
+      nt_tc->_time_panel[loc] += hit->correctedTime();
+
+      if (nt_tc->_nhp[plane] == 0) nt_tc->nplanes++;
+      nt_tc->_nhp[plane]++;
+      nt_tc->_timep [plane] += hit->correctedTime();
+
+      if (nt_tc->_nhf[zface] == 0) {
+        nt_tc->nfaces++;
+        nt_tc->_mnid[zface] = tpm->mnid;
+      }
+      nt_tc->_nhf[zface]++;
+      nt_tc->_timef [zface] += hit->correctedTime();
+
+      if (hit->correctedTime() < nt_tc->tmin) nt_tc->tmin = hit->correctedTime();
+      if (hit->correctedTime() > nt_tc->tmax) nt_tc->tmax = hit->correctedTime();
+    }
+
+    for (int ip=0; ip<2; ip++) {
+      if (nt_tc->_nhp[ip] > 0) nt_tc->_timep[ip] = nt_tc->_timep[ip]/nt_tc->_nhp[ip];
+    }
+
+    for (int i=0; i<4; i++) {
+      if (nt_tc->_nhf[i] > 0) nt_tc->_timef[i] = nt_tc->_timef[i]/nt_tc->_nhf[i];
+    }
+
+    for (int i=0; i<12; i++) {
+      if (nt_tc->_nh_panel[i] > 0) nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
+    }
 //-----------------------------------------------------------------------------
     // to calculate tmin and tmax need to loop over the hits, not now
     if (_debugMode  > 0) {

@@ -148,8 +148,8 @@ physics : {
     filters : { @table::DAQ.filters}
     
     p1 : [ StrawDigisFromArtdaqFragments , StrawDigiFilter     ]
-    p2 : [ EWMProducer, StrawDigisFromArtdaqFragments , makeSH ]
-    p3 : [ EWMProducer, StrawDigisFromArtdaqFragments , makeSH, makePH, TZClusterFinder ]
+    p2 : [ EWMProducer, StrawDigisFromArtdaqFragments, makeSH ]
+    p3 : [ EWMProducer, StrawDigisFromArtdaqFragments, makeSH, makePH, TZClusterFinder ]
 
     ## e1 : []
     e1 : [  defaultOutput ]

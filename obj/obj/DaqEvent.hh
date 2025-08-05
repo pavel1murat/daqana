@@ -8,7 +8,7 @@
 #include "daqana/obj/DaqStrawHit.hh"
 #include "daqana/obj/DaqTimeCluster.hh"
 
-class DaqEvent : public TObject {
+class DaqEvent { // : public TObject {
 public:
   int            run;
   int            srn;                   // subrun number
@@ -36,12 +36,12 @@ public:
   int              Nsh(int I, int J) { return nsh[I][J]; }
   int              Nsd(int Dtc, int Link, int Channel) { return nsd[Dtc][Link][Channel]; }
 
-  virtual void     Clear(const char* Opt = "") override;
+  /* virtual */ void     Clear(const char* Opt = "") ; // override;
   
   DaqEvent();
   ~DaqEvent();
 
-  ClassDef(DaqEvent,1)
+  //   ClassDef(DaqEvent,1)
 };
 
 #endif

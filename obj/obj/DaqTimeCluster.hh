@@ -1,3 +1,6 @@
+///////////////////////////////////////////////////////////////////////////////
+// for now, assume the time cluster in one station, update later
+///////////////////////////////////////////////////////////////////////////////
 #ifndef __daqana_obj_DaqTimeCluster_hh__
 #define __daqana_obj_DaqTimeCluster_hh__
 
@@ -5,15 +8,38 @@
 
 class DaqTimeCluster : public TObject {
 public:
-  int     nsh;
-  int     nch;
-  float   t0;
+  int     nsh ;
+  int     nch ;
+  float   t0  ;
   float   tmin;
   float   tmax;
+
+  int     nplanes;
+  int     nfaces ;
+  int     npanels;   // n panels with hits
+
+  int     _nhf  [4];
+  float   _timef[4];
+
+  int     _nhp  [2];
+  float   _timep[2];
+
+  int     _mnid      [12];
+  int     _nh_panel  [12];
+  float   _time_panel[12];
 
   DaqTimeCluster();
 
   virtual ~DaqTimeCluster();
+
+  int   mnid (int i) { return _mnid [i]; }
+  int   nhf  (int i) { return _nhf  [i]; }
+  float timef(int i) { return _timef[i]; }
+  int   nhp  (int i) { return _nhp  [i]; }
+  float timep(int i) { return _timep[i]; }
+  
+  int   nh_panel   (int i) { return _nh_panel  [i]; }
+  int   time_panel (int i) { return _time_panel[i]; }
 
   ClassDef(DaqTimeCluster,1);
 };
