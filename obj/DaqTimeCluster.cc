@@ -11,8 +11,9 @@ DaqTimeCluster::DaqTimeCluster() : TObject(), nsh(-1), nch(-1), t0(-1.), tmin(-1
   nfaces  = 0;
   nplanes = 0;
 
-  tmin    =  1.e12;
-  tmax    = -1.e12;
+  tmin     =  1.e12;
+  tmax     = -1.e12;
+  edep_max = -1.e12;
   
   for (int i=0; i<2; i++) {
     _nhp  [i] = 0;
@@ -26,6 +27,7 @@ DaqTimeCluster::DaqTimeCluster() : TObject(), nsh(-1), nch(-1), t0(-1.), tmin(-1
   for (int i=0; i<12; i++) {
     _nh_panel  [i] = 0;
     _time_panel[i] = 0.;
+    _edep_panel[i] = 0.;
     _mnid      [i] = -1;
   }
 }

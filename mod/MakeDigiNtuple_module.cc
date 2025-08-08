@@ -550,6 +550,9 @@ int mu2e::MakeDigiNtuple::fillTC() {
       if (nt_tc->_nh_panel[loc] == 0) nt_tc->npanels++;
       nt_tc->_nh_panel[loc]++;
       nt_tc->_time_panel[loc] += hit->correctedTime();
+      nt_tc->_edep_panel[loc] += hit->energyDep();
+
+      if (hit->energyDep() > nt_tc->edep_max) nt_tc->edep_max = hit->energyDep();
 
       if (nt_tc->_nhp[plane] == 0) nt_tc->nplanes++;
       nt_tc->_nhp[plane]++;
@@ -575,7 +578,10 @@ int mu2e::MakeDigiNtuple::fillTC() {
     }
 
     for (int i=0; i<12; i++) {
-      if (nt_tc->_nh_panel[i] > 0) nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
+      if (nt_tc->_nh_panel[i] > 0) {
+        nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
+        nt_tc->_edep_panel[i] = nt_tc->_edep_panel[i]/nt_tc->_nh_panel[i];
+      }
     }
 //-----------------------------------------------------------------------------
     // to calculate tmin and tmax need to loop over the hits, not now

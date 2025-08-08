@@ -13,6 +13,7 @@ public:
   float   t0  ;
   float   tmin;
   float   tmax;
+  float   edep_max;
 
   int     nplanes;
   int     nfaces ;
@@ -27,19 +28,20 @@ public:
   int     _mnid      [12];
   int     _nh_panel  [12];
   float   _time_panel[12];
+  float   _edep_panel[12];
 
   DaqTimeCluster();
 
   virtual ~DaqTimeCluster();
 
-  int   mnid (int i) { return _mnid [i]; }
-  int   nhf  (int i) { return _nhf  [i]; }
-  float timef(int i) { return _timef[i]; }
-  int   nhp  (int i) { return _nhp  [i]; }
-  float timep(int i) { return _timep[i]; }
-  
+  int   mnid       (int i) { return _mnid [i]; }
+  int   nhf        (int i) { return _nhf  [i]; }
+  float timef      (int i) { return _timef[i]; }
+  int   nhp        (int i) { return _nhp  [i]; }
+  float timep      (int i) { return _timep[i]; }
   int   nh_panel   (int i) { return _nh_panel  [i]; }
-  int   time_panel (int i) { return _time_panel[i]; }
+  float time_panel (int i) { return _time_panel[i]; }
+  float edep_panel (int i) { return _edep_panel[i]; }
 
   ClassDef(DaqTimeCluster,1);
 };
