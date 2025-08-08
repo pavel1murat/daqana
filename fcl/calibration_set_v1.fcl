@@ -1,0 +1,22 @@
+# services.DbService : @local::DbEmpty
+services.DbService : {
+    purpose  : EMPTY
+    version  : v0                          ## ignored
+    dbName   : "mu2e_conditions_prd"       ## ignored
+    
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
+                 "daqana/calibrations/TrkDelayRStraw.txt"   ,
+                 "daqana/calibrations/TrkDelayPanel_v2.txt" ]   ## everything needed
+                
+    verbose  : 100
+}
+
+services.ProditionsService.alignedTracker.useDb         : false
+services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.strawElectronics.useDb       : true        ## default false
+services.ProditionsService.strawElectronics.verbose     : 10
+services.ProditionsService.fullReadoutStraw.useDb       : false
+services.ProditionsService.strawDrift.useDb             : false
+services.ProditionsService.strawPhysics.useDb           : false
+services.ProditionsService.strawResponse.useDb          : false
+services.ProditionsService.trackerStatus.Settings.useDb : false
