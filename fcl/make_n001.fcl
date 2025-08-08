@@ -113,5 +113,6 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "/data/tracker/vst/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+# services.TFileService.fileName   :   "/data/tracker/vst/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.scheduler.wantSummary   : true

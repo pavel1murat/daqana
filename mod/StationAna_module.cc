@@ -192,7 +192,7 @@ namespace mu2e {
     }
 
     int nhg = Data->list_of_good_hits.size();
-    Hist->nshg->Fill(nh);
+    Hist->nshg->Fill(nhg);
     for (int ih=0; ih<nhg; ++ih) {
       const StrawHit* sh = Data->list_of_good_hits.at(ih);
       Hist->tcalg->Fill(sh->time(mu2e::StrawEnd::cal));
