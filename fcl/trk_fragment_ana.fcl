@@ -1,17 +1,6 @@
 # -*- mode:tcl -*-
-# Run StrawAndCaloDigisFromFragments module to convert artdaq::Fragment collections
-# into TRK and CAL digi collections.
-# Usage: mu2e -c DAQ/test/generateDigiFromFragment.fcl -s <input art files> -n '-1'
-#
-#
+# Usage: mu2e -c daqana/fcl/trk_fragment_ana.fcl -s <input art files>
 #-----------------------------------------------------------------------------
-# BEGIN_PROLOG
-#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
-#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
-#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
-#   PDG_ID              : 0                                    # 0: ignore PDG_ID
-# END_PROLOG
-
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
 
@@ -19,6 +8,11 @@
 
 #include "Stntuple/fcl/prolog.fcl"
 #include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
 
 process_name : TrkFragmentAna
 
@@ -31,8 +25,6 @@ source : {
 #   inputCommands: ["keep *",
 #                   "drop *Mu2eEventHeader*_*_*_*"]
 }
-
-services : @local::Services.Reco
 
 physics : {
     
@@ -82,9 +74,7 @@ physics : {
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "hst.mu2e.vst00s000r000n000.trk_fragment_ana.%06r_%06s.root"
-services.scheduler.wantSummary                   : true
-
+services.TFileService.fileName : "hst.mu2e.vst00s000r000n000.trk_fragment_ana.%06r_%06s.root"
 source.fileNames : [ 
 "/exp/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.105023_00000001.art" 
                    ]

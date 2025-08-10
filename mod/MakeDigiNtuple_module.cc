@@ -12,7 +12,7 @@
 #include "art_root_io/TFileService.h"
 
 #include "art/Framework/Principal/Handle.h"
-#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
+// #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
@@ -20,7 +20,8 @@
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
-#include "daqana/mod/TrkPanelMap_t.hh"
+#include "Offline/TrackerConditions/inc/TrkPanelMapEntity.hh"
+#include "Offline/ProditionsService/inc/ProditionsHandle.hh"
 
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/mod/WfParam_t.hh"
@@ -117,6 +118,7 @@ public:
 
   DaqEvent*                _event;
   const art::Event*        _art_event;
+  int                      _last_run;
 
   int                     _nstrawdigis;
   int                     _nstrawhits;
@@ -132,7 +134,7 @@ public:
   TBranch*                _branch;
 
   int                     _hist_booked;
-  const TrkPanelMap_t*    _panel_map[200][6];   // indexing - offline: [plane][panel]
+  //  const TrkPanelMap_t*    _panel_map[200][6];   // indexing - offline: [plane][panel]
 
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
@@ -140,6 +142,9 @@ public:
   const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
   
+  ProditionsHandle<TrkPanelMapEntity>          _trkPanelMap_h;
+  const TrkPanelMapEntity*                     _trkPanelMap;
+
 }; // MakeDigiNtuple
 
 // ======================================================================
@@ -166,6 +171,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
   _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
   _hist_booked         = 0;
+  _last_run            = -1;
 //-----------------------------------------------------------------------------
 // parse debug bits
 //-----------------------------------------------------------------------------
@@ -179,14 +185,6 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _debugBit[index]  = value;
     
     print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
-  }
-//-----------------------------------------------------------------------------
-// initialize the panel map
-//-----------------------------------------------------------------------------
-  for (const TrkPanelMap_t* tpm = TrkPanelMap_data.begin(); tpm != TrkPanelMap_data.end(); ++tpm) {
-    int plane = tpm->plane;
-    int panel = tpm->panel;
-    _panel_map[plane][panel] = tpm;
   }
 }
 
@@ -219,7 +217,7 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
 
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
-
+  
   if (_hist_booked == 0) {
                                         // make sure we do it only once
     art::ServiceHandle<art::TFileService> tfs;
@@ -426,14 +424,16 @@ int mu2e::MakeDigiNtuple::fillSD() {
     int pln = sd->strawId().plane();
     int pnl = sd->strawId().panel();
     int ich = sd->strawId().straw();
-    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    //    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     // works for one station, not more...
 
-    int pcie_addr = tpm->dtc % 2; // convention
-    _event->nsd[pcie_addr][tpm->link][ich] += 1;
+    int pcie_addr = tpm->dtc() % 2;                   // convention
+    int link      = tpm->link();
+    _event->nsd[pcie_addr][link][ich] += 1;
 
-    nt_sd->mnid         = tpm->mnid;
+    nt_sd->mnid         = tpm->mnid();
     
     nt_sd->tdc0         = sd->TDC(mu2e::StrawEnd::cal);
     nt_sd->tdc1         = sd->TDC(mu2e::StrawEnd::hv );
@@ -496,15 +496,16 @@ int mu2e::MakeDigiNtuple::fillSH() {
     const mu2e::StrawHit* sh = &_shc->at(i);
     int pln = sh->strawId().plane();
     int pnl = sh->strawId().panel();
-    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    //    const TrkPanelMap_t* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
+    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    int pcie_addr = tpm->dtc % 2;                      // convention
-    _event->nsh[pcie_addr][tpm->link] += 1;
+    int pcie_addr = tpm->dtc() % 2;                      // convention
+    _event->nsh[pcie_addr][tpm->link()] += 1;
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
     nt_sh->sid         = sh->strawId().asUint16();
-    nt_sh->zface       = tpm->zface;
-    nt_sh->mnid        = tpm->mnid;
+    nt_sh->zface       = tpm->zface();
+    nt_sh->mnid        = tpm->mnid();
     nt_sh->time        = sh->time(mu2e::StrawEnd::cal);
     nt_sh->dt          = sh->dt();      // cal-hv
     nt_sh->tot0        = sh->TOT(mu2e::StrawEnd::cal);
@@ -542,8 +543,9 @@ int mu2e::MakeDigiNtuple::fillTC() {
       const mu2e::ComboHit *hit = &_chc->at(hit_index);
       int plane = hit->strawId().plane();
       int panel = hit->strawId().panel();
-      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
-      int zface = tpm->zface;
+      //      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
+      const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(plane,panel);
+      int zface = tpm->zface();
 
       int loc = 6*plane+panel;
       
@@ -560,7 +562,7 @@ int mu2e::MakeDigiNtuple::fillTC() {
 
       if (nt_tc->_nhf[zface] == 0) {
         nt_tc->nfaces++;
-        nt_tc->_mnid[zface] = tpm->mnid;
+        nt_tc->_mnid[zface] = tpm->mnid();
       }
       nt_tc->_nhf[zface]++;
       nt_tc->_timef [zface] += hit->correctedTime();
@@ -607,6 +609,11 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   //  int const packet_size(16); // in bytes
 
   _art_event = &ArtEvent;
+
+  if (_last_run != _art_event->run()) {
+    _trkPanelMap = &_trkPanelMap_h.get(ArtEvent.id());
+    _last_run    = _art_event->run();
+  }
 
   if (_debugMode > 0) {
     print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));

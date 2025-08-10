@@ -7,7 +7,7 @@ public:
   TTree* fTree;
   int    fRunNumber;
 
-  PlotTC(int RunNumber, const char* Fn = nullptr);
+  PlotTC(int RunNumber, int RecoVersion=0, const char* Fn = "");
   PlotTC(const char* Fn);
   ~PlotTC();
 
@@ -19,14 +19,20 @@ public:
 
 
 //-----------------------------------------------------------------------------
-PlotTC::PlotTC(int RunNumber, const char* Fn) {
+// by default, sue datasets
+//-----------------------------------------------------------------------------
+PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
   
   fRunNumber = RunNumber;
 
-  std::string fn;
+  std::string fn(Fn);
 
-  if (Fn == nullptr) fn = std::format("nts.mu2e.trk.vst00s000r001n002.{:06d}_000001.root",RunNumber);
-  else               fn = Fn;
+  if (fn == "") {
+    std::string top_dir = "/projects/mu2e/data/projects/vst/datasets";
+    std::string dsid    = std::format("nts.mu2e.trk.vst00s000r{:03d}n002.root",RecoVersion);
+    fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s000r{:03d}n002.{:06d}_000001.root",
+                                      top_dir,dsid,RecoVersion,RunNumber);
+  }
   
   std::string daqana_lib = Form("%s/lib/libdaqana_obj.so",gSystem->Getenv("SPACK_VIEW"));
   if (not gInterpreter->IsLoaded(daqana_lib.data())) {

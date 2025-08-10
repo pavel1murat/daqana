@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # example :
-#        v001/daqana/scripts/make_digi_ntuple.py --rn=107976 --idsid=vst --ntid=n002 --nsbl=10
+#        v001/daqana/scripts/make_digi_ntuple.py --rn=107976 --idsid=vst --ntid=n002 --nsbl=10 --calib=01
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime
 import sys, string, getopt, glob, os, time, re, array
@@ -10,6 +10,7 @@ import inspect
 class SubmitJob:
     
     def __init__(self):
+        self.calib      = None;
         self.idsid      = None;
         self.nfiles     = 1;
         self.ntid       = None;
@@ -33,7 +34,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['idsid=', 'ntid=', 'rn=', 'nsbl=' ] )
+                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nsbl=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -44,7 +45,9 @@ class SubmitJob:
 
             # print('key,val = ',key,val)
 
-            if   (key == '--diag_level'):
+            if   (key == '--calib'):
+                self.calib = val
+            elif (key == '--diag_level'):
                 self.diag_level = int(val)
             elif (key == '--rn'):
                 self.run_number = int(val)
@@ -57,10 +60,11 @@ class SubmitJob:
             elif (key == '--nsbl'):
                 self.nsbl = int(val)
 
-        self.Print(name,1,'verbose   = %s' % self.diag_level)
-        self.Print(name,0,'rn        = %s' % self.run_number)
-        self.Print(name,0,'ntid      = %s' % self.ntid      )
-        self.Print(name,0,'nsbl      = %s' % self.nsbl      )
+        self.Print(name,1,'self.verbose   = %s' % self.diag_level)
+        self.Print(name,0,'self.calib     = %s' % self.calib     )
+        self.Print(name,0,'self.rn        = %s' % self.run_number)
+        self.Print(name,0,'self.ntid      = %s' % self.ntid      )
+        self.Print(name,0,'self.nsbl      = %s' % self.nsbl      )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -68,20 +72,6 @@ class SubmitJob:
 
         self.Print(name,1,'------------------------------------- Done')
         return 0
-
-#------------------------------------------------------------------------------
-    def test1(self):
-        a = 0;
-
-#------------------------------------------------------------------------------
-    def test2(self):
-        a = 0;
-
-#------------------------------------------------------------------------------
-# print statistics reported by a given artdaq process
-#------------------------------------------------------------------------------
-    def test3(self):
-        a = 0
 
 #------------------------------------------------------------------------------
 # print statistics reported by a given artdaq process
@@ -96,10 +86,16 @@ class SubmitJob:
         print(f'000:template_fcl:{template_fcl}');
 
         cmd = f'cat {template_fcl} >| {input_fcl}';
+#------------------------------------------------------------------------------
+# overrides, calib: 'v1'
+#------------------------------------------------------------------------------
+        if (self.calib):
+            cmd += f'; cat {template_fcl} | sed s/calibration_set_v0/calibration_set_v1/ > {input_fcl}';
+
         if (self.nsbl):
             cmd += f'; echo "physics.analyzers.MakeDigiNtuple.nSamplesBL : {self.nsbl}" >> {input_fcl}';
 
-        print('000:cmd:',cmd);
+        print('001:cmd:',cmd);
         
         p   = subprocess.Popen(cmd,
                                executable="/bin/bash",
@@ -112,7 +108,7 @@ class SubmitJob:
 # form the input file list
 #------------------------------------------------------------------------------
         input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
-        cmd  = "ls -al /data/tracker/vst/mu2etrk_daquser_001/data/* | awk '{print $9}'"
+        cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
         cmd += f' | grep {self.run_number} | sort';
         if (self.nfiles):
             cmd += f' | head -n {self.nfiles}'

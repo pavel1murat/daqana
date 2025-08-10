@@ -1,6 +1,6 @@
 // -*- buffer-read-only:t -*- 
 // ======================================================================
-//
+// clang-format off
 // ======================================================================
 #ifndef __daqana_mod_StationAna_hh__
 #define __daqana_mod_StationAna_hh__
@@ -32,6 +32,8 @@ namespace fhiclcpp {
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 
+#include "Offline/ProditionsService/inc/ProditionsHandle.hh"
+#include "Offline/TrackerConditions/inc/TrkPanelMapEntity.hh"
 // #include "Stntuple/print/TAnaDump.hh"
 #include "Stntuple/mod/THistModule.hh"
 
@@ -145,6 +147,10 @@ namespace mu2e {
     int                             _n_straw_hits;
     Hist_t                          _hist;
     int                             _initialized;
+    int                             _last_run;
+
+    ProditionsHandle<TrkPanelMapEntity> _trkPanelMap_h;
+    const TrkPanelMapEntity*            _trkPanelMap;
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------

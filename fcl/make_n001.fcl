@@ -20,26 +20,12 @@ END_PROLOG
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
 #include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
 
 process_name : MakeDaqNtuple
-
-services : @local::Services.SimAndReco
-
-services.scheduler.wantSummary                   : true
-
-services.DbService : @local::DbEmpty
-services.SeedService.baseSeed         : 8
-services.SeedService.maxUniqueEngines : 100
-
-services.ProditionsService.alignedTracker.useDb         : false
-services.ProditionsService.alignedTrackerSim.useDb      : false
-services.ProditionsService.strawElectronics.useDb       : false
-services.ProditionsService.fullReadoutStraw.useDb       : false
-services.ProditionsService.strawDrift.useDb             : false
-services.ProditionsService.strawPhysics.useDb           : false
-services.ProditionsService.strawResponse.useDb          : false
-services.ProditionsService.trackerStatus.Settings.useDb : false
-
 
 source : {
     module_type : RootInput
@@ -67,10 +53,10 @@ physics : {
     
     producers : {
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
-            SpillType         : 0   ## offspill
-            RecoFromMCTruth   : false  ## default
-            RecoFromMCTruthErr: 0   ## default
-            InitialPhaseShift : 0   ## optional, set it to zero just in case
+            SpillType         : 0       ## offspill
+            RecoFromMCTruth   : false   ## default
+            RecoFromMCTruthErr: 0       ## default
+            InitialPhaseShift : 0       ## optional, set it to zero just in case
         }
 
         makeSD: { @table::DAQ.producers.makeSD
@@ -103,16 +89,7 @@ physics : {
     trigger_paths  : [ p1 ]
     end_paths      : [ e1 ]
 }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-# services.TFileService.fileName   :   "/data/tracker/vst/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
 services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
-services.scheduler.wantSummary   : true

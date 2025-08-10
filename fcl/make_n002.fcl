@@ -1,6 +1,6 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# make digi ntuple witl straw hits and time clusters
+# make digi ntuple with: a) straw hits and b) time clusters  (NO DIGIS)
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
@@ -15,33 +15,12 @@
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
 #include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
 
 process_name : MakeDaqNtuple
-
-services : @local::Services.SimAndReco
-
-services.scheduler.wantSummary : true
-
-services.DbService : @local::DbEmpty
-services.SeedService.baseSeed         : 8
-services.SeedService.maxUniqueEngines : 100
-
-services.ProditionsService.alignedTracker.useDb : false
-services.ProditionsService.alignedTrackerSim.useDb : false
-services.ProditionsService.strawElectronics.useDb : false
-services.ProditionsService.fullReadoutStraw.useDb : false
-services.ProditionsService.strawDrift.useDb : false
-services.ProditionsService.strawPhysics.useDb : false
-services.ProditionsService.strawResponse.useDb : false
-services.ProditionsService.trackerStatus.Settings.useDb : false
-
-services.TimeTracker : {
-    printSummary : true
-    dbOutput : {
-        filename  : ""
-        overwrite : false
-    }
-}
 
 source : {
     module_type : RootInput
@@ -153,13 +132,6 @@ physics : {
     trigger_paths  : [ p2 ] 
     end_paths      : [ e1 ]
 }
-
-# services.TimeTracker : {
-#     dbOutput : {
-#         filename  : "trk_fragment_ana.sqlite3"
-#         overwrite : true
-#     }
-# }
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------

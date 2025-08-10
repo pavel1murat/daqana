@@ -19,11 +19,6 @@
 #define TRACE_NAME "StationAna"
 
 #include "daqana/mod/StationAna_module.hh"
-#include "daqana/mod/TrkPanelMap_t.hh"
-
-namespace {
-  const TrkPanelMap_t* _panel_map[200][6];   // indexing - offline: [plane][panel]
-};
 
 namespace mu2e {
   
@@ -36,7 +31,8 @@ namespace mu2e {
     _maxDt                 (PSet.get<float>           ("maxDt"                 )),
     _minEDep               (PSet.get<float>           ("minEDep"               ))
   {
-    _initialized         = 0;
+    _initialized = 0;
+    _last_run    = -1;
   }
 
 //-----------------------------------------------------------------------------
@@ -145,22 +141,6 @@ namespace mu2e {
     
     if (_initialized != 0) return;
     _initialized = 1;
-//-----------------------------------------------------------------------------
-// art may call beginRun on each input file
-// the following are the steps which need to be taken just once
-// initialize the panel map
-//-----------------------------------------------------------------------------
-    for (const TrkPanelMap_t* tpm = TrkPanelMap_data.begin(); tpm != TrkPanelMap_data.end(); ++tpm) {
-      int plane = tpm->plane;
-      int panel = tpm->panel;
-      _panel_map[plane][panel] = tpm;
-
-      int idtc   = tpm->dtc % 2;
-      int ilink  = tpm->link;
-      int ipanel = 6*idtc+ilink;
-      
-      _edata.panel[ipanel].mnid = tpm->mnid;
-    }
 //-----------------------------------------------------------------------------
 // as a last step, book histograms - need to know the number of active links
 //-----------------------------------------------------------------------------
@@ -342,12 +322,17 @@ int mu2e::StationAna::getData(const art::Event& ArtEvent) {
   return rc;
 }
 
-  //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 int StationAna::init_event(const art::Event& ArtEvent) {
   _edata.event      = &ArtEvent;
   _edata.evt_number = ArtEvent.event();
   _edata.run_number = ArtEvent.run();
   _edata.srn_number = ArtEvent.subRun();
+                                        // init panel map
+  if (_last_run != (int) ArtEvent.run()) {
+    _trkPanelMap = &_trkPanelMap_h.get(ArtEvent.id());
+    _last_run    = ArtEvent.run();
+  }
 
   _edata.nsht       = 0;
   _edata.nshg       = 0;
@@ -375,7 +360,7 @@ int StationAna::init_event(const art::Event& ArtEvent) {
 void StationAna::analyze(const art::Event& ArtEvent) {
 
   init_event(ArtEvent);
-
+  
   if (_debugMode > 0) printf(" Event : %06i:%08i%08i\n", ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event());
 
   _edata.max_edep = -1;
@@ -386,10 +371,10 @@ void StationAna::analyze(const art::Event& ArtEvent) {
     int pnl = sh->strawId().panel();
     int is  = sh->strawId().straw();
     
-    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    int pcie_addr = tpm->dtc % 2;  // this is a convention
-    int ipanel    = pcie_addr*6+tpm->link;
+    int pcie_addr = tpm->dtc() % 2;  // this is a convention
+    int ipanel    = pcie_addr*6+tpm->link();
     
     _edata.nsht               += 1;
     _edata.panel[ipanel].nsht += 1;
