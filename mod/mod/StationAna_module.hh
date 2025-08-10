@@ -32,8 +32,6 @@ namespace fhiclcpp {
 #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 
-#include "Offline/ProditionsService/inc/ProditionsHandle.hh"
-#include "Offline/TrackerConditions/inc/TrkPanelMapEntity.hh"
 // #include "Stntuple/print/TAnaDump.hh"
 #include "Stntuple/mod/THistModule.hh"
 
@@ -43,6 +41,7 @@ namespace fhiclcpp {
 
 // ======================================================================
 namespace mu2e {
+  class TrkPanelMapEntity;
 
   class StationAna : public THistModule {
 
@@ -149,8 +148,7 @@ namespace mu2e {
     int                             _initialized;
     int                             _last_run;
 
-    ProditionsHandle<TrkPanelMapEntity> _trkPanelMap_h;
-    const TrkPanelMapEntity*            _trkPanelMap;
+    const TrkPanelMapEntity*        _trkPanelMap;
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
