@@ -8,6 +8,7 @@
 #pragma link C++  nestedtypedefs;
 #
 #pragma link C++  class  DaqEvent;
+#pragma link C++  class  DaqComboHit;
 #pragma link C++  class  DaqStrawDigi;
 #pragma link C++  class  DaqStrawHit;
 #pragma link C++  class  DaqTimeCluster;

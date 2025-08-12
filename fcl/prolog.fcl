@@ -156,6 +156,8 @@ daqana : {
         MakeDigiNtuple: { module_type: MakeDigiNtuple
             makeSD         : 1
             makeSH         : 1
+            makeCH         : 0
+            makeTC         : 0
             sdCollTag      : "makeSD"
             shCollTag      : "makeSH"
             outputDir      : "./"

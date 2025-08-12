@@ -68,6 +68,7 @@ public:
     Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms"),0};
     Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     ),1};
     Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
+    Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
     Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   ),1};
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
@@ -86,6 +87,7 @@ public:
 
   int      fillSD();
   int      fillSH();
+  int      fillCH();
   int      fillTC();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
@@ -106,6 +108,7 @@ public:
   int                      _saveWaveforms;
   int                      _makeSD;
   int                      _makeSH;
+  int                      _makeCH;
   int                      _makeTC;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   int                      _nSamplesBL;
@@ -135,13 +138,14 @@ public:
 
   int                     _hist_booked;
   //  const TrkPanelMap_t*    _panel_map[200][6];   // indexing - offline: [plane][panel]
-
+   
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
   const mu2e::StrawHitCollection*              _shc;
   const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
   
+  ProditionsHandle<TrackerPanelMap>            _tpm_h;
   const TrackerPanelMap*                       _trkPanelMap;
 
 }; // MakeDigiNtuple
@@ -159,6 +163,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _saveWaveforms(config().saveWaveforms()),
     _makeSD       (config().makeSD       ()),
     _makeSH       (config().makeSH       ()),
+    _makeCH       (config().makeCH       ()),
     _makeTC       (config().makeTC       ()),
     _ewLength     (config().ewLength     ()),
     _nSamplesBL   (config().nSamplesBL   ()),
@@ -274,6 +279,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 
   _nstrawdigis   = 0;
   _nstrawhits    = 0;
+  _ncombohits    = 0;
   _ntimeclusters = 0;
   // _ncalodigis  = 0;
   // _ncrvdigis   = 0;
@@ -282,6 +288,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   _sdc         = nullptr;
   _sdawfc      = nullptr;
   _shc         = nullptr;
+  _chc         = nullptr;
   
   bool ok = ArtEvent.getByLabel(_shCollTag,shch);
   if (ok) { 
@@ -526,6 +533,52 @@ int mu2e::MakeDigiNtuple::fillSH() {
 }
 
 //-----------------------------------------------------------------------------
+// comboo hits
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCH() {
+
+  if (_debugMode > 0) {
+    if (_debugBit[1] != 0) {
+      printf("evn    sid  pln  pnl mnid    time    dt   tot0 tot1   edep\n");
+      printf("---------------------------------------------------------\n");
+    }
+  }
+  for (int i=0; i<_ncombohits; i++) {
+    const mu2e::ComboHit* ch = &_chc->at(i);
+    int pln = ch->strawId().plane();
+    int pnl = ch->strawId().panel();
+    //    const TrkPanelMap_t* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
+    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
+
+    DaqComboHit* nt_ch = new ((*_event->ch)[i]) DaqComboHit();
+    nt_ch->sid         = ch->strawId().asUint16();
+    nt_ch->nsh         = ch->nStrawHits();
+    nt_ch->zface       = tpm->zface();
+    nt_ch->mnid        = tpm->mnid();
+    nt_ch->time        = ch->correctedTime();
+    nt_ch->dtime       = ch->driftTime();
+    nt_ch->x           = ch->pos().x();
+    nt_ch->y           = ch->pos().y();
+    nt_ch->z           = ch->pos().z();
+    nt_ch->ux          = ch->uDir().x();
+    nt_ch->uy          = ch->uDir().y();
+    nt_ch->edep        = ch->energyDep();
+
+    if (_debugMode  > 0) {
+      if (_debugBit[1] != 0) {
+        // printf("%8i %5i %3i %3i %3i %12.4f %12.4f %6.1f %6.1f %7.4f\n",
+        //        _event->evn,
+        //        (int) nt_sh->sid, pln, pnl, nt_sh->mnid,
+        //        nt_sh->time, nt_sh->dt,
+        //        nt_sh->tot0, nt_sh->tot1,
+        //        nt_sh->edep);
+      }
+    }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTC() {
 
   for (int itc=0; itc<_ntimeclusters; itc++) {
@@ -609,9 +662,8 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 
   _art_event = &ArtEvent;
 
-  if (_last_run != _art_event->run()) {
-    ProditionsHandle<TrackerPanelMap> tpm_h;
-    _trkPanelMap = &tpm_h.get(ArtEvent.id());
+  if (_last_run != (int) _art_event->run()) {
+    _trkPanelMap = &_tpm_h.get(ArtEvent.id());
     _last_run    = _art_event->run();
   }
 
@@ -642,6 +694,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
                                         // defined in getData()
   _event->nsdtot = _nstrawdigis;
   _event->nshtot = _nstrawhits;
+  _event->nch    = _ncombohits;
   _event->ntc    = _ntimeclusters;
 
   //   DaqEvent::fgSd.clear();
@@ -651,6 +704,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 
   if (_makeSD) fillSD();
   if (_makeSH) fillSH();
+  if (_makeCH) fillCH();
   if (_makeTC) fillTC();
 
   //  _event->sd = DaqEvent::fgSd.data();

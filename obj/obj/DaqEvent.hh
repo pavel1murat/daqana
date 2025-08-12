@@ -6,6 +6,7 @@
 
 #include "daqana/obj/DaqStrawDigi.hh"
 #include "daqana/obj/DaqStrawHit.hh"
+#include "daqana/obj/DaqComboHit.hh"
 #include "daqana/obj/DaqTimeCluster.hh"
 
 class DaqEvent { // : public TObject {
@@ -19,6 +20,8 @@ public:
   int            nshtot;                // total number of straw digis in event
   int            nsh[2][6];             // by [dtc][link]
   TClonesArray*  sh;
+  int            nch;
+  TClonesArray*  ch;
   int            ntc;                   // N(time clusters)
   TClonesArray*  tc;
   // int            ncalodigis;         // number of calo digis
@@ -27,8 +30,6 @@ public:
   // TClonesArray*  crvdigis;
   // int            nstmdigis;          // number of stm digis
   // TClonesArray*  stmdigis;
-
-  //   static std::vector<DaqStrawDigi> fgSd;
 
   DaqStrawDigi*    Sd(int I) { return (DaqStrawDigi*  ) sd->At(I); }
   DaqStrawHit*     Sh(int I) { return (DaqStrawHit*   ) sh->At(I); }

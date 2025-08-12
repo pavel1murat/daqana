@@ -24,4 +24,4 @@ services.ProditionsService.strawResponse.useDb          : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
 
 ## :: include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
-services.ProditionsService.trackerPanelMap.verbose      : 10
+## services.ProditionsService.trackerPanelMap.verbose      : 10
