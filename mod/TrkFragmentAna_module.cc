@@ -40,11 +40,11 @@ unsigned int reverseBits(unsigned int num) {
 //-----------------------------------------------------------------------------
 //  Richie fixed that
 //-----------------------------------------------------------------------------
-unsigned int correctedTDC(unsigned int TDC) {
-  //  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
-  uint32_t corrected_tdc = TDC;
-  return corrected_tdc;
-}
+//unsigned int correctedTDC(unsigned int TDC) {
+//  //  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+//  uint32_t corrected_tdc = TDC;
+//  return corrected_tdc;
+//}
 
 //-----------------------------------------------------------------------------
 // convert DTC ID into an index within the station (0 or 1)
@@ -616,8 +616,8 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
       for (int ih=0; ih<nh; ih++) {
         TrackerDataDecoder::TrackerDataPacket* hit = chd->hit[ih];
 
-        uint32_t corr_tdc0 = correctedTDC(hit->TDC0());
-        uint32_t corr_tdc1 = correctedTDC(hit->TDC1());
+        uint32_t corr_tdc0 = hit->TDC0();
+        uint32_t corr_tdc1 = hit->TDC1();
 
         float t0_us = corr_tdc0*_tdc_bin;
         float t1_us = corr_tdc1*_tdc_bin;
@@ -703,10 +703,10 @@ void TrkFragmentAna::beginRun(const art::Run& aRun) {
 // time distance between the two sequential hits - need at least two
 //-----------------------------------------------------------------------------
       for (int ih=1; ih<nh; ih++) {
-        int corr_tdc0_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC0());
-        int corr_tdc1_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC1());
-        int corr_tdc0_ih1 = (int) correctedTDC(chd->hit[ih-1]->TDC0());
-        int corr_tdc1_ih1 = (int) correctedTDC(chd->hit[ih-1]->TDC1());
+        int corr_tdc0_ih  = (int) chd->hit[ih  ]->TDC0();
+        int corr_tdc1_ih  = (int) chd->hit[ih  ]->TDC1();
+        int corr_tdc0_ih1 = (int) chd->hit[ih-1]->TDC0();
+        int corr_tdc1_ih1 = (int) chd->hit[ih-1]->TDC1();
 
         double dt0        = (corr_tdc0_ih-corr_tdc0_ih1)*_tdc_bin;
         double dt1        = (corr_tdc1_ih-corr_tdc1_ih1)*_tdc_bin;
@@ -1407,10 +1407,10 @@ void TrkFragmentAna::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) 
 //-----------------------------------------------------------------------------
 // at least one hit in both reference and test channels
 //-----------------------------------------------------------------------------
-      int t0r = correctedTDC(rch->hit[0]->TDC0());
-      int t1r = correctedTDC(rch->hit[0]->TDC1());
-      int t0  = correctedTDC(chd->hit[0]->TDC0());
-      int t1  = correctedTDC(chd->hit[0]->TDC1());
+      int t0r = rch->hit[0]->TDC0();
+      int t1r = rch->hit[0]->TDC1();
+      int t0  = chd->hit[0]->TDC0();
+      int t1  = chd->hit[0]->TDC1();
           
       float dt_over_2(_dt/2);
           
@@ -1431,11 +1431,11 @@ void TrkFragmentAna::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) 
 // time offset between the two pulsers for the same ROC
 //-----------------------------------------------------------------------------
   if ((Rd->ref_ch[0]->nhits() > 0) and (Rd->ref_ch[1]->nhits() > 0)) {
-    int t0r0   = correctedTDC(Rd->ref_ch[0]->hit[0]->TDC0());
-    int t1r0   = correctedTDC(Rd->ref_ch[0]->hit[0]->TDC1());
+    int t0r0   = Rd->ref_ch[0]->hit[0]->TDC0();
+    int t1r0   = Rd->ref_ch[0]->hit[0]->TDC1();
         
-    int t0r1   = correctedTDC(Rd->ref_ch[1]->hit[0]->TDC0());
-    int t1r1   = correctedTDC(Rd->ref_ch[1]->hit[0]->TDC1());
+    int t0r1   = Rd->ref_ch[1]->hit[0]->TDC0();
+    int t1r1   = Rd->ref_ch[1]->hit[0]->TDC1();
         
     Rd->dt0r01 = (t0r0-t0r1)*_tdc_bin_ns;        // convert to ns  
     Rd->dt1r01 = (t1r0-t1r1)*_tdc_bin_ns;        // convert to ns  

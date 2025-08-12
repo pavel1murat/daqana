@@ -41,7 +41,7 @@ namespace fhiclcpp {
 
 // ======================================================================
 namespace mu2e {
-  class TrkPanelMapEntity;
+  class TrackerPanelMap;
 
   class StationAna : public THistModule {
 
@@ -148,7 +148,7 @@ namespace mu2e {
     int                             _initialized;
     int                             _last_run;
 
-    const TrkPanelMapEntity*        _trkPanelMap;
+    const TrackerPanelMap*          _trkPanelMap;
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------

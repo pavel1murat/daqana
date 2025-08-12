@@ -19,7 +19,7 @@
 #define TRACE_NAME "StationAna"
 
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
-#include "Offline/TrackerConditions/inc/TrkPanelMapEntity.hh"
+#include "Offline/TrackerConditions/inc/TrackerPanelMap.hh"
 
 #include "daqana/mod/StationAna_module.hh"
 
@@ -333,7 +333,7 @@ int StationAna::init_event(const art::Event& ArtEvent) {
   _edata.srn_number = ArtEvent.subRun();
                                         // init panel map
   if (_last_run != (int) ArtEvent.run()) {
-    ProditionsHandle<TrkPanelMapEntity> tpm_h;
+    ProditionsHandle<TrackerPanelMap> tpm_h;
     _trkPanelMap = &tpm_h.get(ArtEvent.id());
     _last_run    = ArtEvent.run();
   }

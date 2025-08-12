@@ -20,7 +20,7 @@
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
-#include "Offline/TrackerConditions/inc/TrkPanelMapEntity.hh"
+#include "Offline/TrackerConditions/inc/TrackerPanelMap.hh"
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
 
 #include "daqana/obj/DaqEvent.hh"
@@ -142,8 +142,7 @@ public:
   const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
   
-  ProditionsHandle<TrkPanelMapEntity>          _trkPanelMap_h;
-  const TrkPanelMapEntity*                     _trkPanelMap;
+  const TrackerPanelMap*                       _trkPanelMap;
 
 }; // MakeDigiNtuple
 
@@ -611,7 +610,8 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _art_event = &ArtEvent;
 
   if (_last_run != _art_event->run()) {
-    _trkPanelMap = &_trkPanelMap_h.get(ArtEvent.id());
+    ProditionsHandle<TrackerPanelMap> tpm_h;
+    _trkPanelMap = &tpm_h.get(ArtEvent.id());
     _last_run    = _art_event->run();
   }
 
