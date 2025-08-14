@@ -1,0 +1,29 @@
+#!/usr/bin/bash
+
+unset SPACK_ROOT
+export SPACK_DISABLE_LOCAL_CONFIG=true
+
+source spack/share/spack/setup-env.sh
+spack env activate v001
+
+export SPACK_USER_CACHE_PATH=$SPACK_ROOT/build
+
+        export  SPACK_VIEW=$SPACK_ENV/.spack-env/view
+           export MIDASSYS=$SPACK_VIEW
+    export MIDAS_EXPT_NAME=test_025
+    export    MIDAS_EXPTAB=$PWD/config/midas/$MIDAS_EXPT_NAME.exptab
+
+export  PYTHONPATH=$SPACK_VIEW/python
+export     ROOTSYS=$SPACK_VIEW/lib/root
+
+    export CVMFS_DIR=/cvmfs/mu2e.opensciencegrid.org
+export MUSE_WORK_DIR=$CVMFS_DIR/Musings/Pass1/v01_01_00
+#------------------------------------------------------------------------------
+# there is also a component pointing t the installed offline, but that is inconsistent
+#------------------------------------------------------------------------------
+export MU2E_SEARCH_PATH=$MUSE_WORK_DIR:$SPACK_ENV:/cvmfs/mu2e.opensciencegrid.org/DataFiles:$PWD
+
+export FHICL_FILE_PATH=$SPACK_ENV:$SPACK_VIEW/fcl
+export LD_LIBRARY_PATH=$SPACK_VIEW/lib
+export ROOT_INCLUDE_PATH=$SPACK_VIEW/include:$SPACK_VIEW/include/KinKal/Examples:$SPACK_VIEW/include/KinKal/Trajectory:$SPACK_VIEW/include/KinKal/Fit:$SPACK_VIEW/include/KinKal/Geometry
+export RAW_DATA_DIR=/projects/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art

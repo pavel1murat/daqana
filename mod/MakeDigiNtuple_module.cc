@@ -562,7 +562,8 @@ int mu2e::MakeDigiNtuple::fillCH() {
     nt_ch->z           = ch->pos().z();
     nt_ch->ux          = ch->uDir().x();
     nt_ch->uy          = ch->uDir().y();
-    nt_ch->edep        = ch->energyDep();
+    nt_ch->ures        = ch->uRes();
+    nt_ch->vres        = ch->vRes();
 
     if (_debugMode  > 0) {
       if (_debugBit[1] != 0) {

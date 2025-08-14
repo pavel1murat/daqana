@@ -25,7 +25,7 @@ physics :{
 #      crvCoincidenceClusterPrinter : { verbose : 1              }
 #      helixSeedPrinter             : { verbose : 1              }
 #      kalRepPrinter                : { verbose : 1              }
-#      kalSeedPrinter               : { verbose : 3              }      # this one ahs many print levels
+      kalSeedPrinter               : { verbose : 3              }      # this one ahs many print levels
 #      physicalVolumePrinter        : { verbose : 1              }
       ProtonBunchTimePrinter       : { verbose : 1              }
 #      primaryParticlePrinter       : { verbose : 1              }
