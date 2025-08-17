@@ -1,5 +1,5 @@
 // ======================================================================
-//
+// clang-format off
 // MakeDigiNtuple:  assume that digis have been produced, make a hit ntuple
 //                  for the cross-subsystem timing studies
 // tracker       :  assume that the waveforms are made
@@ -14,11 +14,13 @@
 #include "art/Framework/Principal/Handle.h"
 // #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
-#include "Offline/DataProducts/inc/TrkTypes.hh"
+// #include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
+
+#include "Offline/Mu2eUtilities/inc/LsqSums2.hh"
 
 #include "Offline/TrackerConditions/inc/TrackerPanelMap.hh"
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
@@ -590,10 +592,19 @@ int mu2e::MakeDigiNtuple::fillTC() {
     nt_tc->nsh     = tc->nStrawHits();
     nt_tc->nch     = tc->nhits();
     nt_tc->t0      = tc->t0().t0();
+    
+    LsqSums2 szy;
 
     for (int ih=0; ih<nt_tc->nch; ih++) {
       StrawHitIndex hit_index   = tc->hits().at(ih);
-      const mu2e::ComboHit *hit = &_chc->at(hit_index);
+      const mu2e::ComboHit* hit = &_chc->at(hit_index);
+
+      double y    = hit->pos().Y();
+      double z    = hit->pos().Z();
+      double sigy = hit->uRes()*hit->uDir().X();
+      double w    = 1./sigy/sigy;
+      szy.addPoint(z,y,w);
+      
       int plane = hit->strawId().plane();
       int panel = hit->strawId().panel();
       //      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
@@ -623,6 +634,10 @@ int mu2e::MakeDigiNtuple::fillTC() {
       if (hit->correctedTime() < nt_tc->tmin) nt_tc->tmin = hit->correctedTime();
       if (hit->correctedTime() > nt_tc->tmax) nt_tc->tmax = hit->correctedTime();
     }
+
+    nt_tc->y0     = szy.y0();
+    nt_tc->dydz   = szy.dydx();
+    nt_tc->chi2yz = szy.chi2Dof();
 
     for (int ip=0; ip<2; ip++) {
       if (nt_tc->_nhp[ip] > 0) nt_tc->_timep[ip] = nt_tc->_timep[ip]/nt_tc->_nhp[ip];

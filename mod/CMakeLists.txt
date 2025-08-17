@@ -27,6 +27,8 @@ cet_build_plugin(TrkFragmentAna art::module LIBRARIES REG
   Stntuple_geom
   Stntuple_obj
   Stntuple_base
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
   art_root_io::TFileService_service
   artdaq-core-mu2e::Data
   ROOT::Hist
@@ -34,7 +36,6 @@ cet_build_plugin(TrkFragmentAna art::module LIBRARIES REG
   ROOT::Core
   ROOT::RIO
   ROOT::Gui
-  Offline::RecoDataProducts
 )
 
 cet_build_plugin(FileCatalog art::module LIBRARIES REG
@@ -44,6 +45,7 @@ cet_build_plugin(FileCatalog art::module LIBRARIES REG
   Stntuple_geom
   Stntuple_obj
   Stntuple_base
+  Offline::RecoDataProducts
   art_root_io::TFileService_service
   artdaq-core-mu2e::Data
   ROOT::Hist
@@ -51,7 +53,6 @@ cet_build_plugin(FileCatalog art::module LIBRARIES REG
   ROOT::Core
   ROOT::RIO
   ROOT::Gui
-  Offline::RecoDataProducts
 )
 
 cet_build_plugin(StationAna art::module LIBRARIES REG
@@ -61,6 +62,7 @@ cet_build_plugin(StationAna art::module LIBRARIES REG
   Stntuple_geom
   Stntuple_obj
   Stntuple_base
+  Offline::RecoDataProducts
   art_root_io::TFileService_service
   artdaq-core-mu2e::Data
   ROOT::Hist
@@ -68,19 +70,19 @@ cet_build_plugin(StationAna art::module LIBRARIES REG
   ROOT::Core
   ROOT::RIO
   ROOT::Gui
-  Offline::RecoDataProducts
 )
 
 cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
-daqana_obj
-art_root_io::TFileService_service
-artdaq-core-mu2e::Data
-ROOT::Hist
-ROOT::Tree
-ROOT::Core
-ROOT::RIO
-ROOT::Gui
-Offline::RecoDataProducts
+  daqana_obj
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art_root_io::TFileService_service
+  artdaq-core-mu2e::Data
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::Core
+  ROOT::RIO
+  ROOT::Gui
 )
 
 set (source_files

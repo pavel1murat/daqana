@@ -15,6 +15,10 @@ public:
   float   tmax;
   float   edep_max;
 
+  float   y0;
+  float   dydz;
+  float   chi2yz;                       // per DOF
+
   int     nplanes;
   int     nfaces ;
   int     npanels;   // n panels with hits

@@ -14,6 +14,9 @@ DaqTimeCluster::DaqTimeCluster() : TObject(), nsh(-1), nch(-1), t0(-1.), tmin(-1
   tmin     =  1.e12;
   tmax     = -1.e12;
   edep_max = -1.e12;
+  chi2yz   = -1.e12;
+  y0       = -1.e12;
+  dydz     = -1.e12;
   
   for (int i=0; i<2; i++) {
     _nhp  [i] = 0;
