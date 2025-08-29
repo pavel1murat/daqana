@@ -122,9 +122,11 @@ physics : {
             makeTC    : 1
             makeTrk   : 1
             tcCollTag : "TZClusterFinder"
+            ksCollTag : "KKLine"
         }
     }
 
+    p0 : [ ]
     p1 : [ EWMProducer, makeSD, makeSH ]
     p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
 
@@ -137,4 +139,4 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r011n003.%06r_%06s.root"
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r111n003.%06r_%06s.root"

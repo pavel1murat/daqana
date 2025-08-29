@@ -1,7 +1,15 @@
 # -*- mode: tcl -*- 
 daqana : {
     producers : {}  # empty table
-    filters   : {}
+    filters   : {
+        TCLineFilter: { module_type: TCLineFilter
+            chCollTag      : "makeSH"
+            tcCollTag      : "TZClusterFinder"
+            diagLevel      : 0
+            minPeak        : 0
+            t0offset       : 0
+        }
+    }
     analyzers : {
 #------------------------------------------------------------------------------
 # analysis of the TRK DAQ fragments

@@ -8,6 +8,7 @@
 #include "daqana/obj/DaqStrawHit.hh"
 #include "daqana/obj/DaqComboHit.hh"
 #include "daqana/obj/DaqTimeCluster.hh"
+#include "daqana/obj/DaqTrack.hh"
 
 class DaqEvent { // : public TObject {
 public:
@@ -24,6 +25,8 @@ public:
   TClonesArray*  ch;
   int            ntc;                   // N(time clusters)
   TClonesArray*  tc;
+  int            ntracks;               // N(tracks)
+  TClonesArray*  trk;
   // int            ncalodigis;         // number of calo digis
   // TClonesArray*  calodigis;
   // int            ncrvdigis;          // number of crv digis

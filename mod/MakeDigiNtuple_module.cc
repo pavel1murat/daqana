@@ -19,6 +19,7 @@
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
+#include "Offline/RecoDataProducts/inc/KalSeed.hh"
 
 #include "Offline/Mu2eUtilities/inc/LsqSums2.hh"
 
@@ -64,6 +65,7 @@ public:
     Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"       ),""};
     Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"       ),""};
     Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"     ),""};
+    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"               ),""};
     Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                ),0};
     Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                )};
     Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"          )};
@@ -72,6 +74,7 @@ public:
     Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
     Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
     Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   ),1};
+    Atom<int>             makeTrk       {Name("makeTrk"       ), Comment("make track branch"          ),1};
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
@@ -87,18 +90,19 @@ public:
 
   int      process_adc_waveform(float* Wf, WfParam_t* Wp);
 
-  int      fillSD();
-  int      fillSH();
-  int      fillCH();
-  int      fillTC();
+  int      fillSD ();
+  int      fillSH ();
+  int      fillCH ();
+  int      fillTC ();
+  int      fillTrk();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
 //-----------------------------------------------------------------------------
-  virtual void beginRun(const art::Run&   r);
-  virtual void analyze (const art::Event& e);
-  virtual void endRun  (const art::Run&   r);
-  virtual void beginJob();
-  virtual void endJob  ();
+  virtual  void beginRun(const art::Run&   r);
+  virtual  void analyze (const art::Event& e);
+  virtual  void endRun  (const art::Run&   r);
+  virtual  void beginJob();
+  virtual  void endJob  ();
 
   int                      _debugMode;
   std::vector<std::string> _debugBits;
@@ -106,12 +110,14 @@ public:
   art::InputTag            _sdCollTag;          // straw digi collection tag
   art::InputTag            _shCollTag;          // straw hit collection tag
   art::InputTag            _tcCollTag;          // time cluster collection tag
+  art::InputTag            _ksCollTag;          // kalseed collection tag
   std::string              _outputDir;
   int                      _saveWaveforms;
   int                      _makeSD;
   int                      _makeSH;
   int                      _makeCH;
   int                      _makeTC;
+  int                      _makeTrk;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   int                      _nSamplesBL;
   int                      _minPulseHeight;
@@ -129,6 +135,7 @@ public:
   int                     _nstrawhits;
   int                     _ncombohits;
   int                     _ntimeclusters;
+  int                     _ntracks;
   
   int                     _ncalodigis;
   int                     _ncrvdigis;
@@ -146,6 +153,7 @@ public:
   const mu2e::StrawHitCollection*              _shc;
   const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
+  const mu2e::KalSeedCollection*               _ksc;
   
   ProditionsHandle<TrackerPanelMap>            _tpm_h;
   const TrackerPanelMap*                       _trkPanelMap;
@@ -161,12 +169,14 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _sdCollTag    (config().sdCollTag    ()),
     _shCollTag    (config().shCollTag    ()),
     _tcCollTag    (config().tcCollTag    ()),
+    _ksCollTag    (config().ksCollTag    ()),
     _outputDir    (config().outputDir    ()),
     _saveWaveforms(config().saveWaveforms()),
     _makeSD       (config().makeSD       ()),
     _makeSH       (config().makeSH       ()),
     _makeCH       (config().makeCH       ()),
     _makeTC       (config().makeTC       ()),
+    _makeTrk      (config().makeTrk      ()),
     _ewLength     (config().ewLength     ()),
     _nSamplesBL   (config().nSamplesBL   ()),
     _minPulseHeight(config().minPulseHeight   ()),
@@ -324,7 +334,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   }
 
   if (_makeTC != 0) {
-    art::Handle<mu2e::TimeClusterCollection>             tcch;
+    art::Handle<mu2e::TimeClusterCollection>          tcch;
     ok =  ArtEvent.getByLabel(_tcCollTag,tcch);
     if (ok) { 
       _tcc           = tcch.product();
@@ -347,6 +357,22 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     else {
       print_(std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out",
                        _shCollTag.encode().data()));
+      return -1;
+    }
+  }
+//-----------------------------------------------------------------------------
+//
+//-----------------------------------------------------------------------------
+  if (_makeTrk != 0) {
+    art::Handle<mu2e::KalSeedCollection>  ksch;
+    ok =  ArtEvent.getByLabel(_ksCollTag,ksch);
+    if (ok) { 
+      _ksc     = ksch.product();
+      _ntracks = _ksc->size();
+    }
+    else {
+      print_(std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out",
+                         _ksCollTag.encode().data()));
       return -1;
     }
   }
@@ -670,7 +696,23 @@ int mu2e::MakeDigiNtuple::fillTC() {
   return 0;
 }
 
-// ----------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillTrk() {
+
+  for (int itrk=0; itrk<_ntracks; itrk++) {
+    const mu2e::KalSeed* ks = &_ksc->at(itrk);
+   
+    DaqTrack* nt_trk = new ((*_event->trk)[itrk]) DaqTrack();
+
+    nt_trk->nhits    = ks->nHits();
+    nt_trk->chi2     = ks->chisquared();
+    nt_trk->t0       = ks->t0().t0();
+  }
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 // runs on tracker Artdaq fragments
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
@@ -693,7 +735,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 // clear event
 //-----------------------------------------------------------------------------
   _event->Clear();
-  
+
   // _event->ncalodigis  = _ncalodigis;
   // _event->ncrvdigis   = _ncrvdigis;
   // _event->nstmdigis   = _nstmdigis;
@@ -708,22 +750,21 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->srn    = ArtEvent.subRun();
   _event->evn    = ArtEvent.event();
                                         // defined in getData()
-  _event->nsdtot = _nstrawdigis;
-  _event->nshtot = _nstrawhits;
-  _event->nch    = _ncombohits;
-  _event->ntc    = _ntimeclusters;
+  _event->nsdtot  = _nstrawdigis;
+  _event->nshtot  = _nstrawhits;
+  _event->nch     = _ncombohits;
+  _event->ntc     = _ntimeclusters;
+  _event->ntracks = _ntracks;
 
-  //   DaqEvent::fgSd.clear();
   if (_debugMode > 0) {
     print_(std::format("_nstrawdigis:{}",_nstrawdigis));
   }
 
-  if (_makeSD) fillSD();
-  if (_makeSH) fillSH();
-  if (_makeCH) fillCH();
-  if (_makeTC) fillTC();
-
-  //  _event->sd = DaqEvent::fgSd.data();
+  if (_makeSD ) fillSD ();
+  if (_makeSH ) fillSH ();
+  if (_makeCH ) fillCH ();
+  if (_makeTC ) fillTC ();
+  if (_makeTrk) fillTrk();
 
   if (_debugMode > 0) {
     print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsdtot));

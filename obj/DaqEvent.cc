@@ -7,10 +7,11 @@
 
 //-----------------------------------------------------------------------------
 DaqEvent::DaqEvent() { // : TObject() {
-  nsdtot = 0; sd = new TClonesArray("DaqStrawDigi"  ,100);
-  nshtot = 0; sh = new TClonesArray("DaqStrawHit"   ,100);
-  nch    = 0; ch = new TClonesArray("DaqComboHit"   ,100);
-  ntc    = 0; tc = new TClonesArray("DaqTimeCluster", 10);
+  nsdtot  = 0; sd  = new TClonesArray("DaqStrawDigi"  ,100);
+  nshtot  = 0; sh  = new TClonesArray("DaqStrawHit"   ,100);
+  nch     = 0; ch  = new TClonesArray("DaqComboHit"   ,100);
+  ntc     = 0; tc  = new TClonesArray("DaqTimeCluster", 10);
+  ntracks = 0; trk = new TClonesArray("DaqTrack", 10);
 
   Clear();
 }
@@ -21,6 +22,7 @@ DaqEvent::~DaqEvent() {
   sh->Delete(); delete sh;
   ch->Delete(); delete ch;
   tc->Delete(); delete tc;
+  trk->Delete(); delete trk;
 }
 
 
@@ -40,12 +42,14 @@ void DaqEvent::Clear(const char* Opt) {
     }
   }
 
-  nsdtot = 0;
-  nshtot = 0;
-  nch    = 0;
-  ntc    = 0;
+  nsdtot  = 0;
+  nshtot  = 0;
+  nch     = 0;
+  ntc     = 0;
+  ntracks = 0;
   sd->Clear();
   sh->Clear();
   ch->Clear();
   tc->Clear();
+  trk->Clear();
 }

@@ -12,4 +12,5 @@
 #pragma link C++  class  DaqStrawDigi;
 #pragma link C++  class  DaqStrawHit;
 #pragma link C++  class  DaqTimeCluster;
+#pragma link C++  class  DaqTrack;
 #endif
