@@ -122,6 +122,7 @@ physics : {
             makeTC    : 1
             makeTrk   : 1
             tcCollTag : "TZClusterFinder"
+            ksCollTag : "KKLine"
         }
     }
 

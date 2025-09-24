@@ -3,6 +3,9 @@
 // MakeDigiNtuple:  assume that digis have been produced, make a hit ntuple
 //                  for the cross-subsystem timing studies
 // tracker       :  assume that the waveforms are made
+// debug bits    :  1: for all hits, print hit times assuming contiguous timing
+//                  2: (fillTC) parameters of the time cluster
+//                  3: track segments
 // ======================================================================
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -21,10 +24,17 @@
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 #include "Offline/RecoDataProducts/inc/KalSeed.hh"
 
+
+#include "Offline/GeometryService/inc/GeometryService.hh"
+#include "Offline/GeometryService/inc/GeomHandle.hh"
+
 #include "Offline/Mu2eUtilities/inc/LsqSums2.hh"
 
 #include "Offline/TrackerConditions/inc/TrackerPanelMap.hh"
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
+#include "Offline/TrackerGeom/inc/Plane.hh"
+#include "Offline/TrackerGeom/inc/Panel.hh"
+#include "Offline/TrackerGeom/inc/Tracker.hh"
 
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/mod/WfParam_t.hh"
@@ -43,6 +53,8 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
+#include "TGeoMatrix.h"
+
 // #define TRACEMF_USE_VERBATIM 1
 
 // #include "TRACE/tracemf.h"
@@ -79,6 +91,41 @@ public:
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
   };
+//-----------------------------------------------------------------------------
+// 'per-panel' track segments
+//-----------------------------------------------------------------------------
+  struct Point2D {
+    double x;
+    double y;
+    int    drift_sign;
+    int    sign_fixed;                  // if 1, the drift sign is not updated any more
+
+    Point2D(double xloc, double yloc) {
+      x          = xloc;
+      y          = yloc;
+      drift_sign = 0;                // undefined
+      sign_fixed = 0;
+    }
+  };
+  
+  struct TrkSegment {
+    int             plane;
+    int             panel;
+    TGeoCombiTrans* combiTrans;                      // global to local transform
+    std::vector<const TrkStrawHitSeed*> hits;
+    double          t0;                                   //
+    std::vector<Point2D> points;                 // local points
+    int                  ihit[2];                // indices of the two hits corresponding to the layer transition
+
+    void addPoint(double xloc, double yloc) {
+      Point2D pt(xloc,yloc);
+      points.push_back(pt);
+    }
+
+    void setSign(int I, int Sign) {
+      points.at(I).drift_sign = Sign;
+    }
+  };
 
   // --- C'tor/d'tor:
   explicit MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& config);
@@ -89,6 +136,15 @@ public:
   void     print_(const std::string&  Message, const std::source_location& location = std::source_location::current());
 
   int      process_adc_waveform(float* Wf, WfParam_t* Wp);
+
+  int      calculateMissingTrkParameters();
+  
+  int      correctT0               (TrkSegment* TSeg);
+  int      determineDriftSigns     (TrkSegment* TSeg);
+  int      findInitialApproximation(TrkSegment* TSeg);
+  int      finalSegmentFit         (TrkSegment* TSeg);
+  int      fitLine                 (TrkSegment* TSeg);
+  int      fitSegment              (TrkSegment* TSeg);
 
   int      fillSD ();
   int      fillSH ();
@@ -154,10 +210,16 @@ public:
   const mu2e::ComboHitCollection*              _chc;
   const mu2e::TimeClusterCollection*           _tcc;
   const mu2e::KalSeedCollection*               _ksc;
+
+  const mu2e::Tracker*                         _tracker;
   
   ProditionsHandle<TrackerPanelMap>            _tpm_h;
   const TrackerPanelMap*                       _trkPanelMap;
-
+  
+  TrkSegment                                   _tseg[18][6]; // for now, assume less than 100 segments per event
+  std::vector<TrkSegment*>                     _ptseg;
+  int                                          _nseg;
+  
 }; // MakeDigiNtuple
 
 // ======================================================================
@@ -188,9 +250,12 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
   _hist_booked         = 0;
   _last_run            = -1;
+  _nseg                = 0;
 //-----------------------------------------------------------------------------
 // parse debug bits
 //-----------------------------------------------------------------------------
+  for (int i=0; i<100; i++) _debugBit[i] = 0;
+
   const char* key;
                                         // a flag is an integer!
   int nbits = _debugBits.size();
@@ -259,6 +324,38 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
     // _event->stmdigis   = new TClonesArray("DaqStrawDigi",100);
     }
     _hist_booked = 1;
+  }
+//-----------------------------------------------------------------------------
+// for each panel, build a transformation matrix, do it once
+//-----------------------------------------------------------------------------
+  mu2e::GeomHandle<mu2e::Tracker> handle;
+  _tracker = handle.get();
+  
+  for (int i=0; i<18; i++) {
+    for (int ip=0; ip<6; ip++) {
+      TrkSegment* ts = &_tseg[i][ip];
+      ts->plane = i;
+      ts->panel = ip;
+//-----------------------------------------------------------------------------
+// 1.build transformation matrix
+//-----------------------------------------------------------------------------
+      const mu2e::Plane* pln = &_tracker->getPlane(i);
+      const mu2e::Panel* pnl = &pln->getPanel(ip);
+      //      mu2e::StrawId      pid = pnl->id();
+  
+      double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
+      double phix   = phiy-90;
+      double phiz   = 0;
+      double thetax = 90;
+      double thetay = 90;
+      double thetaz =  0;
+      if (pnl->wDirection().z() < 0) {
+        phix   = phix+180;
+      }
+
+      TGeoRotation* r  = new TGeoRotation("a",thetax,phix,thetay,phiy,thetaz,phiz);
+      ts->combiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",i,ip),0,0,0,r);
+    }
   }
 }
 
@@ -680,7 +777,7 @@ int mu2e::MakeDigiNtuple::fillTC() {
       }
     }
 //-----------------------------------------------------------------------------
-    // to calculate tmin and tmax need to loop over the hits, not now
+// to calculate tmin and tmax need to loop over the hits, not now
     if (_debugMode  > 0) {
       if (_debugBit[2] != 0) {
         printf("%8i %5i %5i %12.2f %12.2f %12.2f\n",
@@ -697,7 +794,194 @@ int mu2e::MakeDigiNtuple::fillTC() {
 }
 
 //-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::determineDriftSigns(TrkSegment* TSeg) {
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fitLine(TrkSegment* TSeg) {
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::correctT0(TrkSegment* TSeg) {
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::finalSegmentFit(TrkSegment* TSeg) {
+//-----------------------------------------------------------------------------
+// draw a straight line tangent to the two hits and determine the drift signs of the rest hits
+//-----------------------------------------------------------------------------
+  determineDriftSigns(TSeg);
+//-----------------------------------------------------------------------------
+// with the drift signs determined, calculate LSQ sums and determine parameters of the straight line
+//------------------------------------------------------------------------------
+  double t0 = TSeg->t0;
+  
+  fitLine(TSeg);
+//-----------------------------------------------------------------------------
+// 3. calculate timing residuals and correct particle T0
+//------------------------------------------------------------------------------
+  correctT0(TSeg);
+
+  std::cout << std::format("t0:{:7.3f} TSeg->t0:{:7.3f}",t0,TSeg->t0) << std::endl;
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// look for a transition between the layers - the drift signs of the hits
+// around the transition are defined
+// if such a pattern is not found - no segment
+// remember, this is not a pattern recognition per se, we're only aiming for alignment validation
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::findInitialApproximation(TrkSegment* TSeg) {
+  int rc(0);
+  int nhits = TSeg->hits.size();
+  for (int i=0; i<nhits-1; i++) {
+    const mu2e::TrkStrawHitSeed* shs0 = TSeg->hits.at(i);
+    const mu2e::TrkStrawHitSeed* shs1 = TSeg->hits.at(i+1);
+    int lay0 = shs0->strawId().layer();
+    int lay1 = shs1->strawId().layer();
+    if (lay0 != lay1) {
+                                        // first transition between layers found, assume it is the only one
+                                        // how to reject the segment if it is not the case ?
+      TSeg->ihit[0] = i;
+      TSeg->ihit[1] = i+1;
+      
+      if (lay0 == 0) {
+        TSeg->setSign(i  ,-1);
+        TSeg->setSign(i+1, 1);
+      }
+      else if (lay0 == 1) {
+        TSeg->setSign(i  , 1);
+        TSeg->setSign(i+1,-1);
+      }
+      break;
+    }
+  }
+  
+  return rc;
+}
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fitSegment(TrkSegment* TSeg) {
+  int rc(0);
+//-----------------------------------------------------------------------------
+// 2. transform XY everything into local coordinate system of the panel
+//-----------------------------------------------------------------------------
+  int nhits = TSeg->hits.size();
+  for (int i=0; i<nhits; i++) {
+    const mu2e::TrkStrawHitSeed* shs = TSeg->hits.at(i);
+    int ind = shs->index();
+// transform hits an place transformed coordinates in a vector
+    const mu2e::ComboHit* ch = &_chc->at(ind);
+    double posm[3], posl[3];
+    posm[0] = ch->pos().x();
+    posm[1] = ch->pos().y();
+    posm[2] = ch->pos().z();
+    TSeg->combiTrans->MasterToLocalVect(posm, posl);
+    // and store hits in the local frame of the panel (xloc = ypanel, yloc = zpanel) : z vs y
+    // better subtract Z-coordinate of the station center - is there such ?
+    TSeg->addPoint(posl[1],posl[2]);
+    //    .... TODO;
+  }
+//-----------------------------------------------------------------------------
+// 3. use straight line fit to determine 0-th approximation
+//    that includes determination of the drift signs
+//-----------------------------------------------------------------------------
+  findInitialApproximation(TSeg);
+//-----------------------------------------------------------------------------
+// 4. final fit, determine final parameters and chi2, no error matrix yet
+//-----------------------------------------------------------------------------
+  finalSegmentFit(TSeg);
+  
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
+
+//-----------------------------------------------------------------------------
+// cleanup from the previous event, initially set _nseg to 0
+//-----------------------------------------------------------------------------
+  for (int i=0; i<_nseg; i++) {
+    _ptseg[i]->hits.clear();
+    // perhaps clear other things
+  }
+  _ptseg.clear();
+  _nseg = 0;
+  
+  for (int itrk=0; itrk<_ntracks; itrk++) {
+    const mu2e::KalSeed* ks = &_ksc->at(itrk);
+//-----------------------------------------------------------------------------
+// loop over hits and find the number of hits in each panel
+//-----------------------------------------------------------------------------
+    const std::vector<mu2e::TrkStrawHitSeed>& hits = ks->hits();
+    int nhits = hits.size();
+    for (int i=0; i<nhits; i++) {
+      const mu2e::TrkStrawHitSeed* shs = &hits.at(i);
+      mu2e::StrawId sid = shs->strawId();
+      int panel = sid.panel();
+      int plane = sid.plane();
+      std::cout << std::format("hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",i,plane,panel,sid.straw());
+
+                                        // cosmic track: assume one segment per panel,
+                                        // in principle, there could be more than one
+
+      TrkSegment* ts = &_tseg[plane][panel];
+      if (ts->hits.size() == 0) {
+        _ptseg.push_back(ts);
+        _nseg    += 1;
+      }
+                                        // and add the hit to the list
+      ts->hits.push_back(shs);
+    }
+  }
+//-----------------------------------------------------------------------------
+// loop over segments with 3 hits or more, fi each segment and compare
+// the segment position ond slope with the track parameters transpated into the local
+// coordinate system of the panel (or in the global ?)
+//-----------------------------------------------------------------------------
+    for (int i=0; i<_nseg; i++) {
+      TrkSegment* ts = _ptseg[i];
+      std::sort(ts->hits.begin(),ts->hits.end(),
+                [] (const mu2e::TrkStrawHitSeed* a, const mu2e::TrkStrawHitSeed* b) {
+                  return a->strawId().straw() < b->strawId().straw();
+                });
+      fitSegment(ts);
+    }  
+//-----------------------------------------------------------------------------
+// at this point, all track hits should be assigned to segments
+// debug printout
+//-----------------------------------------------------------------------------
+  if (_debugMode and (_debugBit[3] != 0)) {
+    std::cout << "nseg:" << _nseg << std::endl;
+    for (int i=0; i<_nseg; i++) {
+      TrkSegment* ts = _ptseg[i];
+      int nh = ts->hits.size();
+      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d}",
+                               i,ts->plane,ts->panel,nh)
+                << std::endl;
+      for (int ih=0; ih<nh; ih++) {
+        const mu2e::TrkStrawHitSeed* shs = ts->hits.at(ih);
+        Point2D* pt = &ts->points[ih];
+        const mu2e::ComboHit* ch           = &_chc->at(shs->index());
+        std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f} rDrift:{:7.3f}",
+                                 ih,shs->strawId().straw(),shs->hitTime(),ch->driftTime(),shs->driftRadius())
+                  << std::format(" x:{:7.3f} y:{:7.3f} drift_sign:{:2} sign_fixed:{}",
+                                 pt->x,pt->y,pt->drift_sign,pt->sign_fixed)
+                  << std::endl;
+      }
+    }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTrk() {
+
+  calculateMissingTrkParameters();
 
   for (int itrk=0; itrk<_ntracks; itrk++) {
     const mu2e::KalSeed* ks = &_ksc->at(itrk);

@@ -80,9 +80,12 @@ cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
   artdaq-core-mu2e::Data
   ROOT::Hist
   ROOT::Tree
-  ROOT::Core
   ROOT::RIO
   ROOT::Gui
+  ROOT::Geom
+  ROOT::Matrix
+  ROOT::GenVector
+  ROOT::Core
 )
 
 cet_build_plugin(TCLineFilter art::module LIBRARIES REG
