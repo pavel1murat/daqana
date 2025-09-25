@@ -107,15 +107,21 @@ public:
       sign_fixed = 0;
     }
   };
-  
+
   struct TrkSegment {
-    int             plane;
-    int             panel;
-    TGeoCombiTrans* combiTrans;                      // global to local transform
+    const mu2e::Panel*   trkPanel;
+    int                  plane;
+    int                  panel;
+    TGeoCombiTrans*      combiTrans;             // global to local transform
     std::vector<const TrkStrawHitSeed*> hits;
-    double          t0;                                   //
+    double               t0;                     //
+    double               ymean;
+    double               xmean;
     std::vector<Point2D> points;                 // local points
     int                  ihit[2];                // indices of the two hits corresponding to the layer transition
+    double               line[2];                // line tangent to the two key hits, [0]: intercept [1]: slope
+    double               chi2;
+    double               drho;
 
     void addPoint(double xloc, double yloc) {
       Point2D pt(xloc,yloc);
@@ -142,9 +148,11 @@ public:
   int      correctT0               (TrkSegment* TSeg);
   int      determineDriftSigns     (TrkSegment* TSeg);
   int      findInitialApproximation(TrkSegment* TSeg);
+  int      findLine                (TrkSegment* TSeg);
   int      finalSegmentFit         (TrkSegment* TSeg);
   int      fitLine                 (TrkSegment* TSeg);
   int      fitSegment              (TrkSegment* TSeg);
+  int      updateCoordinates       (TrkSegment* TSeg);
 
   int      fillSD ();
   int      fillSH ();
@@ -341,6 +349,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 //-----------------------------------------------------------------------------
       const mu2e::Plane* pln = &_tracker->getPlane(i);
       const mu2e::Panel* pnl = &pln->getPanel(ip);
+      ts->trkPanel = pnl;
       //      mu2e::StrawId      pid = pnl->id();
   
       double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
@@ -804,6 +813,70 @@ int mu2e::MakeDigiNtuple::fitLine(TrkSegment* TSeg) {
 }
 
 //-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::findLine(TrkSegment* TSeg) {
+  double const sig_rho_2(0.2*0.2); // in mm for now, assume sigma = 200 um
+  int    i1  = TSeg->ihit[0];
+  int    i2  = TSeg->ihit[1];
+
+  double dx  = TSeg->points[i2].x-TSeg->points[i2].x;
+  double dy  = TSeg->points[i2].y-TSeg->points[i2].y;
+  double r1  = TSeg->hits[i1]->driftRadius();
+  double r2  = TSeg->hits[i2]->driftRadius();
+  double s1  = TSeg->points[i1].drift_sign;
+  double s2  = TSeg->points[i2].drift_sign;
+  double alp = r2*s2-r1*s1;
+  
+  double dr    = sqrt(dx*dx+dy*dy);
+  double alpdr = alp/dr;
+  double dxr   = dx/dr; 
+  double dyr   = dy/dr;
+  double nx    = -alpdr*dyr-dxr*sqrt(1-alpdr*alpdr);
+  double ny    =  alpdr*dxr-dyr*sqrt(1-alpdr*alpdr);
+
+  double nux   = -ny;
+  double nuy   =  nx;
+                                        // expect slope to be small, line[0]: y(x=0)
+  TSeg->line[1] = ny/nx;
+  double t      = -(TSeg->points[i1].x+s1*r1*nux)/nx;
+  TSeg->line[0] = TSeg->points[i1].y+s1*r1*nuy+ny*t;
+//-----------------------------------------------------------------------------
+// line is found, determine the drift signs
+//-----------------------------------------------------------------------------
+  int nhits = TSeg->hits.size();
+  double x1 = TSeg->points[i1].x+r1*s1*nux;
+  double y1 = TSeg->points[i1].y+r1*s1*nuy;
+
+  TSeg->chi2 = 0;
+  TSeg->drho = 0;
+  for (int i=0; i<nhits; i++) {
+                                        // determine disance from the hit to the line in two cases
+    if ((i == i1) or (i == i2)) continue;
+
+    double ri = TSeg->hits[i]->driftRadius();
+
+    double rho[2];
+    for (int is=0; is<2; ++is) {
+      int ids = 2*is-1;
+      double xi = TSeg->points[i].x+nux*ri*ids;
+      double yi = TSeg->points[i].y+nuy*ri*ids;
+      rho[is]   = (xi-x1)*nux+(yi-y1)*nuy;
+    }
+    if (fabs(rho[0]) < fabs(rho[1])) {
+      TSeg->points[i].drift_sign = -1;
+      TSeg->chi2 += rho[0]*rho[0]/sig_rho_2;
+    }
+    else {
+      TSeg->points[i].drift_sign =  1;
+      TSeg->chi2 += rho[1]*rho[1]/sig_rho_2;
+    }
+  }
+  TSeg->chi2 /= (nhits-2);
+  TSeg->drho /= nhits;                  // average signed deltaR
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::correctT0(TrkSegment* TSeg) {
   return 0;
 }
@@ -849,21 +922,53 @@ int mu2e::MakeDigiNtuple::findInitialApproximation(TrkSegment* TSeg) {
                                         // how to reject the segment if it is not the case ?
       TSeg->ihit[0] = i;
       TSeg->ihit[1] = i+1;
+                                        // compare y coordinates of the layers to decide on the drift directions
       
-      if (lay0 == 0) {
+      if (TSeg->points[i].y > TSeg->points[i+1].y) {
         TSeg->setSign(i  ,-1);
         TSeg->setSign(i+1, 1);
       }
-      else if (lay0 == 1) {
+      else {
         TSeg->setSign(i  , 1);
         TSeg->setSign(i+1,-1);
       }
       break;
     }
   }
+//-----------------------------------------------------------------------------
+// tangent line and drift signs of the rest hits 
+//-----------------------------------------------------------------------------
+  findLine(TSeg);
   
   return rc;
 }
+
+//-----------------------------------------------------------------------------
+// preserve accuracy
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::updateCoordinates(TrkSegment* TSeg) {
+  int rc(0);
+
+  double ym(0);
+  
+  int nhits = TSeg->hits.size();
+  if (nhits < 2) return 0;
+  
+  for (int i=0; i<nhits; i++) {
+    ym += TSeg->points[i].y;
+    ym += TSeg->points[i].y;
+  }
+
+  TSeg->xmean = 0;
+  TSeg->ymean = ym/nhits;
+  
+  for (int i=0; i<nhits; i++) {
+    TSeg->points[i].y -=  TSeg->ymean;
+  }
+  return rc;
+}
+
+
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fitSegment(TrkSegment* TSeg) {
   int rc(0);
@@ -873,19 +978,23 @@ int mu2e::MakeDigiNtuple::fitSegment(TrkSegment* TSeg) {
   int nhits = TSeg->hits.size();
   for (int i=0; i<nhits; i++) {
     const mu2e::TrkStrawHitSeed* shs = TSeg->hits.at(i);
-    int ind = shs->index();
-// transform hits an place transformed coordinates in a vector
-    const mu2e::ComboHit* ch = &_chc->at(ind);
+    //    int ind = shs->index();
+// transform wire positions hits an place transformed coordinates in a vector
+    const mu2e::Straw* straw = &TSeg->trkPanel->getStraw(shs->strawId().straw());
+    const CLHEP::Hep3Vector& pos = straw->getMidPoint();
     double posm[3], posl[3];
-    posm[0] = ch->pos().x();
-    posm[1] = ch->pos().y();
-    posm[2] = ch->pos().z();
+    posm[0] = pos.x();
+    posm[1] = pos.y();
+    posm[2] = pos.z();
     TSeg->combiTrans->MasterToLocalVect(posm, posl);
     // and store hits in the local frame of the panel (xloc = ypanel, yloc = zpanel) : z vs y
     // better subtract Z-coordinate of the station center - is there such ?
     TSeg->addPoint(posl[1],posl[2]);
-    //    .... TODO;
   }
+//-----------------------------------------------------------------------------
+// 2.5 update point Y coordinates
+//-----------------------------------------------------------------------------
+  updateCoordinates(TSeg);
 //-----------------------------------------------------------------------------
 // 3. use straight line fit to determine 0-th approximation
 //    that includes determination of the drift signs
@@ -960,8 +1069,8 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
     for (int i=0; i<_nseg; i++) {
       TrkSegment* ts = _ptseg[i];
       int nh = ts->hits.size();
-      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d}",
-                               i,ts->plane,ts->panel,nh)
+      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f} dr:{:7.3f}",
+                               i,ts->plane,ts->panel,nh,ts->chi2,ts->drho)
                 << std::endl;
       for (int ih=0; ih<nh; ih++) {
         const mu2e::TrkStrawHitSeed* shs = ts->hits.at(ih);
