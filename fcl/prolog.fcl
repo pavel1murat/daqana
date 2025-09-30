@@ -9,6 +9,18 @@ daqana : {
             minPeak        : 0
             t0offset       : 0
         }
+        
+        DaqanaFilter: { module_type: DaqanaFilter
+            shCollTag        : "makeSH"
+            tcCollTag        : "TZClusterFinder"
+            debugMode        : false
+            debugBits        : [ "bit0:0" ]
+            maxDt            : 40
+            minEDep          : 1e-3
+            minNGoodSh       : 0
+            minNTimeClusters : 0
+            fillHistograms   : false
+        }
     }
     analyzers : {
 #------------------------------------------------------------------------------
@@ -166,6 +178,7 @@ daqana : {
             makeSH         : 1
             makeCH         : 0
             makeTC         : 0
+            makeTrk        : 0
             sdCollTag      : "makeSD"
             shCollTag      : "makeSH"
             outputDir      : "./"

@@ -22,6 +22,7 @@
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
+#include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
 #include "Offline/RecoDataProducts/inc/KalSeed.hh"
 
 
@@ -38,16 +39,17 @@
 
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/mod/WfParam_t.hh"
+#include "daqana/obj/TrkSegment.hh"
 
 #include <ostream>
 #include <regex>
-#include <ranges>
+// #include <ranges>
 #include <string>
 #include <vector>
 #include <algorithm>
 
 #include <iostream>
-#include <memory>
+// #include <memory>
 
 #include "TH1.h"
 #include "TFile.h"
@@ -91,47 +93,6 @@ public:
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
   };
-//-----------------------------------------------------------------------------
-// 'per-panel' track segments
-//-----------------------------------------------------------------------------
-  struct Point2D {
-    double x;
-    double y;
-    int    drift_sign;
-    int    sign_fixed;                  // if 1, the drift sign is not updated any more
-
-    Point2D(double xloc, double yloc) {
-      x          = xloc;
-      y          = yloc;
-      drift_sign = 0;                // undefined
-      sign_fixed = 0;
-    }
-  };
-
-  struct TrkSegment {
-    const mu2e::Panel*   trkPanel;
-    int                  plane;
-    int                  panel;
-    TGeoCombiTrans*      combiTrans;             // global to local transform
-    std::vector<const TrkStrawHitSeed*> hits;
-    double               t0;                     //
-    double               ymean;
-    double               xmean;
-    std::vector<Point2D> points;                 // local points
-    int                  ihit[2];                // indices of the two hits corresponding to the layer transition
-    double               line[2];                // line tangent to the two key hits, [0]: intercept [1]: slope
-    double               chi2;
-    double               drho;
-
-    void addPoint(double xloc, double yloc) {
-      Point2D pt(xloc,yloc);
-      points.push_back(pt);
-    }
-
-    void setSign(int I, int Sign) {
-      points.at(I).drift_sign = Sign;
-    }
-  };
 
   // --- C'tor/d'tor:
   explicit MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& config);
@@ -145,14 +106,7 @@ public:
 
   int      calculateMissingTrkParameters();
   
-  int      correctT0               (TrkSegment* TSeg);
-  int      determineDriftSigns     (TrkSegment* TSeg);
-  int      findInitialApproximation(TrkSegment* TSeg);
-  int      findLine                (TrkSegment* TSeg);
-  int      finalSegmentFit         (TrkSegment* TSeg);
-  int      fitLine                 (TrkSegment* TSeg);
   int      fitSegment              (TrkSegment* TSeg);
-  int      updateCoordinates       (TrkSegment* TSeg);
 
   int      fillSD ();
   int      fillSH ();
@@ -275,6 +229,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     
     print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
+
+  if (_debugBit[3]) TrkSegment::_debugMode = 1;
 }
 
 std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
@@ -784,6 +740,10 @@ int mu2e::MakeDigiNtuple::fillTC() {
         nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
         nt_tc->_edep_panel[i] = nt_tc->_edep_panel[i]/nt_tc->_nh_panel[i];
       }
+
+      if (nt_tc->_nh_panel[i] > nt_tc->max_nh_panel) {
+        nt_tc->max_nh_panel = nt_tc->_nh_panel[i];
+      }
     }
 //-----------------------------------------------------------------------------
 // to calculate tmin and tmax need to loop over the hits, not now
@@ -803,214 +763,10 @@ int mu2e::MakeDigiNtuple::fillTC() {
 }
 
 //-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::determineDriftSigns(TrkSegment* TSeg) {
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::fitLine(TrkSegment* TSeg) {
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::findLine(TrkSegment* TSeg) {
-  double const sig_rho_2(0.2*0.2); // in mm for now, assume sigma = 200 um
-  int    i1  = TSeg->ihit[0];
-  int    i2  = TSeg->ihit[1];
-
-  double dx  = TSeg->points[i2].x-TSeg->points[i2].x;
-  double dy  = TSeg->points[i2].y-TSeg->points[i2].y;
-  double r1  = TSeg->hits[i1]->driftRadius();
-  double r2  = TSeg->hits[i2]->driftRadius();
-  double s1  = TSeg->points[i1].drift_sign;
-  double s2  = TSeg->points[i2].drift_sign;
-  double alp = r2*s2-r1*s1;
-  
-  double dr    = sqrt(dx*dx+dy*dy);
-  double alpdr = alp/dr;
-  double dxr   = dx/dr; 
-  double dyr   = dy/dr;
-  double nx    = -alpdr*dyr-dxr*sqrt(1-alpdr*alpdr);
-  double ny    =  alpdr*dxr-dyr*sqrt(1-alpdr*alpdr);
-
-  double nux   = -ny;
-  double nuy   =  nx;
-                                        // expect slope to be small, line[0]: y(x=0)
-  TSeg->line[1] = ny/nx;
-  double t      = -(TSeg->points[i1].x+s1*r1*nux)/nx;
-  TSeg->line[0] = TSeg->points[i1].y+s1*r1*nuy+ny*t;
-//-----------------------------------------------------------------------------
-// line is found, determine the drift signs
-//-----------------------------------------------------------------------------
-  int nhits = TSeg->hits.size();
-  double x1 = TSeg->points[i1].x+r1*s1*nux;
-  double y1 = TSeg->points[i1].y+r1*s1*nuy;
-
-  TSeg->chi2 = 0;
-  TSeg->drho = 0;
-  for (int i=0; i<nhits; i++) {
-                                        // determine disance from the hit to the line in two cases
-    if ((i == i1) or (i == i2)) continue;
-
-    double ri = TSeg->hits[i]->driftRadius();
-
-    double rho[2];
-    for (int is=0; is<2; ++is) {
-      int ids = 2*is-1;
-      double xi = TSeg->points[i].x+nux*ri*ids;
-      double yi = TSeg->points[i].y+nuy*ri*ids;
-      rho[is]   = (xi-x1)*nux+(yi-y1)*nuy;
-    }
-    if (fabs(rho[0]) < fabs(rho[1])) {
-      TSeg->points[i].drift_sign = -1;
-      TSeg->chi2 += rho[0]*rho[0]/sig_rho_2;
-    }
-    else {
-      TSeg->points[i].drift_sign =  1;
-      TSeg->chi2 += rho[1]*rho[1]/sig_rho_2;
-    }
-  }
-  TSeg->chi2 /= (nhits-2);
-  TSeg->drho /= nhits;                  // average signed deltaR
-  
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::correctT0(TrkSegment* TSeg) {
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::finalSegmentFit(TrkSegment* TSeg) {
-//-----------------------------------------------------------------------------
-// draw a straight line tangent to the two hits and determine the drift signs of the rest hits
-//-----------------------------------------------------------------------------
-  determineDriftSigns(TSeg);
-//-----------------------------------------------------------------------------
-// with the drift signs determined, calculate LSQ sums and determine parameters of the straight line
-//------------------------------------------------------------------------------
-  double t0 = TSeg->t0;
-  
-  fitLine(TSeg);
-//-----------------------------------------------------------------------------
-// 3. calculate timing residuals and correct particle T0
-//------------------------------------------------------------------------------
-  correctT0(TSeg);
-
-  std::cout << std::format("t0:{:7.3f} TSeg->t0:{:7.3f}",t0,TSeg->t0) << std::endl;
-  
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-// look for a transition between the layers - the drift signs of the hits
-// around the transition are defined
-// if such a pattern is not found - no segment
-// remember, this is not a pattern recognition per se, we're only aiming for alignment validation
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::findInitialApproximation(TrkSegment* TSeg) {
-  int rc(0);
-  int nhits = TSeg->hits.size();
-  for (int i=0; i<nhits-1; i++) {
-    const mu2e::TrkStrawHitSeed* shs0 = TSeg->hits.at(i);
-    const mu2e::TrkStrawHitSeed* shs1 = TSeg->hits.at(i+1);
-    int lay0 = shs0->strawId().layer();
-    int lay1 = shs1->strawId().layer();
-    if (lay0 != lay1) {
-                                        // first transition between layers found, assume it is the only one
-                                        // how to reject the segment if it is not the case ?
-      TSeg->ihit[0] = i;
-      TSeg->ihit[1] = i+1;
-                                        // compare y coordinates of the layers to decide on the drift directions
-      
-      if (TSeg->points[i].y > TSeg->points[i+1].y) {
-        TSeg->setSign(i  ,-1);
-        TSeg->setSign(i+1, 1);
-      }
-      else {
-        TSeg->setSign(i  , 1);
-        TSeg->setSign(i+1,-1);
-      }
-      break;
-    }
-  }
-//-----------------------------------------------------------------------------
-// tangent line and drift signs of the rest hits 
-//-----------------------------------------------------------------------------
-  findLine(TSeg);
-  
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
-// preserve accuracy
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::updateCoordinates(TrkSegment* TSeg) {
-  int rc(0);
-
-  double ym(0);
-  
-  int nhits = TSeg->hits.size();
-  if (nhits < 2) return 0;
-  
-  for (int i=0; i<nhits; i++) {
-    ym += TSeg->points[i].y;
-    ym += TSeg->points[i].y;
-  }
-
-  TSeg->xmean = 0;
-  TSeg->ymean = ym/nhits;
-  
-  for (int i=0; i<nhits; i++) {
-    TSeg->points[i].y -=  TSeg->ymean;
-  }
-  return rc;
-}
-
-
-//-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::fitSegment(TrkSegment* TSeg) {
-  int rc(0);
-//-----------------------------------------------------------------------------
-// 2. transform XY everything into local coordinate system of the panel
-//-----------------------------------------------------------------------------
-  int nhits = TSeg->hits.size();
-  for (int i=0; i<nhits; i++) {
-    const mu2e::TrkStrawHitSeed* shs = TSeg->hits.at(i);
-    //    int ind = shs->index();
-// transform wire positions hits an place transformed coordinates in a vector
-    const mu2e::Straw* straw = &TSeg->trkPanel->getStraw(shs->strawId().straw());
-    const CLHEP::Hep3Vector& pos = straw->getMidPoint();
-    double posm[3], posl[3];
-    posm[0] = pos.x();
-    posm[1] = pos.y();
-    posm[2] = pos.z();
-    TSeg->combiTrans->MasterToLocalVect(posm, posl);
-    // and store hits in the local frame of the panel (xloc = ypanel, yloc = zpanel) : z vs y
-    // better subtract Z-coordinate of the station center - is there such ?
-    TSeg->addPoint(posl[1],posl[2]);
-  }
-//-----------------------------------------------------------------------------
-// 2.5 update point Y coordinates
-//-----------------------------------------------------------------------------
-  updateCoordinates(TSeg);
-//-----------------------------------------------------------------------------
-// 3. use straight line fit to determine 0-th approximation
-//    that includes determination of the drift signs
-//-----------------------------------------------------------------------------
-  findInitialApproximation(TSeg);
-//-----------------------------------------------------------------------------
-// 4. final fit, determine final parameters and chi2, no error matrix yet
-//-----------------------------------------------------------------------------
-  finalSegmentFit(TSeg);
-  
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
+  int rc(0);
 
+  if (_debugMode != 0) std::cout << __func__ << " START" << std::endl;
 //-----------------------------------------------------------------------------
 // cleanup from the previous event, initially set _nseg to 0
 //-----------------------------------------------------------------------------
@@ -1054,12 +810,8 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 //-----------------------------------------------------------------------------
     for (int i=0; i<_nseg; i++) {
       TrkSegment* ts = _ptseg[i];
-      std::sort(ts->hits.begin(),ts->hits.end(),
-                [] (const mu2e::TrkStrawHitSeed* a, const mu2e::TrkStrawHitSeed* b) {
-                  return a->strawId().straw() < b->strawId().straw();
-                });
-      fitSegment(ts);
-    }  
+      ts->fit();
+    }
 //-----------------------------------------------------------------------------
 // at this point, all track hits should be assigned to segments
 // debug printout
@@ -1076,14 +828,15 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
         const mu2e::TrkStrawHitSeed* shs = ts->hits.at(ih);
         Point2D* pt = &ts->points[ih];
         const mu2e::ComboHit* ch           = &_chc->at(shs->index());
-        std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f} rDrift:{:7.3f}",
-                                 ih,shs->strawId().straw(),shs->hitTime(),ch->driftTime(),shs->driftRadius())
-                  << std::format(" x:{:7.3f} y:{:7.3f} drift_sign:{:2} sign_fixed:{}",
-                                 pt->x,pt->y,pt->drift_sign,pt->sign_fixed)
+        std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
+                                 ih,shs->strawId().straw(),shs->hitTime(),ch->driftTime())
+                  << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
+                                 pt->x,pt->y,shs->driftRadius(),pt->drift_sign,pt->sign_fixed)
                   << std::endl;
       }
     }
   }
+  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
   return 0;
 }
 

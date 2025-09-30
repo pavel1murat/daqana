@@ -33,6 +33,7 @@ DaqTimeCluster::DaqTimeCluster() : TObject(), nsh(-1), nch(-1), t0(-1.), tmin(-1
     _edep_panel[i] = 0.;
     _mnid      [i] = -1;
   }
+  max_nh_panel = 0;
 }
 
 //-----------------------------------------------------------------------------

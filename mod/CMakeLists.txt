@@ -1,4 +1,4 @@
-#
+# PM: use cet
 set (subpkg "mod"                  )
 set (dict   "daqana_${subpkg}_dict")
 set (lib    "daqana_${subpkg}"     )
@@ -19,6 +19,13 @@ set (include_files
 
 # ROOT_GENERATE_DICTIONARY(${dict} ${include_files} LINKDEF ${subpkg}/Linkdef.h)
 # set_property(SOURCE ${dict}.cxx PROPERTY generated)
+
+# cet_make_library(LIBRARY_NAME daqana_mod
+#   SOURCE
+#   TrkSegment.cc
+#   LIBRARIES PUBLIC
+#   ROOT::Geom
+# )
 
 cet_build_plugin(TrkFragmentAna art::module LIBRARIES REG
   Stntuple_mod
@@ -73,6 +80,7 @@ cet_build_plugin(StationAna art::module LIBRARIES REG
 )
 
 cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
+  # daqana::mod
   daqana_obj
   Offline::Mu2eUtilities
   Offline::RecoDataProducts
@@ -89,6 +97,19 @@ cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
 )
 
 cet_build_plugin(TCLineFilter art::module LIBRARIES REG
+  daqana_obj
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art_root_io::TFileService_service
+  artdaq-core-mu2e::Data
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::Core
+  ROOT::RIO
+  ROOT::Gui
+)
+
+cet_build_plugin(DaqanaFilter art::module LIBRARIES REG
   daqana_obj
   Offline::Mu2eUtilities
   Offline::RecoDataProducts

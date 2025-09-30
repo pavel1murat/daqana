@@ -33,6 +33,7 @@ public:
   int     _nh_panel  [12];
   float   _time_panel[12];
   float   _edep_panel[12];
+  int     max_nh_panel;                 // max number of hits in one of the panels
 
   DaqTimeCluster();
 

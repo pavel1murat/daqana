@@ -1,0 +1,47 @@
+# -*- mode:tcl -*-
+# should be the same as Richie is using
+# services.DbService : @local::DbEmpty
+services.DbService : {
+    purpose  : MDC2020_perfect
+    version  : v1_3                        ## ignored
+    dbName   : "mu2e_conditions_prd"       ## ignored
+    
+    textFile : [ "trkvst/stationfcl/TrackerStatus.txt",
+                 "trkvst/stationfcl/TrackerAlign.txt" ,
+                 "trkvst/stationfcl/TrkDelayPanel.txt" ,
+                 "trkvst/stationfcl/calib107894.txt"   
+#                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
+                ]
+                
+    verbose  : 100
+}
+
+services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.fullReadoutStraw.useDb       : false
+services.ProditionsService.strawDrift.useDb             : false
+services.ProditionsService.strawPhysics.useDb           : false
+services.ProditionsService.strawResponse.useDb          : false
+
+services.ProditionsService.strawElectronics.useDb       : true        ## default false
+services.ProditionsService.strawElectronics.verbose     : 10
+services.ProditionsService.alignedTracker.useDb         : true
+services.ProditionsService.trackerStatus.Settings.useDb : true ## false
+
+services.ProditionsService.strawResponse.eBins : 2
+services.ProditionsService.strawResponse.eBinWidth : 1.0
+services.ProditionsService.strawResponse.eHalfPVScale :  [1.0, 1.0]
+services.ProditionsService.strawResponse.defaultHalfPropVelocity : 100.0
+services.ProditionsService.strawResponse.centralWirePos : 0.0
+services.ProditionsService.strawResponse.tdCentralRes : [ 100.0, 100.0 ]
+services.ProditionsService.strawResponse.tdResSlope : [ 0.0, 0.0 ]
+
+services.ProditionsService.strawResponse.totTBins : 1
+services.ProditionsService.strawResponse.totEBins : 1
+services.ProditionsService.strawResponse.totDriftTime : [ 25.0 ]
+services.ProditionsService.strawResponse.totDriftError : [ 11.10 ]
+
+## #include "trkvst/stationfcl/DefaultCalibrations.fcl"
+#include "trkvst/stationfcl/calib107894.fcl"
+
+## :: include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
+## services.ProditionsService.trackerPanelMap.verbose      : 10

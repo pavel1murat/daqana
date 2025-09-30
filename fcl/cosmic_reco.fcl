@@ -1,0 +1,204 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# run interactively, stop after each event to display waveforms
+#
+# Usage: mu2e -c daqana/fcl/trk_fragment_ana_001.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+#-----------------------------------------------------------------------------
+BEGIN_PROLOG
+  TRIGGER_PATH            : [ p4 ]
+#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+#   PDG_ID              : 0                                    # 0: ignore PDG_ID
+END_PROLOG
+
+#include "Stntuple/fcl/stntuple_external_prologs.fcl"
+#include "Stntuple/fcl/prolog.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services section
+#------------------------------------------------------------------------------
+services                              : @local::Services.SimAndReco
+services.scheduler.wantSummary        : true
+services.SeedService.baseSeed         : 8
+services.SeedService.maxUniqueEngines : 100
+services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etrk_pasha_029/digi_ntuples/make_digi_ntuple_%06r.root"
+#------------------------------------------------------------------------------
+# update DB section
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
+
+process_name : CosmicReco
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+    inputCommands: ["keep *",
+                    "drop *_EWMProducer_*_*",
+                    "drop *_makeSH_*_*",
+                    "drop *_makeSD_*_*",
+                    "drop *_TZClusterFinder_*_*"
+                   ]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :  RootOutput
+        SelectEvents  : [ @sequence::TRIGGER_PATH]
+
+        outputCommands : [ "drop *_*_*_*",
+                           "keep artdaq::Fragments_*_*_*",
+                           "keep *_EWMProducer_*_*",
+                           "keep *_makeSH_*_*",
+                           "keep *_TZClusterFinder_*_*",
+                           "keep *_LineFinder_*_*",
+                           @sequence::Reconstruction.GeneralProducts,
+                           @sequence::Reconstruction.HighRecoProducts
+                          ]
+    }
+}
+
+physics : {
+    producers : {
+        makeSD: { @table::DAQ.producers.makeSD
+            saveWaveforms : true
+        }
+
+        LineFinder : { @table::CosmicReco.LineFinder
+            ComboHitCollection    : "makeSH"
+            TimeClusterCollection : "TZClusterFinder"
+        }
+
+        EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+            SpillType:          0   ## offspill
+            RecoFromMCTruth: false  ## default
+            RecoFromMCTruthErr: 0   ## default
+            InitialPhaseShift:  0   ## optional, set it to zero just in case
+        }
+
+        makeSH : { @table::TrkHitReco.producers.makeSH
+            module_type                       : StrawHitReco
+            MinimumTime                       : 0          ## 400.0 # ns configuration for OnSpill
+            MaximumTime                       : 100000.    ## 1710.0 # ns
+            MinimumEnergy                     : 0.0001 # MeV
+            MaximumEnergy                     : 0.01       ## 0.005 # MeV
+            MinimumRadius                     : 350.0 # mm
+            MaximumRadius                     : 750.0 # mm
+            FitType                           : 1
+            FilterHits                        : false
+            WriteStrawHitCollection           : true
+            ProtonBunchTimeTag                : "EWMProducer"
+            StrawDigiCollectionTag            : "makeSD" ## "makeSD"
+            StrawDigiADCWaveformCollectionTag : "makeSD" ## "makeSD"
+            EventWindowMarker                 : "EWMProducer"
+            UseCalorimeter                    : false
+            clusterDt                         : 100.0 # ns
+            CaloClusterCollectionTag          : "notUsed"
+            FlagCrossTalk                     : false
+            crossTalkEnergy                   : 0.007 # MeV
+            crossTalkMinimumTime              : -1 # ns
+            crossTalkMaximumTime              : 100 # ns
+        }
+        
+        makePH : { @table::TrkHitReco.producers.makePH
+            ComboHitCollection    : "makeSH"
+            EventWindowMarker     : "EWMProducer"
+            StrawHitSelectionBits : [ ]                 ## "EnergySelection", "TimeSelection", "RadiusSelection"]
+            StrawHitMask          : ["Dead"]
+            MaxDt                 : 45 # ns
+            UseTOT                : false               ## true
+            MaxWireDistDiffPull   : 10.                 ## 5.0
+            MaxDS                 : 10                  ## 3
+            UError                : 20.                 ## 10.0 # mm
+            MinimumTime           : 0                   ## 410.0 # ns
+            MaximumTime           : 300000              ## 1700.0 # ns
+            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
+            MaximumEnergy         : 0.006               ## 0.0045 # MeV
+            MinimumRadius         : 300.                ## 380.0 # mm
+            MaximumRadius         : 1000.               ## 700.0 # mm
+            MinimumNHits          : 1
+            MaximumNHits          : 1                   ## 8
+            CheckWres             : false               ## true
+            Unsorted              : false               ## VST data are readout by panel
+        }
+
+        TZClusterFinder : { @table::CalPatRec.producers.TZClusterFinder
+            module_type                : TZClusterFinder
+            diagLevel                  : 0
+            debugLevel                 : 0
+            printFrequency             : 1000
+            runDisplay                 : 0
+            useCCs                     : 1
+            recoverCCs                 : 1
+            chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
+            chCollLabel2               : "makeSH"
+            tcCollLabel                : "TimeClusterFinderDe"
+            ccCollLabel                : "CaloClusterMaker"
+            hitBkgBits                 : ["Noisy","Dead","Background"]
+            radSelect                  : 0        ## 1
+            chunkSep                   : 5
+            chunkWindow                : 300.0    ## 20.0
+            chunkThresh                : 5        ## 3
+            combineWindow              : 300.0    ## 30.0
+            maxCombineSep              : 2500.0
+            chunkFitThresh             : 5
+            recoverWindow              : 30.0
+            clusterThresh              : 5        ## 15
+            minCaloSize                : 2
+            minCaloEnergy              : 50.0
+            caloDtMax                  : 30.0
+            caloTimeOffset             : @local::TrackCaloMatching.DtOffset
+            doRefine                   : 1        ## 0
+
+            diagPlugin : { tool_type  : "TZClusterFinderDiag"
+                 mcTruth       : 1
+                 simIDThresh   : 15
+                 mcUtils       : { @table::TrkReco.McUtils }
+            }
+        }
+
+        KKLine  : { @table::Reconstruction.producers.KKLine   }
+
+        @table::CaloReco.producers
+        @table::CaloCluster.producers
+    }
+    
+    filters : {
+        @table::DAQ.filters
+        LineFinderB: { @table::daqana.filters.TCLineFilter ## LineFinder
+            chCollTag : "makeSH"
+            tcCollTag : "TZClusterFinder"
+            diagLevel : 0
+        }
+        @table::daqana.filters
+        KLFilter: { @table::Reconstruction.filters.KLFilter }
+    }
+    
+    p1 : [ makeSD     , StrawDigiFilter                 ]
+    p2 : [ EWMProducer, makeSD, makeSH                  ]
+    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
+
+    p4 : [EWMProducer, makeSD, makeSH,
+                                                    ##  @sequence::Reconstruction.CaloReco,
+          CaloRecoDigiMaker, CaloHitMaker,          ## @sequence::CaloReco.Reco,
+          CaloProtoClusterMaker, CaloClusterMaker,  ## @sequence::CaloCluster.Reco,
+          TZClusterFinder, LineFinder, KKLine    ]  ## , KLFilter
+
+    e1 : [ defaultOutput ]
+
+    trigger_paths  : [ @sequence::TRIGGER_PATH ]
+    end_paths      : [ e1 ]
+}
+#------------------------------------------------------------------------------
+# assume we're on mu2edaq22
+#------------------------------------------------------------------------------
+source.fileNames : [ "/projects/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.107995_000001.art" ]
+outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r010n000.%06r_%06s.art"   # 011 or 111: after cosmic reco
+
+physics.producers.StrawDigisFromArtdaqFragments.saveWaveforms :  1

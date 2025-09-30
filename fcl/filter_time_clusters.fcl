@@ -20,7 +20,7 @@
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
 
-process_name : MakeDaqNtuple
+process_name : FilterTimeClusters
 
 source : {
     module_type : RootInput
@@ -28,19 +28,20 @@ source : {
 
     # firstEvent  : 500
     maxEvents   : -1
-    #   inputCommands: ["keep *",
-    #                   "drop *Mu2eEventHeader*_*_*_*"]
+#       inputCommands: [ "keep *",
+#                        "drop *_*_*_*"
+#                      ]
 }
 
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
         fileName      :   "trk_fragment_ana.art"
-#        SelectEvents  : [ @sequence::TRIGGER_PATHS ]
-#        outputCommands: [
+        SelectEvents  : [ p3 ]
+        outputCommands: [ "keep *_*_*_*",
 #                         "drop *_*_*_*",
-#                         "keep *_*_*_*"
-#                        ]
+                          "drop *_*_*_FilterTimeClusters"
+                        ]
     }
 }
 
@@ -119,22 +120,25 @@ physics : {
             makeSD    : 0
             makeSH    : 1
             makeTC    : 1
-            makeTrk   : 0
             tcCollTag : "TZClusterFinder"
         }
     }
 
     p1 : [ EWMProducer, makeSD, makeSH ]
     p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
-    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, FilterTimeClusters ]
+    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ]
 
-    e0 : []
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    e0 : [ ]
+    e1 : [ defaultOutput  ]
+    e2 : [ MakeDigiNtuple ] ## , defaultOutput ]
 
-    trigger_paths  : [ p2 ] 
+    trigger_paths  : [ p3 ] 
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+#
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n002.%06r_%06s.root"
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
+outputs.defaultOutput.fileName   : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.art"
+physics.filters.DaqanaFilter.minNTimeClusters : 1
+
