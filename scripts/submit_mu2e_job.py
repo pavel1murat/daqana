@@ -165,37 +165,42 @@ class SubmitJob:
             if (self.source):
                 # input file defined, assume Mu2e naming conventions
                 run_number = os.path.basename(self.source).split('.')[4]
-                
-        logfile=f'log.mu2e.{input_dsid}.{fcl_job_stub}.{run_number}.log' ;
 
-        cmd = f'cd {output_dir}; mu2e -c {job_fcl}'          # fcl file is in the output_dif
+        fn = os.getenv("WORK_DIR")+'/.source_me';
+        if (os.path.exists(fn)):
+            logfile=f'log.mu2e.{input_dsid}.{fcl_job_stub}.{run_number}.log' ;
+
+            cmd  = f'cd $WORK_DIR; source $WORK_DIR/.source_me ;'
+            cmd += f' cd {output_dir}; mu2e -c {job_fcl}' # fcl file is in the output_dif
         
-        if (self.source     ): cmd += f' -s {self.source}'
-        if (self.first_event): cmd += f' -e {self.first_event}'
-        if (self.nev        ): cmd += f' -n {self.nev}'
+            if (self.source     ): cmd += f' -s {self.source}'
+            if (self.first_event): cmd += f' -e {self.first_event}'
+            if (self.nev        ): cmd += f' -n {self.nev}'
 
-        cmd += f' >> {logfile} 2>&1 &'
+            cmd += f' >> {logfile} 2>&1 &'
 #------------------------------------------------------------------------------
 # print the command and log it, together with the FCL file, in the log file
-#-------v----------------------------------------------------------------------
-        self.Print(name,0,cmd)
+#-----------v------------------------------------------------------------------
+            self.Print(name,0,cmd)
 
-        os.system(f'echo "{cmd}"                                   >| {output_dir}/{logfile}')
-        os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
-        os.system(f'cat {output_dir}/{job_fcl}                     >> {output_dir}/{logfile}')
-        os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
+            os.system(f'echo "cmd:{cmd}"                               >| {output_dir}/{logfile}')
+            os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
+            os.system(f'cat {output_dir}/{job_fcl}                     >> {output_dir}/{logfile}')
+            os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
                
-        p   = subprocess.Popen(cmd,
-                             executable="/bin/bash",
-                             shell=True,
-                             stderr=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             encoding="utf-8")
-        (out, err) = p.communicate();
-        self.Print(name,1,f'out_2:{out}')
-
+            p   = subprocess.Popen(cmd,
+                                   executable="/bin/bash",
+                                   shell=True,
+                                   stderr=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   encoding="utf-8")
+            (out, err) = p.communicate();
+            self.Print(name,1,f'out_2:{out}')
+            self.Print(name,0,f'err_2:{err}')
+        else:
+            self.Print(name,0,f'ERROR: {os.getenv("WORK_DIR")}/.source_me doesn\'t exist, BAIL OUT')
+            
         return;
-    
 #------------------------------------------------------------------------------
 if __name__ == "__main__":
 
