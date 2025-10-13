@@ -5,6 +5,7 @@
 # Usage: mu2e -c daqana/fcl/trk_fragment_ana_001.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
+# defailt calibrations: v2 (with panel-to panel timing);
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
   TRIGGER_PATH            : [ p4 ]
@@ -27,9 +28,9 @@ services.SeedService.baseSeed         : 8
 services.SeedService.maxUniqueEngines : 100
 services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etrk_pasha_029/digi_ntuples/make_digi_ntuple_%06r.root"
 #------------------------------------------------------------------------------
-# update DB section
+# DB section
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v0.fcl"
+#include "daqana/fcl/calibration_set_v2.fcl"
 
 process_name : CosmicReco
 
@@ -199,6 +200,6 @@ physics : {
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
 source.fileNames : [ "/projects/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.107995_000001.art" ]
-outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r010n000.%06r_%06s.art"   # 011 or 111: after cosmic reco
+outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r012n000.%06r_%06s.art"   # 012 or 111: after cosmic reco
 
 physics.producers.StrawDigisFromArtdaqFragments.saveWaveforms :  1

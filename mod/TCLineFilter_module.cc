@@ -275,7 +275,7 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
       double x = ch->pos().X();
       double y = ch->pos().Y();
-      double z = ch->pos().Z();
+      //      double z = ch->pos().Z();
             
       double u1 =  ch->uDir().X()*nx+ch->uDir().Y()*ny;
       double u2 = -ch->uDir().X()*ny+ch->uDir().Y()*nx;

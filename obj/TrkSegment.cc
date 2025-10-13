@@ -1,311 +1,227 @@
 //
-#include "format"
+#include <format>
+#include <ostream>
 #include "daqana/obj/TrkSegment.hh"
+#include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
 
 int TrkSegment::_debugMode(0);
 
+//
+double const Point2D::fgVDrift    = 65.e-3;   // mm/ns
+double const TrkSegment::fgRStraw =  2.5;     // mm
 //-----------------------------------------------------------------------------
-TrkSegment::TrkSegment() {
-  plane      = -1;
-  panel      = -1;
-  trkPanel   = nullptr;
-  combiTrans = nullptr;
+TrkSegment::TrkSegment(int Plane, int Panel) {
+  plane       = Plane;
+  panel       = Panel;
+  trkPanel    = nullptr;
+  fCombiTrans = nullptr;
+  //  fDRho       = 0;
+  fChi2Dof    = -1;
+  fMask       = 0;
+  fIhit[0]    = -1;
+  fIhit[1]    = -1;
 }
 
 //-----------------------------------------------------------------------------
-int TrkSegment::correctT0() {
-  return 0;
-}
+int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int Panel) {
+  int rc(0);
 
-//-----------------------------------------------------------------------------
-int TrkSegment::determineDriftSigns() {
-  return 0;
-}
+  int nhits = Hits.size();
+  std::cout << std::format("TrkSegment::{}: BEGIN nhits:{}\n",__func__,nhits);
 
-//-----------------------------------------------------------------------------
-// doesn't touch hits, only points
-//-----------------------------------------------------------------------------
-int TrkSegment::findLine() {
-  int    rc(0);
-  double const sig_rho_2(0.2*0.2); // in mm for now, assume sigma = 200 um
-  int    i1  = ihit[0];
-  int    i2  = ihit[1];
+  //  int all_hits(1);
+  // if ((UniquePlane != -1) && (Panel != -1)) all_hits = 0;
 
-  if (_debugMode != 0) std::cout << std::format("-- {}:START plane:{:2} panel:{} i1:{:2} i2:{:2}",
-                                                __func__,plane,panel,i1,i2) << std::endl;
-
-  std::cout << __func__ << " points[i2].x:" << points[i2].x << std::endl;
-
-  double dx  = points[i2].x-points[i1].x;
-  double dy  = points[i2].y-points[i1].y;
-
-  std::cout << __func__ << " emoe 1.1" << std::endl;
-
-  double r1  = points[i1].r;
-  double r2  = points[i2].r;
-  std::cout << __func__ << " emoe 1.2 hits[i1]->driftRadius():" << points[i1].r << std::endl;
-  double s1  = points[i1].drift_sign;
-  double s2  = points[i2].drift_sign;
-  double alp = r2*s2-r1*s1;
-  
-  std::cout << std::format("dx:{:10.5f} dy:{:10.5f} r1:{:10.5f} r2:{:10.5f} s1:{} s2:{} alp:{:10.5f}",
-                           dx,dy,r1,r2,s1,s2,alp) << std::endl;
-  
-  double dr    = sqrt(dx*dx+dy*dy);
-  double alpdr = alp/dr;
-  double dxr   = dx/dr; 
-  double dyr   = dy/dr;
-  // double nx    = -alpdr*dyr-dxr*sqrt(1-alpdr*alpdr);
-  // double ny    =  alpdr*dxr-dyr*sqrt(1-alpdr*alpdr);
-  double nx    =  -alpdr*dyr+dxr*sqrt(1-alpdr*alpdr);
-  double ny    =   alpdr*dxr+dyr*sqrt(1-alpdr*alpdr);
-
-  std::cout << std::format("dr:{:10.5f} alpdr:{:10.5f} dxr:{:10.5f} dyr:{:10.5f}",
-                           dr,alpdr,dxr,dyr) << std::endl;
-  double nux   = -ny;
-  double nuy   =  nx;
-                                        // expect slope to be small, line[0]: y(x=0)
-  line[1]  = ny/nx;
-  double t = -(points[i1].x+s1*r1*nux)/nx;
-  line[0]  =   points[i1].y+s1*r1*nuy+ny*t;
-//-----------------------------------------------------------------------------
-// line is found, determine the drift signs
-//-----------------------------------------------------------------------------
-  int nhits = points.size();
-  double x1 = points[i1].x+r1*s1*nux;
-  double y1 = points[i1].y+r1*s1*nuy;
-
-  if (_debugMode) {
-    std::cout << std::format("nx:{} ny:{} nux:{} nuy:{} line[0]:{} line[1]:{} ",
-                             nx,ny,nux,nuy,line[0],line[1])
-              << std::format(" nhits:{} x1:{}  y1:{}",nhits,x1,y1)
-              << std::endl;
+  fT0           = 0;
+  fNGoodHits    = 0;
+  for (int i=0; i<nhits; i++) {
+    ComboHitData_t* hit = &Hits[i];
+    if (hit->IsGood() != 1)              continue;
+    fT0        += hit->tcorr;
+    fNGoodHits += 1;
   }
-
-  chi2 = 0;
-  drho = 0;
+                                        // in principle, this approximation for T0 should be good enough
+  fT0 = fT0/(fNGoodHits+1.e-12);
+  if (fNGoodHits < 4) {
+    fMask = kNHitsBit;
+  }
 //-----------------------------------------------------------------------------
-// only if nhits > 2
+// make sure initial drift radii do not go above the straw radius - that reflects
+// too small value of T0
 //-----------------------------------------------------------------------------
-  if (nhits > 2) {
-    for (int i=0; i<nhits; i++) {
-                                        // determine disance from the hit to the line in two cases
-      if ((i == i1) or (i == i2)) continue;
+  double rstraw(2.5);
+  double drmax(0);
+  for (int i=0; i<nhits; i++) {
+    ComboHitData_t* hit = &Hits[i];
+    double td = hit->time-fT0-hit->prtime;
+    double dr = td*Point2D::fgVDrift-rstraw;
+    if (dr > drmax) drmax = dr;
+  }
+  if (drmax > 0) fT0 = fT0+drmax/Point2D::fgVDrift;
+//-----------------------------------------------------------------------------
+// find seed hits, ignore the very first and the very last pairs
+//-----------------------------------------------------------------------------
+  fNTransitions = 0;
+  ComboHitData_t* last_hit = nullptr;
 
-      double ri = points[i].r;
-
-      double rho[2];
-      for (int is=0; is<2; ++is) {
-        int ids = 2*is-1;
-        double xi = points[i].x+nux*ri*ids;
-        double yi = points[i].y+nuy*ri*ids;
-        rho[is]   = (xi-x1)*nux+(yi-y1)*nuy;
-
-        if (_debugMode) {
-          std::cout << std::format("i:{:2} ri:{:10.5f} is:{} xi:{:10.5f} yi:{:10.5f} rho:{}",
-                                   i,ri,is,xi,yi,rho[is])
-                    << std::endl;
+  for (int i=0; i<nhits; i++) {
+    ComboHitData_t* hit = &Hits[i];
+                                        // figure out the drift signs
+    int layer = mu2e::StrawId(hit->sid).getLayer();
+    if (last_hit != nullptr) {
+      int last_hit_layer = mu2e::StrawId(last_hit->sid).getLayer();
+                                        // layer is either 0 or 1
+      if (last_hit_layer != layer) {
+//-----------------------------------------------------------------------------
+// transition between the layers found.
+// ignore transitions involving the first and the last hits
+//-----------------------------------------------------------------------------
+        if ((i == 1) or (i == nhits-1))                 continue;
+//-----------------------------------------------------------------------------
+// ignore back-and-forth transitions - instead, mark hit as bad
+//-----------------------------------------------------------------------------
+        if (i < nhits-1) {
+          ComboHitData_t* next_hit = &Hits[i+1];
+          int next_hit_layer = mu2e::StrawId(next_hit->sid).getLayer();
+          if (next_hit_layer == last_hit_layer) {
+            hit->flag = 0x1;
+            continue;
+          }
         }
-      }
-      double arho0 = fabs(rho[0]);
-      double arho1 = fabs(rho[1]);
-      if (arho0 < arho1) {
-        chi2 += rho[0]*rho[0]/sig_rho_2;
-        drho += rho[0]*(-1);
-        if (fabs(arho0-arho1) > 0.5) points[i].drift_sign = -1;
-      }
-      else {
-        chi2 += rho[1]*rho[1]/sig_rho_2;
-        drho += rho[1];
-        if (fabs(arho0-arho1) > 0.5) points[i].drift_sign = 1;
+//-----------------------------------------------------------------------------
+// get here only if hits is initially good (not 'back-n-forth')
+// rotations don't change the Z-coordinate
+//-----------------------------------------------------------------------------
+        fNTransitions += 1;
+                                        // z becomes Y in points
+        if (last_hit->z > hit->z) {
+          last_hit->drs      = -1;
+          hit->drs           =  1;
+        }
+        else if (last_hit->z < hit->z) {
+          last_hit->drs      =  1;
+          hit->drs           = -1;
+        }
+        fIhit[0] = i-1;
+        fIhit[1] = i;
       }
     }
-    chi2 /= (nhits-2);
-    drho /= nhits;                // average signed deltaR
+    last_hit    = hit;
   }
+  if (fNTransitions != 1) fMask |= kNTransitionsBit;
+//-----------------------------------------------------------------------------
+// add Point2D's :
+//-----------------------------------------------------------------------------
+  std::cout << std::format("-- TrkSegment::{}:{}: fT0:{:10.3f} fNTransitions:{} fNGoodHits:{}\n",
+                           __func__,__LINE__,fT0,fNTransitions,fNGoodHits);
 
+  //  int    imax      (-1);
+  double max_drtime(-1);
+
+  fXMean = 0;
+  fYMean = 0;
+  fTMean = 0;
+  
   for (int i=0; i<nhits; i++) {
-    std::cout << std::format(" hit #:{:2} drift_sign:{}",i,points[i].drift_sign) << std::endl;
-  }
+    ComboHitData_t* hit = &Hits[i];
+    if (hit->IsGood() == 0) continue;
 
-
-  if (_debugMode != 0) std::cout << std::format("-- {}:END chi2:{:10.3f} drho:{:10.5f} rc:{}",
-                                                __func__,chi2,drho,rc) << std::endl;
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
-int TrkSegment::finalFit() {
-  int rc(0);
-//-----------------------------------------------------------------------------
-// draw a straight line tangent to the two hits and determine the drift signs of the rest hits
-//-----------------------------------------------------------------------------
-  determineDriftSigns();
-//-----------------------------------------------------------------------------
-// with the drift signs determined, calculate LSQ sums and determine parameters of the straight line
-//------------------------------------------------------------------------------
-  double t0 = fT0;
-  
-  fitLine();
-//-----------------------------------------------------------------------------
-// 3. calculate timing residuals and correct particle T0
-//------------------------------------------------------------------------------
-  correctT0();
-
-  std::cout << std::format("t0:{:7.3f} fT0:{:7.3f}",t0,fT0) << std::endl;
-  
-  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
-
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
-// look for a transition between the layers - the drift signs of the hits
-// around the transition are defined
-// if such a pattern is not found - no segment
-// remember, this is not a pattern recognition per se, we're only aiming for alignment validation
-//-----------------------------------------------------------------------------
-int TrkSegment::findInitialApproximation() {
-  int rc(0);
-  if (_debugMode != 0) std::cout << "--" << __func__ << ":START" << std::endl;
-//-----------------------------------------------------------------------------
-// determine drift signs of the seed hits
-//-----------------------------------------------------------------------------
-  int nhits = hits.size();
-  for (int i=0; i<nhits-1; i++) {
-    const mu2e::TrkStrawHitSeed* shs0 = hits.at(i);
-    const mu2e::TrkStrawHitSeed* shs1 = hits.at(i+1);
-    int lay0 = shs0->strawId().layer();
-    int lay1 = shs1->strawId().layer();
-    if (lay0 != lay1) {
-                                        // first transition between layers found, assume it is the only one
-                                        // how to reject the segment if it is not the case ?
-      ihit[0] = i;
-      ihit[1] = i+1;
-                                        // compare y coordinates of the layers to decide on the drift directions
-      
-      if (points[i].y > points[i+1].y) {
-        setSign(i  ,-1);
-        setSign(i+1, 1);
-      }
-      else {
-        setSign(i  , 1);
-        setSign(i+1,-1);
-      }
-      break;
-    }
-  }
-//-----------------------------------------------------------------------------
-// tangent line and drift signs of the rest hits 
-//-----------------------------------------------------------------------------
-  findLine();
-  
-  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
-  return rc;
-}
-
-
-//-----------------------------------------------------------------------------
-int TrkSegment::fitLine() {
-  return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-int TrkSegment::fit() {
-  int rc(0);
-  if (_debugMode) std::cout << __func__
-                            << std::format(":START plane:{:2} panel:{}",plane,panel)
-                            << std::endl;
-//-----------------------------------------------------------------------------
-// sort hits
-//-----------------------------------------------------------------------------
-  std::sort(hits.begin(),hits.end(),
-            [] (const mu2e::TrkStrawHitSeed* a, const mu2e::TrkStrawHitSeed* b) {
-              return a->strawId().straw() < b->strawId().straw();
-            });
-//-----------------------------------------------------------------------------
-// 2. transform XY everything into local coordinate system of the panel
-//-----------------------------------------------------------------------------
-  int nhits = hits.size();
-  for (int i=0; i<nhits; i++) {
-    const mu2e::TrkStrawHitSeed* shs = hits.at(i);
-    //    int ind = shs->index();
-// transform wire positions hits an place transformed coordinates in a vector
-    const mu2e::Straw*       straw = &trkPanel->getStraw(shs->strawId().straw());
-    const CLHEP::Hep3Vector& pos   = straw->getMidPoint();
     double posm[3], posl[3];
-    posm[0] = pos.x();
-    posm[1] = pos.y();
-    posm[2] = pos.z();
-    combiTrans->MasterToLocalVect(posm, posl);
-    if (_debugMode) {
-      std::cout << std::format("i:{:2} posm:{:8} {:8} {:8} posl:{:8} {:8} {:8}",
-                               i,posm[0],posm[1],posm[2],posl[0],posl[1],posl[2]) << std::endl;
+    posm[0] = hit->x;
+    posm[1] = hit->y;
+    posm[2] = hit->z;
+    fCombiTrans->MasterToLocalVect(posm, posl);
+
+    if (_debugMode != 0) {
+      std::cout << std::format("i:{} sid:0x{:05x} xyz(M):({:10.3f} {:10.3f} {:10.3f})", i, hit->sid, hit->x, hit->y, hit->z)
+                << std::format(" xyz(L):({:10.3f} {:10.3f} {:10.3f}) time:{:10.3f} prtime:{:10.3f} r:{:10.3f} drs:{:2d}\n",
+                               posl[0], posl[1], posl[2], hit->time, hit->prtime, hit->r,hit->drs);
     }
-    // and store hits in the local frame of the panel (xloc = ypanel, yloc = zpanel) : z vs y
-    // better subtract Z-coordinate of the station center - is there such ?
-    // invert sign of the Z-coordinate to keep the ref system right-handed
-    addPoint(posl[1],-posl[2],shs->driftRadius(),0);
+//-----------------------------------------------------------------------------
+// points have coordinates in the local coordinate system of the panel
+//-----------------------------------------------------------------------------
+    addPoint(hit->sid,hit->flag, posl[0],posl[2],hit->time,hit->prtime, hit->drs);
+//-----------------------------------------------------------------------------
+// to avoid mistakes, perform the subtraction just once
+// hits flagged at this stage will never be unflagged
+// and don't assume that <X>, <Y> etc are exactly equal to zero
+//-----------------------------------------------------------------------------
+    fXMean += posl[0];
+    fYMean += posl[2];
+    fTMean += hit->time-hit->prtime;
+    double drtime = hit->time-hit->prtime-fT0;
+    if (drtime > max_drtime) {
+      // imax       = i;
+      max_drtime = drtime;
+    }
+  }
+
+  fXMean = fXMean/fNGoodHits;
+  fYMean = fYMean/fNGoodHits;
+  fTMean = fTMean/fNGoodHits;
+//-----------------------------------------------------------------------------
+// it is enough to know that there is no large offsets which could affect the
+// calculations; x,y, and t to be used in calculations, their values should be close to zero
+//-----------------------------------------------------------------------------
+  for (int i=0; i<nhits; i++) {
+    Point2D* p  = &points[i];
+    p->x       -= fXMean;
+    p->y       -= fYMean;
+    p->t        = p->time-p->tprop-fTMean;
   }
 //-----------------------------------------------------------------------------
-// 2.5 update point Y coordinates
+// sort points
 //-----------------------------------------------------------------------------
-  updateCoordinates();
-//-----------------------------------------------------------------------------
-// 3. use straight line fit to determine 0-th approximation
-//    that includes determination of the drift signs
-//-----------------------------------------------------------------------------
-  findInitialApproximation();
-//-----------------------------------------------------------------------------
-// 4. final fit, determine final parameters and chi2, no error matrix yet
-//-----------------------------------------------------------------------------
-  finalFit();
-  
-  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
+  std::sort(points.begin(),points.end(),
+            [] (const Point2D& a, const Point2D& b) {
+              return a.strawId().straw() < b.strawId().straw();
+            });
+
+  if (_debugMode != 0) {
+    std::cout << std::format("-- TrkSegment.cc:{}",__LINE__) << std::endl;
+    print();
+  }
+
+  std::cout << std::format("TrkSegment::{}: END rc={}\n",__func__,rc);
   return rc;
+}
+
+//------------------------------------------------------------------------------
+// in general, the worst hit could be not the one which has the largest chi2
+//-----------------------------------------------------------------------------
+int TrkSegment::CalculateChi2() {
+  double const res2(0.2*0.2);            // assume 200 um
+
+  double chi2 = 0;
+  int nhits = points.size();
+  int n_good_hits(0);
+  for (int i=0; i<nhits; ++i) {
+    Point2D* pt = &points[i];
+    if (pt->IsGood() == 0) continue;
+    double rd   = Point2D::fgVDrift*(pt->time-pt->tprop-fT0);
+    if (rd < 0) rd = 0;
+    if (rd > fgRStraw) rd = fgRStraw;
+    double dist = (pt->y-fDyDx*pt->x-fY0)/sqrt(1+fDyDx*fDyDx)-rd*pt->drs;
+    chi2        += dist*dist/res2;
+    n_good_hits += 1;
+  }
+
+  fChi2Dof = chi2/(n_good_hits - 2.999999);
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
 void TrkSegment::print(std::ostream& Stream) {
-  Stream << std::format("") << std::endl;
-}
 
-//-----------------------------------------------------------------------------
-// preserve accuracy
-//-----------------------------------------------------------------------------
-int TrkSegment::updateCoordinates() {
-  int rc(0);
+  int nhits = points.size();
 
-  double ym(0), xm(0);
-  if (_debugMode != 0) std::cout << __func__ <<  ":START :" << std::endl;
-  
-  int nhits = hits.size();
-  if (nhits < 2) return 0;
-  
+  Stream << std::format("DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f}",fDyDx,fY0,fNx,fNy)
+         << std::format("-- TrkSegment::{}: nhits:{} fIhit[0]:{} fIhit[1]:{} n_transitions:{} chi2/DOF:{:8.3f}",
+                        __func__,nhits,fIhit[0],fIhit[1],fNTransitions,fChi2Dof)
+         << std::endl;
+
   for (int i=0; i<nhits; i++) {
-    xm += points[i].x;
-    ym += points[i].y;
+    Point2D* pt = &points[i];
+    pt->print();
   }
-
-  xmean = xm/nhits;
-  ymean = ym/nhits;
-  
-  for (int i=0; i<nhits; i++) {
-    points[i].x -=  xmean;
-    points[i].y -=  ymean;
-  }
-
-  if (_debugMode !=0) {
-    std::cout << std::format("{}: plane:{:2} panel:{} xmean,ymean:{:10.3f} {:10.3f}",
-                             __func__,plane,panel,xmean,ymean)
-              << std::endl;
-    
-    for (int i=0; i<nhits; i++) {
-      std::cout << std::format("i:{:2}, points[i].x,y:{:8} {:8}",
-                               i,points[i].x,points[i].y) << std::endl;;
-    }
-  }
-  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
-  return rc;
 }

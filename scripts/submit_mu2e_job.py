@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # example :
-#        v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --rn=105935 --idsid=vst --calib=v9 --diag_level=10
+#        v001/daqana/scripts/submit_mu2e_job.py --v=a.fcl --rn=105935 --idsid=vst --calib=v9 --diag_level=10
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime, socket
 import sys, string, getopt, glob, os, time, re, array
@@ -66,11 +66,11 @@ class SubmitJob:
             elif (key == '--s'):
                 self.source = val
 
-        self.Print(name,1,'self.verbose   = %s' % self.diag_level)
-        self.Print(name,0,'self.calib     = %s' % self.calib     )
-        self.Print(name,0,'self.rn        = %s' % self.run_number)
-        self.Print(name,0,'self.fcl       = %s' % self.fcl       )
-        self.Print(name,0,'self.nfiles    = %s' % self.nfiles    )
+        self.Print(name,0,'self.diag_level = %s' % self.diag_level)
+        self.Print(name,0,'self.calib      = %s' % self.calib     )
+        self.Print(name,0,'self.rn         = %s' % self.run_number)
+        self.Print(name,0,'self.fcl        = %s' % self.fcl       )
+        self.Print(name,0,'self.nfiles     = %s' % self.nfiles    )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -115,8 +115,10 @@ class SubmitJob:
 # overrides, calib: 'v1'
 #------------------------------------------------------------------------------
         overrides_cmd = ''
-        if (self.calib): overrides_cmd = f'| sed s/calibration_set_v0/calibration_set_v{self.calib}/'
-            
+        if (self.calib):
+            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{self.calib}/'
+            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{self.calib}/'
+
 #------------------------------------------------------------------------------
 # redefinitions --> appends
 #------------------------------------------------------------------------------

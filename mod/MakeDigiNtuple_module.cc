@@ -40,6 +40,7 @@
 #include "daqana/obj/DaqEvent.hh"
 #include "daqana/mod/WfParam_t.hh"
 #include "daqana/obj/TrkSegment.hh"
+#include "daqana/obj/SegmentFit.hh"
 
 #include <ostream>
 #include <regex>
@@ -310,7 +311,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
   
       double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
       double phix   = phiy-90;
-      double phiz   = 0;
+      double phiz   =  0;
       double thetax = 90;
       double thetay = 90;
       double thetaz =  0;
@@ -318,8 +319,8 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
         phix   = phix+180;
       }
 
-      TGeoRotation* r  = new TGeoRotation("a",thetax,phix,thetay,phiy,thetaz,phiz);
-      ts->combiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",i,ip),0,0,0,r);
+      TGeoRotation* r = new TGeoRotation  ("a",thetax,phix,thetay,phiy,thetaz,phiz);
+      ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",i,ip),0,0,0,r);
     }
   }
 }
@@ -808,10 +809,12 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 // the segment position ond slope with the track parameters transpated into the local
 // coordinate system of the panel (or in the global ?)
 //-----------------------------------------------------------------------------
-    for (int i=0; i<_nseg; i++) {
-      TrkSegment* ts = _ptseg[i];
-      ts->fit();
-    }
+  SegmentFit::Par_t par;
+  for (int i=0; i<_nseg; i++) {
+    TrkSegment* ts = _ptseg[i];
+    SegmentFit sfitter(ts);
+    sfitter.Fit(1,&par);
+  }
 //-----------------------------------------------------------------------------
 // at this point, all track hits should be assigned to segments
 // debug printout
@@ -821,8 +824,8 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
     for (int i=0; i<_nseg; i++) {
       TrkSegment* ts = _ptseg[i];
       int nh = ts->hits.size();
-      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f} dr:{:7.3f}",
-                               i,ts->plane,ts->panel,nh,ts->chi2,ts->drho)
+      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f}",
+                               i,ts->plane,ts->panel,nh,ts->Chi2Dof())
                 << std::endl;
       for (int ih=0; ih<nh; ih++) {
         const mu2e::TrkStrawHitSeed* shs = ts->hits.at(ih);
@@ -831,7 +834,7 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
         std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
                                  ih,shs->strawId().straw(),shs->hitTime(),ch->driftTime())
                   << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
-                                 pt->x,pt->y,shs->driftRadius(),pt->drift_sign,pt->sign_fixed)
+                                 pt->x,pt->y,shs->driftRadius(),pt->drs,pt->sign_fixed)
                   << std::endl;
       }
     }

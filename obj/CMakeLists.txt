@@ -24,11 +24,11 @@ set_property(SOURCE ${dict}.cxx PROPERTY generated)
 
 add_library(${lib} SHARED
   DaqEvent.cc DaqTrack.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
-  TrkSegment.cc
+  TrkSegment.cc SegmentFit.cc
   ${dict}.cxx
 )
 
-target_link_libraries(${lib} ROOT::Core)
+target_link_libraries(${lib}   Offline::Mu2eUtilities ROOT::Core)
 
 cet_add_compiler_flags(-g -O0)
 
