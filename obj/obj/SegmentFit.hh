@@ -7,16 +7,11 @@
 class SegmentFit {
 public:
 
-  struct Par_t {
-    double a;
-    double b;
-    double tau;
-    double chi2dof;
-  };
-
   static int fgDebugMode;
 
   TrkSegment* fSegment;                 // cached segment
+
+  //  Par_t      fP0;
 
   LsqSums2   fSxy;
   LsqSums2   fSxs;
@@ -40,7 +35,8 @@ public:
     double sig_yss = fSys.xMean()-fSys.yMean()*fSys.sigXY();
     double sig_xss = fSxs.xMean()-fSxs.yMean()*fSxs.sigXY();
 
-    double x = (sig_yss-A*sig_xss-vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
+    //    double x = (sig_yss-A*sig_xss-vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
+    double x = (sig_yss - A*sig_xss + vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
 
     return x;
   }
@@ -51,31 +47,40 @@ public:
 
     double sig_xss = fSxs.xMean()-fSxs.yMean()*fSxs.sigXY();
 
-    double x = (-1.)*(sig_xss+A*vd*fSts.sigXY()/sqrt(1+A*A))/(1-smn*smn);
+    // double x = (-1.)*(sig_xss+A*vd*fSts.sigXY()/sqrt(1+A*A))/(1-smn*smn);
+    double x = (-sig_xss + A*vd*fSts.sigXY()/sqrt(1+A*A))/(1-smn*smn);
     return x;
   }
 
   double Tau(double A) {
     double smn = fSts.yMean();
     double vd  = Point2D::fgVDrift;
-    double tau = fSts.xMean()+1./(1-smn*smn)*((A*fSxs.sigXY()-fSys.sigXY())/(vd*sqrt(1+A*A))-smn*fSts.sigXY());
+    //    double tau = fSts.xMean()+1./(1-smn*smn)*((A*fSxs.sigXY()-fSys.sigXY())/(vd*sqrt(1+A*A))-smn*fSts.sigXY());
+    double tau = fSts.xMean() - 1./(1-smn*smn)*((A*fSxs.sigXY() - fSys.sigXY())/(vd*sqrt(1+A*A)) + smn*fSts.sigXY());
     return tau;
   }
 
   double DtauDa(double A) {
     double smn = fSts.yMean();
     double vd  = Point2D::fgVDrift;
-    double x   = (fSxs.sigXY()+A*fSys.sigXY())/(vd*(1-smn*smn)*pow(1+A*A,3/2.));
+    //    double x   = (fSxs.sigXY()+A*fSys.sigXY())/(vd*(1-smn*smn)*pow(1+A*A,3/2.));
+    double x   = -(fSxs.sigXY() + A*fSys.sigXY())/(vd*(1-smn*smn)*pow(1+A*A,3/2.));
     return x;
   }
+                                        // for debugging/validation
 
-  int Fit(int NIterations,Par_t* Par);
-  int Init();
+  double DChi2Da  (double A, double B, double Tau);
+  double DChi2Db  (double A, double B, double Tau);
+  double DChi2Dtau(double A, double B, double Tau);
+
+  int    Fit(int NIterations, int DoCleanup, const Par_t* Pin, Par_t* Par);
+  int    Init();
                                         // find the segment line parameters using two seed hits and two edge hits
-  int DefineDriftDirections();
-  int FindTangentLine (TrkSegment* Seg);
-  int CalculateLsqSums();
-  int DisplaySegment();
+  int    DefineDriftDirections(const Par_t* Pin = nullptr);
+  int    CalculateLsqSums();
+  int    DisplaySegment();
+                                        // if nullptr, use fTangentLine
+  int    DefineTangentLine(Par_t* Par = nullptr);
 };
 
 #endif

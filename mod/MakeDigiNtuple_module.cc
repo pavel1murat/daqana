@@ -809,11 +809,28 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 // the segment position ond slope with the track parameters transpated into the local
 // coordinate system of the panel (or in the global ?)
 //-----------------------------------------------------------------------------
-  SegmentFit::Par_t par;
+  
+  Par_t par;
+  int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
+    ts->InitHits();
+    ts->DefineTangentLine();
+
     SegmentFit sfitter(ts);
-    sfitter.Fit(1,&par);
+//-----------------------------------------------------------------------------
+// use tangent line and the first and the last hits
+// perform 4 fits, find the best
+//-----------------------------------------------------------------------------
+    sfitter.DefineDriftDirections();
+//-----------------------------------------------------------------------------
+// perform fit using all points
+//-----------------------------------------------------------------------------
+    int converged = sfitter.Fit(niter,0,nullptr,&par);
+
+    if (_debugMode) {
+      std::cout << "converged:" << converged;
+    }
   }
 //-----------------------------------------------------------------------------
 // at this point, all track hits should be assigned to segments

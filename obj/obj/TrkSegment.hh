@@ -7,6 +7,24 @@
 
 #include "daqana/obj/ComboHitData_t.hh"
 
+struct Par_t {
+  double a;
+  double b;
+  double tau;
+  double nx;
+  double ny;
+  double chi2dof;
+
+  double DyDx() const { return  a ; }
+  double Y0  () const { return  b ; }
+  double X0  () const { return  0 ; }
+  double Nx  () const { return  nx; }
+  double Ny  () const { return  ny; }
+  double Nux () const { return -ny; }
+  double Nuy () const { return  nx; }
+  double T0  () const { return tau; }
+};
+
 //-----------------------------------------------------------------------------
 // 'per-panel' track segments
 //-----------------------------------------------------------------------------
@@ -17,6 +35,7 @@ struct Point2D {
   double y;
   double time;                          // measured time
   double tprop;                         // propagation time
+  double tcorr;
   double t;                             // time-tprop (-fTMean)
   int    drs;
   int    sign_fixed;                    // if 1, the drift sign is not updated any more
@@ -25,18 +44,19 @@ struct Point2D {
 
   static double const fgVDrift;
 
-  Point2D(int Sid, int Mask, double X, double Y, double Time, double TProp, int Sign = 0) {
+  Point2D(int Sid, int Mask, double X, double Y, double Time, double TProp, double TCorr, int Sign = 0) {
     sid        = Sid;
     fMask      = Mask;
     x          = X;
     y          = Y;
     time       = Time;
     tprop      = TProp;
+    tcorr      = TCorr;
     drs        = Sign;                // 0:undefined
     sign_fixed = 0;
   }
 
-  double        r() { return fR; } // ## TODO 
+  // double        r() { return fR; } // ## TODO 
 
   int IsGood() { return (fMask == 0); }
 
@@ -45,8 +65,8 @@ struct Point2D {
   void print(std::ostream& Stream = std::cout) {
     // double rdrift = this->r();
     Stream << std::format("Point2D: sid:0x{:04x} mask:0x{:04x}",sid,fMask) 
-           << std::format(" x,y,time,tprop,drs,fixed: {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:2d} {}",
-                          x,y,time,tprop,drs,sign_fixed)
+           << std::format(" x,y,time,tprop,tcorr, drs,fixed: {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:2d} {}",
+                          x,y,time,tprop,tcorr,drs,sign_fixed)
            << std::endl;
   }
 };
@@ -69,68 +89,81 @@ public:
   int                  fNGoodHits;
   TGeoCombiTrans*      fCombiTrans;                 // global to local transform
   std::vector<const mu2e::TrkStrawHitSeed*> hits;   // initialization in the ntuple making code
-  double               fT0;                         // segment T0
   double               fXMean;
   double               fYMean;
   double               fTMean;                      // <t-tprop>
-  double               fNx;
-  double               fNy;
-  // double               fNux;
-  // double               fNuy;
-  std::vector<Point2D> points;                 // local points
-  int                  fIhit[2];                // indices of the two hits corresponding to the layer transition
-  double               fY0;                  // Y(X=0) (local coordinate system of the segment)
-  double               fDyDx;                // line tangent to the two key hits, [0]: intercept [1]: slope dydx
-  double               fChi2Dof;
-  //  double               fDrho;
+  std::vector<Point2D> points;               // local points
+  int                  fIhit[2];             // indices of the two hits corresponding to the layer transition
+                                             // // 
+                                                // fits
+  Par_t                fTangentLine;
+  Par_t                fPar4;                   // best parameters after a 4-point fit
+  Par_t                fPar;                    // best fit parameters
 
   static int           _debugMode;
 
   TrkSegment(int Plane = -1, int Panel = -1);
   ~TrkSegment() { if (fCombiTrans) delete fCombiTrans ; }
 
-  void addPoint(int Sid, int Flag, double XLoc, double YLoc, double Time, double TProp, int Sign) {
-    Point2D pt(Sid, Flag, XLoc,YLoc, Time, TProp, Sign);
+  void addPoint(int Sid, int Flag, double XLoc, double YLoc, double Time, double TProp, double TCorr, int Sign) {
+    Point2D pt(Sid, Flag, XLoc,YLoc, Time, TProp, TCorr, Sign);
     points.push_back(pt);
   }
 
   int InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane = -1, int Panel = -1);
+
+  int InitHits(); // does the same starting from TrkStrawHitSeeds
 
   void setSign(int I, int Sign) {
     points.at(I).drs = Sign;
   }
 
   int      nHits() { return points.size(); }
+  int      Plane() { return plane; }
+  int      Panel() { return panel; }
 
-  int      determineDriftSigns     ();
-  int      UpdateDriftRadii        ();
+  //  int      DefineTangentLine();
+//-----------------------------------------------------------------------------
+// the segment parameters need always to be redefined consistently
+//-----------------------------------------------------------------------------
                                         // line goes through (x0(), y0())
-  double   X0  () { return    0;  }
-  double   Y0  () { return  fY0;  }
-  double   DyDx() { return  fDyDx;}
-  double   Nx  () { return  fNx;  }
-  double   Ny  () { return  fNy;  }
-  double   Nux () { return -fNy;  }
-  double   Nuy () { return  fNx;  }
-  double   Chi2Dof() { return  fChi2Dof;}
+  double   X0     () const { return    0;  }
+  double   Y0     () const { return  fPar.b;   }
+  double   DyDx   () const { return  fPar.a;   }
+  double   T0     () const { return  fPar.tau; }
+  double   Nx     () const { return  fPar.nx;  }
+  double   Ny     () const { return  fPar.ny;  }
+  double   Nux    () const { return -fPar.ny;  }
+  double   Nuy    () const { return  fPar.nx;  }
+  double   Chi2Dof() const { return  fPar.chi2dof;}
 
-  double   R(int i) {
-    Point2D* pt = &points[i];
-    double r    = (pt->time-pt->tprop-fT0)*Point2D::fgVDrift;
+  double  DriftTime (const Point2D* Pt, double T0)  const {
+    double t    = Pt->t-T0;
+    return t;
+  }
+
+  double  R(const Point2D* Pt, double T0)  const {
+    double r    = DriftTime(Pt,T0)*Point2D::fgVDrift;
+    if (r < 0) {
+      std::cout << ">>> ERROR: negative radius: point:" << " r:" << r << std::endl;
+      r = 0;
+    }
     return r;
   }
-
-  void     UpdateLineParameters(double DyDx, double Y0, double T0) {
-    fY0   = Y0;
-    fDyDx = DyDx;
-    fNx   =  1.   /sqrt(1+fDyDx*fDyDx);
-    fNy   =  fDyDx/sqrt(1+fDyDx*fDyDx);
-    fT0   = T0;
+                                        // parameters of the line have to be defined
+  double Rho(const Point2D* Pt, const Par_t* Par) const {
+    double rdrift = R(Pt,Par->T0());
+    double rho  = (Par->X0()-Pt->x)*Par->Nux()+(Par->Y0()-Pt->y)*Par->Nuy() - rdrift*Pt->drs;
+    return rho;
   }
 
-  int     CalculateChi2();
+  int      DefineTangentLine();
+                                        // recalculate chi2 - don't have a formula for that 
+  double      Chi2();
+                                        // if Chi2Dof=-1, recalculate chi2
+  void     UpdateParameters(double DyDx, double Y0, double T0, double Chi2Dof = -1);
 
-  void     print   (std::ostream& Stream = std::cout);
+  void     print   (const char* Message = nullptr, std::ostream& Stream = std::cout);
 
 };
 
