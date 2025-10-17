@@ -1,0 +1,45 @@
+/*
+             
+*/
+ratprint: false $
+debugmode(true);
+/* file_search_maxima: append (file_search_maxima,["/projects/muon_collider/muon_racetrack/pasha/###.mac"])$ */
+/* load("lapack")$ */
+
+/* chi2 of a point */
+
+chi2(a,b,t0) := ((a*x[i]+b-y[i])/sqrt(1+a^2) -s[i]*v*(T[i]-t0))^2/sigma[i]^2;
+diff(chi2(a,b,t0),a);
+diff(chi2(a,b,t0),t0);
+
+S : sum(k^2, k, 1, n);
+ev(S, n=3);  /* evaluates S for n = 3 */
+
+s1 : sum(chi2(a,b,t0),i,0,n-1);
+
+diff(s1,t0);
+
+expand(solve(diff(s1,t0) = 0,t0));
+
+
+mean(a);
+
+dist: (y[i]-a*x[i]-b)/sqrt(1+a^2) -v*s[i]*(t[i]-tau);
+
+chi2: sum(dist^2,i,1,k);
+
+dchi2_da: diff(chi2,a);
+dchi2_db: diff(chi2,b);
+dchi2_dtau: diff(chi2,tau);
+
+ddist_da : diff(dist,a);
+ddist_dtau : diff(dist,tau);
+d1 : -ratsimp(ddist_da*(a^2+1))*sqrt(a^2+1);
+d2 : d1+a*b; /* dchi2_db = 0 */
+
+dchi2_da : sum(d2*dist,i,1,k);
+dchi2_db : sum(dist,i,1,k);
+
+e1: sum(d2*dist,i,1,k) = 0;
+e2: -dchi2_db*sqrt(a^2+1)/2 = 0;
+e3: dchi2_dtau/(2*v) = 0;
