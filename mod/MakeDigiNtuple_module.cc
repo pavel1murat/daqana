@@ -22,7 +22,7 @@
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
-#include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
+// #include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
 #include "Offline/RecoDataProducts/inc/KalSeed.hh"
 
 
@@ -115,6 +115,7 @@ public:
   int      fillCH ();
   int      fillTC ();
   int      fillSeg();
+  int      fillSegSh();
   int      fillTrk();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
@@ -780,6 +781,24 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 }
 
 //-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillTrk() {
+
+  calculateMissingTrkParameters();
+
+  for (int itrk=0; itrk<_ntracks; itrk++) {
+    const mu2e::KalSeed* ks = &_ksc->at(itrk);
+   
+    DaqTrack* nt_trk = new ((*_event->trk)[itrk]) DaqTrack();
+
+    nt_trk->nhits    = ks->nHits();
+    nt_trk->chi2     = ks->chisquared();
+    nt_trk->t0       = ks->t0().t0();
+  }
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::makeSegments() {
   int rc(0);
 
@@ -876,21 +895,9 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   return 0;
 }
 
+
 //-----------------------------------------------------------------------------
-int mu2e::MakeDigiNtuple::fillTrk() {
-
-  calculateMissingTrkParameters();
-
-  for (int itrk=0; itrk<_ntracks; itrk++) {
-    const mu2e::KalSeed* ks = &_ksc->at(itrk);
-   
-    DaqTrack* nt_trk = new ((*_event->trk)[itrk]) DaqTrack();
-
-    nt_trk->nhits    = ks->nHits();
-    nt_trk->chi2     = ks->chisquared();
-    nt_trk->t0       = ks->t0().t0();
-  }
-  
+int mu2e::MakeDigiNtuple::fillSegSh() {
   return 0;
 }
 
@@ -899,11 +906,87 @@ int mu2e::MakeDigiNtuple::fillSeg() {
 
   makeSegments();
 
+  _event->nseg = _nseg;
+
+  int nsegsh = 0;
   for (int iseg=0; iseg<_nseg; iseg++) {
+    const TrkSegment* ts = _ptseg[iseg];
+   
+    DaqSegment* nt_ts = new ((*_event->seg)[iseg]) DaqSegment();
+    mu2e::StrawId sid = ts->hits[0]->strawId();
+
+    nt_ts->sid     = sid.asUint16();                       // straw ID of the straw=0 of the panel
+    nt_ts->nh      = ts->points.size();
+    nt_ts->ngh     = ts->fNGoodHits;
+    nt_ts->nghl[0] = ts->fNghLayer[0];
+    nt_ts->nghl[1] = ts->fNghLayer[1];
+    nt_ts->nmhl[0] = ts->fNMisses[0];                       // number of missing hits/layer
+    nt_ts->nmhl[1] = ts->fNMisses[1];                       // number of missing hits/layer
+    nt_ts->t0      = ts->fPar.T0();
+    nt_ts->chi2d   = ts->fPar.chi2dof;                      // chi2/dof
+    nt_ts->z0      = -1.;
+    nt_ts->y0      = ts->fPar.Y0();                         // likely, not very useful
+    nt_ts->ymean   = ts->fXMean;                            // local on a panel
+    nt_ts->dzdy    = ts->fPar.DyDx();
+    if (_ntracks > 0) {
+                                        // transform track parameters into a local coordinate system
+      
+      const mu2e::KalSeed*   ks = &_ksc->at(0);
+      mu2e::KalSeed::KLPTPtr kspar = ks->kinematicLineFitTrajectory();
+
+      ROOT::Math::XYZVector  dir = kspar->momentum3(nt_ts->t0);
+      ROOT::Math::XYZTVector pos = kspar->position4(nt_ts->t0);
+
+      double dirm[3], dirl[3], posm[3], posl[3];
+      dirm[0] = dir.x();
+      dirm[1] = dir.y();
+      dirm[2] = dir.z();
+      ts->fCombiTrans->MasterToLocalVect(dirm, dirl);
+
+      posm[0] = pos.x();
+      posm[1] = pos.y();
+      posm[2] = pos.z();
+      ts->fCombiTrans->MasterToLocalVect(posm, posl);
+
+      nt_ts->y0t     = 0;                                     // at z=Z(mid panel) - to be figured
+      nt_ts->dzdyt   = dirl[2]/dirl[2];                       // dzdy of the track (local coord system)
+    }
+//-----------------------------------------------------------------------------
+// fill segment straw hit branch
+//-----------------------------------------------------------------------------
+    int pln = sid.plane();
+    int pnl = sid.panel();
+    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
+    
+    for (int ih=0; ih<nt_ts->nh; ih++) {
+      const mu2e::StrawHit* sh = &_shc->at(ih);
+      const mu2e::ComboHit* ch = ts->hits[ih];
+      Point2D* pt              = ts->Point(ih);
+
+      int ihh            = nsegsh+ih;
+      DaqTrkStrawHit* nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();
+
+      nt_tsh->sid     = ch->strawId().asUint16();                          // hit id = sid | (segment #) << 16 | (track #) << 24
+      nt_tsh->zface   = tpm->zface();                        // z-ordered face ... can be deduced from sid...
+      nt_tsh->mnid    = tpm->mnid();                         // Minnesota panel ID 
+      nt_tsh->time    = sh->time(mu2e::StrawEnd::cal);   // 0:CAL
+      nt_tsh->dt      = sh->dt();      // cal-hv
+      nt_tsh->tot0    = sh->TOT(mu2e::StrawEnd::cal);
+      nt_tsh->tot1    = sh->TOT(mu2e::StrawEnd::hv );
+      nt_tsh->edep    = ch->energyDep();
+
+      nt_tsh->iseg    = iseg;
+      nt_tsh->itrk    = -1;
+      nt_tsh->rdrift  = ts->R(pt);            // drift distance
+      nt_tsh->doca    = ts->Rho(pt);              // rdrift-(track-wire distance) (assume signed, double check)
+      nt_tsh->drho    = fabs(ts->WsDist(pt))-fabs(ts->R(pt)); // unsigned residual
+    }
+    nsegsh += nt_ts->nh;
   }
-  
+
   return 0;
 }
+
 
 //-----------------------------------------------------------------------------
 // runs on tracker Artdaq fragments
@@ -947,7 +1030,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->nshtot  = _nstrawhits;
   _event->nch     = _ncombohits;
   _event->ntc     = _ntimeclusters;
-  _event->ntracks = _ntracks;
+  _event->ntrk    = _ntracks;
 
   if (_debugMode > 0) {
     print_(std::format("_nstrawdigis:{}",_nstrawdigis));
@@ -957,7 +1040,10 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeSH ) fillSH ();
   if (_makeCH ) fillCH ();
   if (_makeTC ) fillTC ();
-  if (_makeSeg) fillSeg();
+  if (_makeSeg) {
+    fillSeg  ();
+    fillSegSh();
+  }
   if (_makeTrk) fillTrk();
 
   if (_debugMode > 0) {

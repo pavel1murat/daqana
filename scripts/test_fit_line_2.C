@@ -11,9 +11,8 @@
 #include "daqana/obj/obj/TrkSegment.hh"
 
 #include "daqana/obj/obj/SegmentFit.hh"
-
-#include "root_scripts/panel_geometry.C"
-#include "root_scripts/read_combohits_2.C"
+#include "daqana/scripts/panel_geometry.C"
+#include "daqana/scripts/read_combohits_2.C"
 
 //-----------------------------------------------------------------------------
 // global variables
@@ -61,7 +60,7 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
 // read combohits from a text file
 //-----------------------------------------------------------------------------
   std::vector<std::string>     vnames;
-  std::vector<mu2e::ComboHit*> chhits;
+  std::vector<const mu2e::ComboHit*> chhits;
 
   std::cout << "-- before readDataFile" << std::endl;
   readDataFile(Fn,vnames,chhits,Plane,Panel);
@@ -69,8 +68,8 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
   
   std::cout << "-- after readDataFile" << std::endl;
                                         // sort by straw
-  std::sort(chhits.begin(),chhits.end(), [](ComboHit* a, ComboHit* b) {
-    mu2e::StrawId sa(a->sid), sb(b->sid);
+  std::sort(chhits.begin(),chhits.end(), [](const mu2e::ComboHit* a, const mu2e::ComboHit* b) {
+    mu2e::StrawId sa(a->strawId()), sb(b->strawId());
     return sa.getStraw() < sb.getStraw();
   });
   

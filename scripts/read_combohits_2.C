@@ -36,7 +36,7 @@ int split(const std::string& str, std::vector<std::string>& Tokens) {
 //-----------------------------------------------------------------------------
 // read combohit printout, extract hits with a given panel and plane
 //-----------------------------------------------------------------------------
-int readDataFile(const char* Fn, std::vector<std::string>& Names, std::vector<mu2e::ComboHit*>& Data, int Plane, int Panel) {
+int readDataFile(const char* Fn, std::vector<std::string>& Names, std::vector<const mu2e::ComboHit*>& Data, int Plane, int Panel) {
   std::ifstream file(Fn);
     
   if (!file.is_open()) {
@@ -154,7 +154,7 @@ int readDataFile(const char* Fn, std::vector<std::string>& Names, std::vector<mu
 //-----------------------------------------------------------------------------
 // Print the data
 //-----------------------------------------------------------------------------
-void printData(const std::vector<std::string>& Names, const std::vector<mu2e::ComboHit*> Data) {
+void printData(const std::vector<std::string>& Names, std::vector<const mu2e::ComboHit*> Data) {
 
   std::cout << "Headers: ";
   for (const auto& name : Names) {
@@ -178,7 +178,7 @@ void printData(const std::vector<std::string>& Names, const std::vector<mu2e::Co
 //-----------------------------------------------------------------------------
 int test_read_combohits(const char* Fn, int Plane=-1, int Panel=-1) {
 
-  std::vector<mu2e::ComboHit*> data;
+  std::vector<const mu2e::ComboHit*> data;
   std::vector<std::string>     names;
 
   int rc = readDataFile(Fn,names,data,Plane,Panel);

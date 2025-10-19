@@ -108,6 +108,8 @@ public:
 
   void Clear();
 
+  Point2D* Point(int I) { return &points[I] ; }
+
   void AddPoint(int Sid, int Mask, double XLoc, double YLoc, double Time, double TProp, double TCorr, int Sign) {
     Point2D pt(Sid, Mask, XLoc,YLoc, Time, TProp, TCorr, Sign);
     points.push_back(pt);
@@ -127,7 +129,7 @@ public:
     return good;
   }
 
-  int      nHits() { return points.size(); }
+  int      nHits() { return (int) points.size(); }
   int      Plane() { return plane; }
   int      Panel() { return panel; }
 
@@ -171,15 +173,32 @@ public:
 // use segment T0
 // parameters of the line have to be defined
 //-----------------------------------------------------------------------------
-  double Rho(const Point2D* Pt, const Par_t* Par) const {
-    double rdrift = R(Pt,Par->T0());
-    double rho  = (Par->X0()-Pt->x)*Par->Nux()+(Par->Y0()-Pt->y)*Par->Nuy() - rdrift*Pt->drs;
+  double Rho(const Point2D* Pt, const Par_t* Par = nullptr) const {
+    const Par_t* par(Par);
+    if (par == nullptr) par = &fPar;
+
+    double rdrift = R(Pt,par->T0());
+    double rho  = (par->X0()-Pt->x)*par->Nux()+(par->Y0()-Pt->y)*par->Nuy() - rdrift*Pt->drs; // 
+    return rho;
+  }
+
+//-----------------------------------------------------------------------------
+// signed distance between the drift circle and the segment (DOCA),
+// definition of the sign - to be clarified
+// use segment T0
+// parameters of the line have to be defined
+//-----------------------------------------------------------------------------
+  double WsDist(const Point2D* Pt, const Par_t* Par = nullptr) const {
+    const Par_t* par(Par);
+    if (par == nullptr) par = &fPar;
+
+    double rho  = (par->X0()-Pt->x)*par->Nux()+(par->Y0()-Pt->y)*par->Nuy(); // 
     return rho;
   }
 
   int      DefineTangentLine();
                                         // recalculate chi2 - don't have a formula for that 
-  double      Chi2();
+  double   Chi2();
                                         // if Chi2Dof=-1, recalculate chi2
   void     UpdateParameters(double DyDx, double Y0, double T0, double Chi2Dof = -1);
 
