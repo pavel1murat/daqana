@@ -16,14 +16,14 @@ include_directories(
 # link_directories($ENV{ROOTSYS}/lib)
 
 ROOT_GENERATE_DICTIONARY(${dict}
-  DaqEvent.hh DaqTrack.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
-  TrkSegment.hh
+  DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
+  TrkSegment.hh SegmentFit.hh
   LINKDEF obj/Linkdef.h)
 
 set_property(SOURCE ${dict}.cxx PROPERTY generated)
 
 add_library(${lib} SHARED
-  DaqEvent.cc DaqTrack.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
+  DaqEvent.cc DaqTrack.cc DaqSegment.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
   TrkSegment.cc SegmentFit.cc
   ${dict}.cxx
 )

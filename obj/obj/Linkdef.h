@@ -13,5 +13,7 @@
 #pragma link C++  class  DaqStrawHit;
 #pragma link C++  class  DaqTimeCluster;
 #pragma link C++  class  DaqTrack;
+#pragma link C++  class  DaqSegment;
+
 #pragma link C++  class  TrkSegment;
 #endif

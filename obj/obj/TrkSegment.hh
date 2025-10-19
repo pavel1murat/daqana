@@ -1,7 +1,7 @@
 #ifndef __daqana_mod_TrkSegment_hh_
 #define __daqana_mod_TrkSegment_hh_
 #include <format>
-#include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
+#include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/TrackerGeom/inc/Panel.hh"
 #include "TGeoMatrix.h"
 
@@ -86,15 +86,16 @@ public:
   int                  plane;
   int                  panel;
   int                  fNTransitions;
-  int                  fNGoodHits;
+  int                  fNGoodHits;                  // total number of good hits
+  int                  fNghLayer[2];                // # good hits in each layer
+  int                  fNMisses[2];                 // # of straws w/o hits in each layer
   TGeoCombiTrans*      fCombiTrans;                 // global to local transform
-  std::vector<const mu2e::TrkStrawHitSeed*> hits;   // initialization in the ntuple making code
+  std::vector<const mu2e::ComboHit*> hits;          // initialization (from a time cluster) in the ntuple making code
   double               fXMean;
   double               fYMean;
   double               fTMean;                      // <t-tprop>
   std::vector<Point2D> points;               // local points
   int                  fIhit[2];             // indices of the two hits corresponding to the layer transition
-                                             // // 
                                                 // fits
   Par_t                fTangentLine;
   Par_t                fPar4;                   // best parameters after a 4-point fit
@@ -105,17 +106,25 @@ public:
   TrkSegment(int Plane = -1, int Panel = -1);
   ~TrkSegment() { if (fCombiTrans) delete fCombiTrans ; }
 
-  void addPoint(int Sid, int Flag, double XLoc, double YLoc, double Time, double TProp, double TCorr, int Sign) {
-    Point2D pt(Sid, Flag, XLoc,YLoc, Time, TProp, TCorr, Sign);
+  void Clear();
+
+  void AddPoint(int Sid, int Mask, double XLoc, double YLoc, double Time, double TProp, double TCorr, int Sign) {
+    Point2D pt(Sid, Mask, XLoc,YLoc, Time, TProp, TCorr, Sign);
     points.push_back(pt);
   }
 
-  int InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane = -1, int Panel = -1);
+  int InitHits(std::vector<const mu2e::ComboHit*>& Hits, int UniquePlane = -1, int Panel = -1);
 
-  int InitHits(); // does the same starting from TrkStrawHitSeeds
+  // int InitHits(); // does the same starting from TrkStrawHitSeeds
 
-  void setSign(int I, int Sign) {
-    points.at(I).drs = Sign;
+  // void setSign(int I, int Sign) {
+  //   points.at(I).drs = Sign;
+  // }
+                                        // any set bit marks the hit as bad, so far use 'dead'
+  int      GoodHit(const mu2e::ComboHit* Ch) {
+    int x  = std::stoi(Ch->_flag.hex(),nullptr,0);
+    int good = (x == 0);
+    return good;
   }
 
   int      nHits() { return points.size(); }
@@ -137,12 +146,18 @@ public:
   double   Nuy    () const { return  fPar.nx;  }
   double   Chi2Dof() const { return  fPar.chi2dof;}
 
-  double  DriftTime (const Point2D* Pt, double T0)  const {
-    double t    = Pt->t-T0;
+//-----------------------------------------------------------------------------
+// by default, use the segment T0
+//-----------------------------------------------------------------------------
+  double  DriftTime (const Point2D* Pt, double HitT0=1.e12)  const {
+    double t0 = HitT0;
+    if (t0 > 1.e10) t0 = T0();
+
+    double t    = Pt->t-t0;
     return t;
   }
 
-  double  R(const Point2D* Pt, double T0)  const {
+  double  R(const Point2D* Pt, double T0=1.e12)  const {
     double r    = DriftTime(Pt,T0)*Point2D::fgVDrift;
     if (r < 0) {
       std::cout << ">>> ERROR: negative radius: point:" << " r:" << r << std::endl;
@@ -150,7 +165,12 @@ public:
     }
     return r;
   }
-                                        // parameters of the line have to be defined
+//-----------------------------------------------------------------------------
+// signed distance between the drift circle and the segment (DOCA),
+// definition of the sign - to be clarified
+// use segment T0
+// parameters of the line have to be defined
+//-----------------------------------------------------------------------------
   double Rho(const Point2D* Pt, const Par_t* Par) const {
     double rdrift = R(Pt,Par->T0());
     double rho  = (Par->X0()-Pt->x)*Par->Nux()+(Par->Y0()-Pt->y)*Par->Nuy() - rdrift*Pt->drs;

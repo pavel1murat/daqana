@@ -2,7 +2,7 @@
 #include <format>
 #include <ostream>
 #include "daqana/obj/TrkSegment.hh"
-#include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
+#include "Offline/RecoDataProducts/inc/ComboHit.hh"
 
 int TrkSegment::_debugMode(0);
 
@@ -11,29 +11,31 @@ double const Point2D::fgVDrift    = 65.e-3;   // mm/ns
 double const TrkSegment::fgRStraw =  2.5;     // mm
 //-----------------------------------------------------------------------------
 TrkSegment::TrkSegment(int Plane, int Panel) {
+  Clear();
   plane       = Plane;
   panel       = Panel;
+}
+
+//-----------------------------------------------------------------------------
+void TrkSegment::Clear(){
   trkPanel    = nullptr;
   fCombiTrans = nullptr;
-  //  fChi2Dof    = -1;
   fMask       = 0;
   fIhit[0]    = -1;
   fIhit[1]    = -1;
+  hits.clear();
+  points.clear();
 }
 
 //-----------------------------------------------------------------------------
-int TrkSegment::InitHits() {
-  int rc(0);
-  std::cout << "ERROR: TrkSegment::InitHits() yet to be written! \n" ;
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
-int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int Panel) {
+int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>& Hits, int UniquePlane, int Panel) {
   int rc(0);
 
   int nhits = Hits.size();
   std::cout << std::format("TrkSegment::{}: BEGIN nhits:{}\n",__func__,nhits);
+
+  std::vector<int> drs (nhits);
+  std::vector<int> flag(nhits);
 
   //  int all_hits(1);
   // if ((UniquePlane != -1) && (Panel != -1)) all_hits = 0;
@@ -66,16 +68,21 @@ int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int
 //   if (rmax > rstraw) fT0 = fT0+(rmax-rstraw)/Point2D::fgVDrift;
 //-----------------------------------------------------------------------------
 // find seed hits, ignore the very first and the very last pairs
+// in the befinning, set all hit flag bits to zero
+/// mu2e::StrawHitFlagDetail::dead : back-and-forth transition 
 //-----------------------------------------------------------------------------
   fNTransitions = 0;
-  ComboHitData_t* last_hit = nullptr;
+  const mu2e::ComboHit* last_hit = nullptr;
+  int                   last_i(-1);
 
   for (int i=0; i<nhits; i++) {
-    ComboHitData_t* hit = &Hits[i];
+    const mu2e::ComboHit* hit = Hits[i];
+    //    hit->_flag.reset();
+    // hit->_pind[0] = 2;                  // pind[0] : drift sign+2
                                         // figure out the drift signs
-    int layer = mu2e::StrawId(hit->sid).getLayer();
+    int layer = hit->strawId().getLayer();
     if (last_hit != nullptr) {
-      int last_hit_layer = mu2e::StrawId(last_hit->sid).getLayer();
+      int last_hit_layer = last_hit->strawId().getLayer();
                                         // layer is either 0 or 1
       if (last_hit_layer != layer) {
 //-----------------------------------------------------------------------------
@@ -83,10 +90,10 @@ int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int
 // ignore back-and-forth transitions - instead, mark hit as bad
 //-----------------------------------------------------------------------------
         if (i < nhits-1) {
-          ComboHitData_t* next_hit = &Hits[i+1];
-          int next_hit_layer = mu2e::StrawId(next_hit->sid).getLayer();
+          const mu2e::ComboHit* next_hit = Hits[i+1];
+          int next_hit_layer = next_hit->strawId().getLayer();
           if (next_hit_layer == last_hit_layer) {
-            hit->flag = 0x1;
+            flag[i] |= 0x1;
                                         // start from scratch
             last_hit  = nullptr;
             continue;
@@ -105,21 +112,33 @@ int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int
 //-----------------------------------------------------------------------------
         fNTransitions += 1;
                                         // z becomes Y in points
-        if (last_hit->z > hit->z) {
-          last_hit->drs      = -1;
-          hit->drs           =  1;
+        if (last_hit->pos().z() > hit->pos().z()) {
+          drs[last_i]      = -1; // those are uint16_t, so use sign+2
+          drs[i]           =  1;
         }
-        else if (last_hit->z < hit->z) {
-          last_hit->drs      =  1;
-          hit->drs           = -1;
+        else if (last_hit->pos().z() < hit->pos().z()) {
+          drs[last_i]      =  1;
+          drs[i]           = -1;
         }
         fIhit[0] = i-1;
         fIhit[1] = i;
       }
     }
     last_hit    = hit;
+    last_i      = i;
   }
+
+  int last_straw[2] = {-1, -1};
   if (fNTransitions != 1) fMask |= kNTransitionsBit;
+  for (int i=0; i<fIhit[1]; i++) {
+    const mu2e::ComboHit* hit = Hits[i];
+    if (flag[i] != 0) continue;
+    int layer = hit->strawId().getLayer();
+    int straw = hit->strawId().straw();
+    fNghLayer[layer] += 1;
+    int miss = (straw-last_straw[layer]) > 2;
+    fNMisses[layer]  += miss;
+  }
 //-----------------------------------------------------------------------------
 // add Point2D's :
 //-----------------------------------------------------------------------------
@@ -137,36 +156,39 @@ int TrkSegment::InitHits(std::vector<ComboHitData_t>& Hits, int UniquePlane, int
 
   fNGoodHits = 0;
   for (int i=0; i<nhits; i++) {
-    ComboHitData_t* ch = &Hits[i];
-    if (ch->IsGood() == 0) continue;
-    fNGoodHits += 1;
+    const mu2e::ComboHit* ch = Hits[i];
 
     double posm[3], posl[3];
-    posm[0] = ch->x;
-    posm[1] = ch->y;
-    posm[2] = ch->z;
+    posm[0] = ch->pos().x();
+    posm[1] = ch->pos().y();
+    posm[2] = ch->pos().z();
     fCombiTrans->MasterToLocalVect(posm, posl);
 //-----------------------------------------------------------------------------
 // points have coordinates in the local coordinate system of the panel
+// add all hits, including flagged ones - those will not be used in the fit
 //-----------------------------------------------------------------------------
-    addPoint(ch->sid,ch->flag, posl[0],posl[2],ch->time,ch->prtime, ch->tcorr, ch->drs);
+    AddPoint(ch->_sid.asUint16(),flag[i], posl[0],posl[2],ch->_etime[ch->_eend],ch->_ptime, ch->correctedTime(), drs[i]);
 //-----------------------------------------------------------------------------
 // to avoid mistakes, perform the subtraction just once
 // hits flagged at this stage will never be unflagged
 // and don't assume that <X>, <Y> etc are exactly equal to zero
 //-----------------------------------------------------------------------------
-    fXMean += posl[0];
-    fYMean += posl[2];
-    fTMean += ch->time-ch->prtime;
+    if (flag[i] == 0) {
+      fNGoodHits += 1;
+      fXMean     += posl[0];
+      fYMean     += posl[2];
+                                        // time() is the early end time, assum ptime is the propagation time for that end
+      fTMean     += ch->time()-ch->_ptime;
+    }
     // double drtime = ch->time-ch->prtime-fT0;
     // if (drtime > max_drtime) {
     //   // imax       = i;
     //   max_drtime = drtime;
     // }
     if (_debugMode != 0) {
-      std::cout << std::format("{:2} 0x{:05x} ({:10.3f} {:10.3f} {:10.3f})",i,ch->flags,ch->x, ch->y, ch->z)
+      std::cout << std::format("{:2} 0x{:05x} ({:10.3f} {:10.3f} {:10.3f})",i,std::stoi(ch->flag().hex(),nullptr,0),ch->pos().x(), ch->pos().y(), ch->pos().z())
                 << std::format(" ({:10.3f} {:10.3f} {:10.3f}) {:10.3f} {:7.3f} {:2}",
-                               posl[0], posl[1], posl[2], ch->time, ch->prtime, ch->drs)
+                               posl[0], posl[1], posl[2], ch->correctedTime(), ch->_ptime, drs[i])
                 << std::endl;
     }
   }

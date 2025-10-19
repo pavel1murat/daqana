@@ -89,6 +89,7 @@ public:
     Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
     Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
     Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   ),1};
+    Atom<int>             makeSeg       {Name("makeSeg"       ), Comment("make segment branch"        ),1};
     Atom<int>             makeTrk       {Name("makeTrk"       ), Comment("make track branch"          ),1};
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
@@ -107,12 +108,13 @@ public:
 
   int      calculateMissingTrkParameters();
   
-  int      fitSegment              (TrkSegment* TSeg);
+  int      makeSegments();
 
   int      fillSD ();
   int      fillSH ();
   int      fillCH ();
   int      fillTC ();
+  int      fillSeg();
   int      fillTrk();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
@@ -136,6 +138,7 @@ public:
   int                      _makeSH;
   int                      _makeCH;
   int                      _makeTC;
+  int                      _makeSeg;
   int                      _makeTrk;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   int                      _nSamplesBL;
@@ -154,6 +157,7 @@ public:
   int                     _nstrawhits;
   int                     _ncombohits;
   int                     _ntimeclusters;
+  int                     _nsegments;
   int                     _ntracks;
   
   int                     _ncalodigis;
@@ -179,7 +183,7 @@ public:
   ProditionsHandle<TrackerPanelMap>            _tpm_h;
   const TrackerPanelMap*                       _trkPanelMap;
   
-  TrkSegment                                   _tseg[18][6]; // for now, assume less than 100 segments per event
+  TrkSegment                                   _tseg[18][6]; // for now, assume just one segment per panel
   std::vector<TrkSegment*>                     _ptseg;
   int                                          _nseg;
   
@@ -201,6 +205,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _makeSH       (config().makeSH       ()),
     _makeCH       (config().makeCH       ()),
     _makeTC       (config().makeTC       ()),
+    _makeSeg      (config().makeSeg      ()),
     _makeTrk      (config().makeTrk      ()),
     _ewLength     (config().ewLength     ()),
     _nSamplesBL   (config().nSamplesBL   ()),
@@ -735,7 +740,9 @@ int mu2e::MakeDigiNtuple::fillTC() {
     for (int i=0; i<4; i++) {
       if (nt_tc->_nhf[i] > 0) nt_tc->_timef[i] = nt_tc->_timef[i]/nt_tc->_nhf[i];
     }
-
+//-----------------------------------------------------------------------------
+// average time and charge of the hits in a given panel
+//-----------------------------------------------------------------------------
     for (int i=0; i<12; i++) {
       if (nt_tc->_nh_panel[i] > 0) {
         nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
@@ -768,29 +775,37 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
   int rc(0);
 
   if (_debugMode != 0) std::cout << __func__ << " START" << std::endl;
+  if (_debugMode != 0) std::cout << __func__ << " END"   << std::endl;
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::makeSegments() {
+  int rc(0);
+
+  if (_debugMode != 0) std::cout << __func__ << " START" << std::endl;
 //-----------------------------------------------------------------------------
 // cleanup from the previous event, initially set _nseg to 0
 //-----------------------------------------------------------------------------
   for (int i=0; i<_nseg; i++) {
-    _ptseg[i]->hits.clear();
-    // perhaps clear other things
+    _ptseg[i]->Clear();
   }
   _ptseg.clear();
   _nseg = 0;
-  
-  for (int itrk=0; itrk<_ntracks; itrk++) {
-    const mu2e::KalSeed* ks = &_ksc->at(itrk);
 //-----------------------------------------------------------------------------
-// loop over hits and find the number of hits in each panel
+// for each time cluster make segments - see how it goes
+// will need to handle the segment hits as well
 //-----------------------------------------------------------------------------
-    const std::vector<mu2e::TrkStrawHitSeed>& hits = ks->hits();
-    int nhits = hits.size();
-    for (int i=0; i<nhits; i++) {
-      const mu2e::TrkStrawHitSeed* shs = &hits.at(i);
-      mu2e::StrawId sid = shs->strawId();
+  for (int itc=0; itc<_ntimeclusters; itc++) {
+    const mu2e::TimeCluster* tc = &_tcc->at(itc);
+    int nsh = tc->nStrawHits();
+    for (int ih=0; ih<nsh; ih++) {
+      StrawHitIndex hit_index   = tc->hits().at(ih);
+      const mu2e::ComboHit* ch = &_chc->at(hit_index);
+      mu2e::StrawId sid = ch->strawId();
       int panel = sid.panel();
       int plane = sid.plane();
-      std::cout << std::format("hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",i,plane,panel,sid.straw());
+      std::cout << std::format("hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",ih,plane,panel,sid.straw());
 
                                         // cosmic track: assume one segment per panel,
                                         // in principle, there could be more than one
@@ -801,21 +816,23 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
         _nseg    += 1;
       }
                                         // and add the hit to the list
-      ts->hits.push_back(shs);
+      ts->hits.push_back(ch);
     }
   }
 //-----------------------------------------------------------------------------
 // loop over segments with 3 hits or more, fi each segment and compare
 // the segment position ond slope with the track parameters transpated into the local
 // coordinate system of the panel (or in the global ?)
+// need add more segment parameters : n(layers) = ? - require N(transitions) = 1
+// - number of good hits in each layer
+// - number of 'holes' on each side - tomorrow? 
 //-----------------------------------------------------------------------------
-  
+
   Par_t par;
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
-    ts->InitHits();
-    ts->DefineTangentLine();
+    ts->InitHits(ts->hits);             // this looks ugly, OK for the purpose
 
     SegmentFit sfitter(ts);
 //-----------------------------------------------------------------------------
@@ -824,7 +841,7 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 //-----------------------------------------------------------------------------
     sfitter.DefineDriftDirections();
 //-----------------------------------------------------------------------------
-// perform fit using all points
+// perform fit using all points and starting from ts.fPar4
 //-----------------------------------------------------------------------------
     int converged = sfitter.Fit(niter,0,nullptr,&par);
 
@@ -845,13 +862,12 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
                                i,ts->plane,ts->panel,nh,ts->Chi2Dof())
                 << std::endl;
       for (int ih=0; ih<nh; ih++) {
-        const mu2e::TrkStrawHitSeed* shs = ts->hits.at(ih);
         Point2D* pt = &ts->points[ih];
-        const mu2e::ComboHit* ch           = &_chc->at(shs->index());
+        const mu2e::ComboHit* ch           = ts->hits[ih];
         std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
-                                 ih,shs->strawId().straw(),shs->hitTime(),ch->driftTime())
+                                 ih,ch->strawId().straw(),ch->time(),ts->DriftTime(pt))
                   << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
-                                 pt->x,pt->y,shs->driftRadius(),pt->drs,pt->sign_fixed)
+                                 pt->x,pt->y,ts->R(pt),pt->drs,pt->sign_fixed)
                   << std::endl;
       }
     }
@@ -873,6 +889,17 @@ int mu2e::MakeDigiNtuple::fillTrk() {
     nt_trk->nhits    = ks->nHits();
     nt_trk->chi2     = ks->chisquared();
     nt_trk->t0       = ks->t0().t0();
+  }
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillSeg() {
+
+  makeSegments();
+
+  for (int iseg=0; iseg<_nseg; iseg++) {
   }
   
   return 0;
@@ -930,6 +957,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeSH ) fillSH ();
   if (_makeCH ) fillCH ();
   if (_makeTC ) fillTC ();
+  if (_makeSeg) fillSeg();
   if (_makeTrk) fillTrk();
 
   if (_debugMode > 0) {
