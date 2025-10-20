@@ -252,6 +252,8 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
 }
 
 //-----------------------------------------------------------------------------
+// Message should be \n terminated , if needed
+//-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_location& location) {
   if (_art_event) {
     std::cout << std::format(" event:{}:{}:{}",
@@ -264,7 +266,7 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_
   
   std::cout << " " << ss.back() << ":" << location.line()
     //            << location.function_name()
-            << ": " << Message << std::endl;
+            << ": " << Message;
 }
 
 //-----------------------------------------------------------------------------
@@ -377,7 +379,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _nstrawhits = _shc->size();
   }
   else {
-    print_(std::format("ERROR: StrawHitCollection:{:s} is not available. Bail out",_shCollTag.encode().data()));
+    print_(std::format("ERROR: StrawHitCollection:{:s} is not available. Bail out\n",_shCollTag.encode().data()));
     return -1;
   }
 
@@ -387,7 +389,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _nstrawdigis = _sdc->size();
   }
   else {
-    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out",
+    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
                        _sdCollTag.encode().data()));
     return -1;
   }
@@ -397,7 +399,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     _sdawfc = sdawfch.product();
   }
   else {
-    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out",
+    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
                        _sdCollTag.encode().data()));
     return -1;
   }
@@ -410,7 +412,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntimeclusters = _tcc->size();
     }
     else {
-      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out",
+      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
                        _tcCollTag.encode().data()));
       return -1;
     }
@@ -424,7 +426,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncombohits    = _chc->size();
     }
     else {
-      print_(std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out",
+      print_(std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
                        _shCollTag.encode().data()));
       return -1;
     }
@@ -440,7 +442,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntracks = _ksc->size();
     }
     else {
-      print_(std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out",
+      print_(std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out\n",
                          _ksCollTag.encode().data()));
       return -1;
     }
@@ -802,7 +804,7 @@ int mu2e::MakeDigiNtuple::fillTrk() {
 int mu2e::MakeDigiNtuple::makeSegments() {
   int rc(0);
 
-  if (_debugMode != 0) std::cout << __func__ << " START" << std::endl;
+  if (_debugMode != 0) print_(std::format("{}  START: ntimeclusters:{}\n", __func__,_ntimeclusters));
 //-----------------------------------------------------------------------------
 // cleanup from the previous event, initially set _nseg to 0
 //-----------------------------------------------------------------------------
@@ -818,6 +820,11 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   for (int itc=0; itc<_ntimeclusters; itc++) {
     const mu2e::TimeCluster* tc = &_tcc->at(itc);
     int nsh = tc->nStrawHits();
+    if (_debugMode) {
+      if (_debugBit[3] != 0) {
+        print_(std::format(" -- PM: time cluster:{:2d} segment with {:2d} hits\n",itc, nsh));
+      }
+    }
     for (int ih=0; ih<nsh; ih++) {
       StrawHitIndex hit_index   = tc->hits().at(ih);
       const mu2e::ComboHit* ch = &_chc->at(hit_index);
@@ -851,6 +858,11 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
+    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",i,ts->nHits()));
+    if (ts->nHits() < 4) {
+      ts->fMask |= 0x1 ; // not enough hits
+      continue;
+    }
     ts->InitHits(ts->hits);             // this looks ugly, OK for the purpose
 
     SegmentFit sfitter(ts);
@@ -874,23 +886,25 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 //-----------------------------------------------------------------------------
   if (_debugMode and (_debugBit[3] != 0)) {
     std::cout << "nseg:" << _nseg << std::endl;
-    for (int i=0; i<_nseg; i++) {
-      TrkSegment* ts = _ptseg[i];
-      int nh = ts->hits.size();
-      std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f}",
-                               i,ts->plane,ts->panel,nh,ts->Chi2Dof())
+  }
+
+  for (int i=0; i<_nseg; i++) {
+    TrkSegment* ts = _ptseg[i];
+    int nh = ts->hits.size();
+    std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f}",
+                             i,ts->plane,ts->panel,nh,ts->Chi2Dof())
+              << std::endl;
+    for (int ih=0; ih<nh; ih++) {
+      Point2D* pt = &ts->points[ih];
+      const mu2e::ComboHit* ch           = ts->hits[ih];
+      std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
+                               ih,ch->strawId().straw(),ch->time(),ts->DriftTime(pt))
+                << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
+                               pt->x,pt->y,ts->R(pt),pt->drs,pt->sign_fixed)
                 << std::endl;
-      for (int ih=0; ih<nh; ih++) {
-        Point2D* pt = &ts->points[ih];
-        const mu2e::ComboHit* ch           = ts->hits[ih];
-        std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
-                                 ih,ch->strawId().straw(),ch->time(),ts->DriftTime(pt))
-                  << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
-                                 pt->x,pt->y,ts->R(pt),pt->drs,pt->sign_fixed)
-                  << std::endl;
-      }
     }
   }
+
   if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
   return 0;
 }
@@ -910,7 +924,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
 
   int nsegsh = 0;
   for (int iseg=0; iseg<_nseg; iseg++) {
-    const TrkSegment* ts = _ptseg[iseg];
+    TrkSegment* ts = _ptseg[iseg];
    
     DaqSegment* nt_ts = new ((*_event->seg)[iseg]) DaqSegment();
     mu2e::StrawId sid = ts->hits[0]->strawId();
@@ -1002,7 +1016,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   }
 
   if (_debugMode > 0) {
-    print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
+    print_(std::format("-- START event:{}:{}:{}\n",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
   }
 
   int rc = getData(ArtEvent);
@@ -1033,7 +1047,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->ntrk    = _ntracks;
 
   if (_debugMode > 0) {
-    print_(std::format("_nstrawdigis:{}",_nstrawdigis));
+    print_(std::format("_nstrawdigis:{}\n",_nstrawdigis));
   }
 
   if (_makeSD ) fillSD ();
@@ -1047,12 +1061,12 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeTrk) fillTrk();
 
   if (_debugMode > 0) {
-    print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsdtot));
+    print_(std::format("_event->strawdigis->GetEntries():{}\n",_event->nsdtot));
   }
 
   _tree->Fill();
 
-  if (_debugMode > 0) print_("-- END");
+  if (_debugMode > 0) print_("-- END\n");
 }
 
 

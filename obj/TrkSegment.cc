@@ -14,12 +14,14 @@ TrkSegment::TrkSegment(int Plane, int Panel) {
   Clear();
   plane       = Plane;
   panel       = Panel;
+  fCombiTrans = nullptr; // geometry - to be initialized just once
+  trkPanel    = nullptr;
 }
 
 //-----------------------------------------------------------------------------
 void TrkSegment::Clear(){
-  trkPanel    = nullptr;
-  fCombiTrans = nullptr;
+  // trkPanel    = nullptr;
+  // fCombiTrans = nullptr;
   fMask       = 0;
   fIhit[0]    = -1;
   fIhit[1]    = -1;

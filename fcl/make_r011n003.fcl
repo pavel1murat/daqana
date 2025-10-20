@@ -120,6 +120,7 @@ physics : {
             makeSH    : 1
             makeCH    : 1
             makeTC    : 1
+            makeSeg   : 1
             makeTrk   : 1
             tcCollTag : "TZClusterFinder"
             ksCollTag : "KKLine"
