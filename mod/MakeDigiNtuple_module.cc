@@ -858,7 +858,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
-    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",i,ts->nHits()));
+    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,ts->nHits()));
     if (ts->nHits() < 4) {
       ts->fMask |= 0x1 ; // not enough hits
       continue;
