@@ -943,6 +943,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     nt_ts->dzdy    = ts->fPar.DyDx();
     if (_ntracks > 0) {
                                         // transform track parameters into a local coordinate system
+                                        // assume one track...
       
       const mu2e::KalSeed*   ks = &_ksc->at(0);
       mu2e::KalSeed::KLPTPtr kspar = ks->kinematicLineFitTrajectory();
@@ -962,7 +963,14 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       ts->fCombiTrans->MasterToLocalVect(posm, posl);
 
       nt_ts->y0t     = 0;                                     // at z=Z(mid panel) - to be figured
-      nt_ts->dzdyt   = dirl[2]/dirl[2];                       // dzdy of the track (local coord system)
+      nt_ts->dzdyt   = -dirl[2]/dirl[1];                      // dzdy of the track (local coord system)
+    }
+    else {
+      nt_ts->y0t     = 1.e6;                                     // at z=Z(mid panel) - to be figured
+      nt_ts->dzdyt   = 1.e6;
+    }
+    if (_debugMode) {
+      print_(std::format(" iseg:{} dz/dy(seg):{:12.5f} dz/dy(trk):{:12.5f}\n",iseg,nt_ts->dzdy,nt_ts->dzdyt));
     }
 //-----------------------------------------------------------------------------
 // fill segment straw hit branch

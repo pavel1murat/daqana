@@ -30,7 +30,7 @@ struct Par_t {
 //-----------------------------------------------------------------------------
 struct Point2D {
   int    sid;                           // integer part of straw ID
-  int    fMask;                          // 0: ok , 0x1: bad
+  int    fMask;                         // 0: ok , 0x1: bad
   double x;
   double y;
   double time;                          // measured time
@@ -77,6 +77,7 @@ public:
   enum {
     kNTransitionsBit   = 0x0001,
     kNHitsBit          = 0x0002,
+    kLargeDrhoBit      = 0x0004,
   };
 
   static double const  fgRStraw;

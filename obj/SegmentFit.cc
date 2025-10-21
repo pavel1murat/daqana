@@ -91,7 +91,7 @@ int SegmentFit::CalculateLsqSums() {
   int nhits = fSegment->points.size();
   for (int i=0; i<nhits; i++) {
     Point2D* pt = &fSegment->points[i];
-    pt->print();
+    // pt->print();
     if (pt->IsGood() != 1)                      continue;
     if (pt->drs != 0) {
       fSxs.addPoint(pt->x,pt->drs);
@@ -150,6 +150,10 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
   for (int i=0; i<4; i++) {
     pt[0]->drs = sgn[i][0];
     pt[1]->drs = sgn[i][1];
+
+    if (SegmentFit::fgDebugMode != 0) {
+      std::cout << std::format("-- SegmentFit::{}:{} signs: {}:{}\n",__func__,__LINE__,pt[0]->drs,pt[1]->drs);
+    }
                                         // make sure always start from the same parameter values
     Fit(1,0,pin,&fit_res[i]);
 //-----------------------------------------------------------------------------
@@ -162,7 +166,7 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
   }
 
   if (SegmentFit::fgDebugMode != 0) {
-    std::cout << std::format("-- SegmentFit::{}:{} ibest:{} chi2_best:{:8.2f}\n",__func__,__LINE__,ibest,chi2_best);
+    std::cout << std::format("-- SegmentFit::{}:{} ibest:{} signs: {}:{} chi2_best:{:8.2f}\n",__func__,__LINE__,ibest,pt[0]->drs,pt[1]->drs,chi2_best);
   }
 
   Par_t* pbest = &fit_res[ibest];
@@ -184,12 +188,20 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
     if (p->IsGood() == 0) continue;
                                         // skip four points with [supposedly] defined drift directions
     if (p->drs != 0) continue;
-    double dist   = (pin->X0()-p->x)*pbest->Nux()+(pin->Y0()-p->y)*pbest->Nuy();
+    double dist   = (pbest->X0()-p->x)*pbest->Nux()+(pbest->Y0()-p->y)*pbest->Nuy();
     double rdrift = fSegment->R(p,pbest->T0());
-    double dr1    = dist+rdrift;
-    double dr2    = dist-rdrift;
-    if (fabs(dr1) < fabs(dr2)) p->drs =  1;
-    else                       p->drs = -1;
+    double dr1    = dist-rdrift;
+    double dr2    = dist+rdrift;
+    double min_dist(1.e6);
+    if (fabs(dr1) < fabs(dr2)) {
+      p->drs   =  1;
+      min_dist = fabs(dr1);
+    }
+    else {
+      p->drs   = -1;
+      min_dist = fabs(dr2);
+    }
+    if (min_dist > 1.) p->fMask |= TrkSegment::kLargeDrhoBit;
   }
   if (SegmentFit::fgDebugMode != 0) {
     fSegment->print();
@@ -379,7 +391,7 @@ int SegmentFit::Fit(int NItMax, int DoCleanup, const Par_t* Pin, Par_t* Par) {
                                         // return best parameters
   *Par = fSegment->fPar;
 
-  if (fgDebugMode)  std::cout << std::format("SegmentFit::{} END  Par->chi2_dof:{:8.2f} converged:{}\n",__func__,Par->chi2dof,converged);
+  if (fgDebugMode)  std::cout << std::format("-- SegmentFit::{} END  Par->chi2_dof:{:8.2f} converged:{}\n",__func__,Par->chi2dof,converged);
 
   return converged;
 }

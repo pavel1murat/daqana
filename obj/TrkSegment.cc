@@ -102,8 +102,6 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 
   for (int i=0; i<nhits; i++) {
     const mu2e::ComboHit* hit = hits[i];
-    //    hit->_flag.reset();
-    // hit->_pind[0] = 2;                  // pind[0] : drift sign+2
                                         // figure out the drift signs
     int layer = hit->strawId().getLayer();
     if (last_hit != nullptr) {
@@ -155,15 +153,28 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 
   int last_straw[2] = {-1, -1};
   if (fNTransitions != 1) fMask |= kNTransitionsBit;
-  for (int i=0; i<fIhit[1]; i++) {
+  for (int i=0; i<nhits; i++) {
     const mu2e::ComboHit* hit = hits[i];
     if (flag[i] != 0) continue;
     int layer = hit->strawId().getLayer();
     int straw = hit->strawId().straw();
     fNghLayer[layer] += 1;
-    int miss = (straw-last_straw[layer]) > 2;
-    fNMisses[layer]  += miss;
+    if (last_straw[layer] != -1) {
+      int miss = (straw-last_straw[layer]) > 2;
+      fNMisses[layer]  += miss;
+    }
+    last_straw[layer] = straw;
   }
+
+  // for (int i=fIhit[1]; i<nhits; i++) {
+  //   const mu2e::ComboHit* hit = hits[i];
+  //   if (flag[i] != 0) continue;
+  //   int layer = hit->strawId().getLayer();
+  //   int straw = hit->strawId().straw();
+  //   fNghLayer[layer] += 1;
+  //   int miss = (straw-last_straw[layer]) > 2;
+  //   fNMisses[layer]  += miss;
+  // }
 
   if (fgDebugMode != 0) {
     std::cout << std::format("fIhit[0]:{:2d} fIhit[1]:{:2d} ngh: {} {} miss: {} {}\n",
@@ -269,19 +280,22 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
 void TrkSegment::print(const char* Message, std::ostream& Stream) {
 
-  if (Message) Stream << Message << std::endl;
+  Stream << "--------------------------------------------- Segment parameters:";
+  if (Message) Stream << " " << Message;
+  Stream << std::endl;
+                                        // no points, if N(hits) < 4...
+  int nhits = hits.size();
+  int npt   = points.size();
 
-  int nhits = points.size();
-
-  Stream << std::format(" plane:{:2} panel:{} nhits:{} fNGoodHits:{} n_transitions:{} seed hits: {}:{} good hits/layer: {:2}:{:2} misses/layer: {:2}{:2}\n",
-                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghLayer[0],fNghLayer[1],fNMisses[0],fNMisses[1])
+  Stream << std::format(" plane:{:2} panel:{} nhits:{} fNGoodHits:{} n_transitions:{} seed hits: {}:{} good hits/layer: {:2}:{:2} misses/layer: {:2}{:2} Npoints:{}\n",
+                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghLayer[0],fNghLayer[1],fNMisses[0],fNMisses[1],npt)
          << std::format(" Parameters: DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
                         fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
 
   Stream << std::format(" i   sid   mask       x      y        t        time   tprop tdrift   radius drs      rho  fixed\n");
   Stream <<             "-----------------------------------------------------------------------------------------------\n" ;
   double t0 = fPar.T0();
-  for (int i=0; i<nhits; i++) {
+  for (int i=0; i<npt; i++) {
     Point2D* pt = &points[i];
     Stream << std::format("{:2d} 0x{:04x} 0x{:04x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:5d}",
                           i,pt->sid,pt->fMask,pt->x,pt->y,pt->t,pt->time,pt->tprop,
@@ -298,7 +312,7 @@ double TrkSegment::Chi2() {
   double const res2(0.2*0.2);            // assume 200 um
 
   double chi2 = 0;
-  int nhits = points.size();
+  int nhits = hits.size();
   int n_good_hits(0);
   double t0 = T0();
   double a  = DyDx();
@@ -356,7 +370,7 @@ int TrkSegment::DefineTangentLine() {
   double t0(0);
   int    n_good_hits(0);
 
-  int nhits = points.size();
+  int nhits = hits.size();
   for (int i=0; i<nhits; i++) {
     Point2D* pt = &points[i];
     if (pt->IsGood() != 1)              continue;
