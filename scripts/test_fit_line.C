@@ -55,7 +55,7 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
 
   std::cout << std::format("---------------------------------- {}:{}: START\n",__func__,__LINE__);
 
-  TrkSegment::_debugMode  = 1;
+  TrkSegment::fgDebugMode = 1;
   SegmentFit::fgDebugMode = 1;
 //-----------------------------------------------------------------------------
 // read combohits from a text file

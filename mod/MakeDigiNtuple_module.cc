@@ -5,7 +5,8 @@
 // tracker       :  assume that the waveforms are made
 // debug bits    :  1: for all hits, print hit times assuming contiguous timing
 //                  2: (fillTC) parameters of the time cluster
-//                  3: track segments
+//                  3: TrkSegment::fgDebugMode
+//                  4: SegmentFit::fgDebugMode
 // ======================================================================
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -170,7 +171,6 @@ public:
   TBranch*                _branch;
 
   int                     _hist_booked;
-  //  const TrkPanelMap_t*    _panel_map[200][6];   // indexing - offline: [plane][panel]
    
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
@@ -184,7 +184,7 @@ public:
   ProditionsHandle<TrackerPanelMap>            _tpm_h;
   const TrackerPanelMap*                       _trkPanelMap;
   
-  TrkSegment                                   _tseg[18][6]; // for now, assume just one segment per panel
+  TrkSegment                                   _tseg[36][6]; // for now, assume just one segment per panel
   std::vector<TrkSegment*>                     _ptseg;
   int                                          _nseg;
   
@@ -237,7 +237,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
 
-  if (_debugBit[3]) TrkSegment::_debugMode = 1;
+  TrkSegment::fgDebugMode = _debugBit[3];
+  SegmentFit::fgDebugMode = _debugBit[4];
 }
 
 std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
@@ -304,11 +305,11 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
   mu2e::GeomHandle<mu2e::Tracker> handle;
   _tracker = handle.get();
   
-  for (int i=0; i<18; i++) {
+  for (int i=0; i<36; i++) {
     for (int ip=0; ip<6; ip++) {
       TrkSegment* ts = &_tseg[i][ip];
-      ts->plane = i;
-      ts->panel = ip;
+      ts->fPlane = i;
+      ts->fPanel = ip;
 //-----------------------------------------------------------------------------
 // 1.build transformation matrix
 //-----------------------------------------------------------------------------
@@ -317,18 +318,25 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
       ts->trkPanel = pnl;
       //      mu2e::StrawId      pid = pnl->id();
   
-      double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
-      double phix   = phiy-90;
+      // double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
+      // double phix   = phiy-90;
+      double phix   = atan2(pnl->straw0MidPoint().y(),pnl->straw0MidPoint().x())*180./M_PI;
+      double phiy   = phix+90;
       double phiz   =  0;
       double thetax = 90;
       double thetay = 90;
       double thetaz =  0;
-      if (pnl->wDirection().z() < 0) {
-        phix   = phix+180;
-      }
+      // if (pnl->wDirection().z() < 0) {
+      //   phix   = phix+180;
+      // }
 
       TGeoRotation* r = new TGeoRotation  ("a",thetax,phix,thetay,phiy,thetaz,phiz);
       ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",i,ip),0,0,0,r);
+
+      if (_debugMode != 0) {
+        print_(std::format("-- combitrans for plane:{:2} panel:{}\n",i,ip));
+        ts->fCombiTrans->Print();
+      }
     }
   }
 }
@@ -831,8 +839,10 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       mu2e::StrawId sid = ch->strawId();
       int panel = sid.panel();
       int plane = sid.plane();
-      std::cout << std::format("hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",ih,plane,panel,sid.straw());
-
+      if (_debugBit[3] != 0) {
+        print_(std::format(" {}: hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",
+                           __func__,ih,plane,panel,sid.straw()));
+      }
                                         // cosmic track: assume one segment per panel,
                                         // in principle, there could be more than one
 
@@ -863,7 +873,8 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       ts->fMask |= 0x1 ; // not enough hits
       continue;
     }
-    ts->InitHits(ts->hits);             // this looks ugly, OK for the purpose
+                                        // list of hits already defined
+    ts->InitHits(nullptr);              // this looks ugly, OK for the purpose
 
     SegmentFit sfitter(ts);
 //-----------------------------------------------------------------------------
@@ -886,22 +897,10 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 //-----------------------------------------------------------------------------
   if (_debugMode and (_debugBit[3] != 0)) {
     std::cout << "nseg:" << _nseg << std::endl;
-  }
 
-  for (int i=0; i<_nseg; i++) {
-    TrkSegment* ts = _ptseg[i];
-    int nh = ts->hits.size();
-    std::cout << std::format("-- segm:{} plane:{} panel:{} nh:{:2d} chi2:{:7.2f}",
-                             i,ts->plane,ts->panel,nh,ts->Chi2Dof())
-              << std::endl;
-    for (int ih=0; ih<nh; ih++) {
-      Point2D* pt = &ts->points[ih];
-      const mu2e::ComboHit* ch           = ts->hits[ih];
-      std::cout << std::format("   -- ih:{:2d} straw:{:02d} time:{:7.2f} tDrift:{:7.2f}",
-                               ih,ch->strawId().straw(),ch->time(),ts->DriftTime(pt))
-                << std::format(" x:y:rDrift:drift_sign: {:7.3f} {:7.3f} {:7.3f} {:2} sign_fixed:{}",
-                               pt->x,pt->y,ts->R(pt),pt->drs,pt->sign_fixed)
-                << std::endl;
+    for (int i=0; i<_nseg; i++) {
+      TrkSegment* ts = _ptseg[i];
+      ts->print();
     }
   }
 

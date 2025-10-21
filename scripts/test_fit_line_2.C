@@ -54,7 +54,7 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
 
   std::cout << std::format("---------------------------------- {}:{}: START\n",__func__,__LINE__);
 
-  TrkSegment::_debugMode  = 1;
+  TrkSegment::fgDebugMode = 1;
   SegmentFit::fgDebugMode = 1;
 //-----------------------------------------------------------------------------
 // read combohits from a text file
@@ -66,12 +66,12 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
   readDataFile(Fn,vnames,chhits,Plane,Panel);
   printData(vnames,chhits);
   
-  std::cout << "-- after readDataFile" << std::endl;
-                                        // sort by straw
-  std::sort(chhits.begin(),chhits.end(), [](const mu2e::ComboHit* a, const mu2e::ComboHit* b) {
-    mu2e::StrawId sa(a->strawId()), sb(b->strawId());
-    return sa.getStraw() < sb.getStraw();
-  });
+  // std::cout << "-- after readDataFile" << std::endl;
+  //                                       // sort by straw
+  // std::sort(chhits.begin(),chhits.end(), [](const mu2e::ComboHit* a, const mu2e::ComboHit* b) {
+  //   mu2e::StrawId sa(a->strawId()), sb(b->strawId());
+  //   return sa.getStraw() < sb.getStraw();
+  // });
   
   int nhits = chhits.size();
   std::cout << "-- hits sorted, nhits:" << nhits << std::endl;
@@ -85,7 +85,7 @@ int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0) {
 //-----------------------------------------------------------------------------
 // InitHits also defines two seed hits - can draw a tangent line at this point
 //-----------------------------------------------------------------------------
-  mTs->InitHits(chhits);
+  mTs->InitHits(&chhits);
 //-----------------------------------------------------------------------------
   if (sfitter != nullptr) delete sfitter;
   sfitter = new SegmentFit(mTs);

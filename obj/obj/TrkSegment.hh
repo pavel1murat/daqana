@@ -83,8 +83,8 @@ public:
 
   const mu2e::Panel*   trkPanel;
   int                  fMask;           // 0: OK
-  int                  plane;
-  int                  panel;
+  int                  fPlane;
+  int                  fPanel;
   int                  fNTransitions;
   int                  fNGoodHits;                  // total number of good hits
   int                  fNghLayer[2];                // # good hits in each layer
@@ -101,7 +101,7 @@ public:
   Par_t                fPar4;                   // best parameters after a 4-point fit
   Par_t                fPar;                    // best fit parameters
 
-  static int           _debugMode;
+  static int           fgDebugMode;
 
   TrkSegment(int Plane = -1, int Panel = -1);
   ~TrkSegment() { if (fCombiTrans) delete fCombiTrans ; }
@@ -115,7 +115,7 @@ public:
     points.push_back(pt);
   }
 
-  int InitHits(std::vector<const mu2e::ComboHit*>& Hits, int UniquePlane = -1, int Panel = -1);
+  int InitHits(std::vector<const mu2e::ComboHit*>* Hits = nullptr, int UniquePlane = -1, int Panel = -1);
 
   // int InitHits(); // does the same starting from TrkStrawHitSeeds
 
@@ -129,9 +129,9 @@ public:
     return good;
   }
 
-  int      nHits() { return (int) points.size(); }
-  int      Plane() { return plane; }
-  int      Panel() { return panel; }
+  int      nHits() { return (int) hits.size(); }
+  int      Plane() { return fPlane; }
+  int      Panel() { return fPanel; }
 
   //  int      DefineTangentLine();
 //-----------------------------------------------------------------------------
