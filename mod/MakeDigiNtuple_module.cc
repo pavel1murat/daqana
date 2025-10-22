@@ -919,11 +919,12 @@ int mu2e::MakeDigiNtuple::fillSeg() {
 
   makeSegments();
 
-  _event->nseg = _nseg;
-
   int nsegsh = 0;
+  int nseg4  = 0;
   for (int iseg=0; iseg<_nseg; iseg++) {
     TrkSegment* ts = _ptseg[iseg];
+    //    if (ts->points.size() < 4) continue;
+    nseg4 += 1;
    
     DaqSegment* nt_ts = new ((*_event->seg)[iseg]) DaqSegment();
     mu2e::StrawId sid = ts->hits[0]->strawId();
@@ -935,7 +936,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     nt_ts->nghl[1] = ts->fNghLayer[1];
     nt_ts->nmhl[0] = ts->fNMisses[0];                       // number of missing hits/layer
     nt_ts->nmhl[1] = ts->fNMisses[1];                       // number of missing hits/layer
-    nt_ts->t0      = ts->fPar.T0();
+    nt_ts->t0      = ts->fPar.T0()+ts->fTMean;
     nt_ts->chi2d   = ts->fPar.chi2dof;                      // chi2/dof
     nt_ts->z0      = -1.;
     nt_ts->y0      = ts->fPar.Y0();                         // likely, not very useful
@@ -1004,6 +1005,8 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     }
     nsegsh += nt_ts->nh;
   }
+
+  _event->nseg = _nseg;
 
   return 0;
 }

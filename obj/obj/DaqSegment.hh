@@ -26,6 +26,9 @@ public:
 
   virtual ~DaqSegment();
 
+  int panel  () { return (sid >>  7) & 0x0007 ; }
+  int plane  () { return (sid >> 10) & 0x003f ; }
+
   ClassDef(DaqSegment,1);
 };
 
