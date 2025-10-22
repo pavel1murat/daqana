@@ -6,7 +6,9 @@ ClassImp(DaqSegment)
 
 //-----------------------------------------------------------------------------
 DaqSegment::DaqSegment() : TObject() {
-  nh    = -1;
+  nh     = -1;
+  ntrans = -1;
+
   for (int i=0; i<2; ++i) {
     nghl[i] = -1;
     nmhl[i] = -1;

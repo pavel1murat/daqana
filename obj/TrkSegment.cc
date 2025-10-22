@@ -27,6 +27,10 @@ void TrkSegment::Clear(){
   fIhit[1]    = -1;
   hits.clear();
   points.clear();
+  fNghl[0] = 0;
+  fNghl[1] = 0;
+  fNmhl [0] = 0;
+  fNmhl [1] = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -158,10 +162,10 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
     if (flag[i] != 0) continue;
     int layer = hit->strawId().getLayer();
     int straw = hit->strawId().straw();
-    fNghLayer[layer] += 1;
+    fNghl[layer] += 1;
     if (last_straw[layer] != -1) {
       int miss = (straw-last_straw[layer]) > 2;
-      fNMisses[layer]  += miss;
+      fNmhl[layer]  += miss;
     }
     last_straw[layer] = straw;
   }
@@ -171,14 +175,14 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   //   if (flag[i] != 0) continue;
   //   int layer = hit->strawId().getLayer();
   //   int straw = hit->strawId().straw();
-  //   fNghLayer[layer] += 1;
+  //   fNghl[layer] += 1;
   //   int miss = (straw-last_straw[layer]) > 2;
-  //   fNMisses[layer]  += miss;
+  //   fNmhl[layer]  += miss;
   // }
 
   if (fgDebugMode != 0) {
     std::cout << std::format("fIhit[0]:{:2d} fIhit[1]:{:2d} ngh: {} {} miss: {} {}\n",
-                             fIhit[0],fIhit[1],fNghLayer[0],fNghLayer[1],fNMisses[0],fNMisses[1]);
+                             fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1]);
     fCombiTrans->Print();
   }
 //-----------------------------------------------------------------------------
@@ -288,7 +292,7 @@ void TrkSegment::print(const char* Message, std::ostream& Stream) {
   int npt   = points.size();
 
   Stream << std::format(" plane:{:2} panel:{} nhits:{} fNGoodHits:{} n_transitions:{} seed hits: {}:{} good hits/layer: {:2}:{:2} misses/layer: {:2}{:2} Npoints:{}\n",
-                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghLayer[0],fNghLayer[1],fNMisses[0],fNMisses[1],npt)
+                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1],npt)
          << std::format(" Parameters: DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
                         fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
 

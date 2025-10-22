@@ -12,7 +12,7 @@ class DaqTrkStrawHit : public DaqStrawHit {
 public:
   float   rdrift;                       // drift distance
   float   doca;                         // vdot((track-to-hit dist),(track-to-wire distance).unit)
-  int     drho;                         // unsigned: |track-to-wire dist| - rdrift
+  float   drho;                         // unsigned: |track-to-wire dist| - rdrift
   int     iseg;
   int     itrk;
 

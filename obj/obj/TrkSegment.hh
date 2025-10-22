@@ -88,8 +88,8 @@ public:
   int                  fPanel;
   int                  fNTransitions;
   int                  fNGoodHits;                  // total number of good hits
-  int                  fNghLayer[2];                // # good hits in each layer
-  int                  fNMisses[2];                 // # of straws w/o hits in each layer
+  int                  fNghl[2];                    // # good hits in each layer
+  int                  fNmhl[2];                    // # of straws w/o hits in each layer
   TGeoCombiTrans*      fCombiTrans;                 // global to local transform
   std::vector<const mu2e::ComboHit*> hits;          // initialization (from a time cluster) in the ntuple making code
   double               fXMean;
@@ -184,12 +184,9 @@ public:
   }
 
 //-----------------------------------------------------------------------------
-// signed distance between the drift circle and the segment (DOCA),
-// definition of the sign - to be clarified
-// use segment T0
-// parameters of the line have to be defined
+// segment_to_wire_distance.vdot.normal_to_the_segment
 //-----------------------------------------------------------------------------
-  double WsDist(const Point2D* Pt, const Par_t* Par = nullptr) const {
+  double SwDist(const Point2D* Pt, const Par_t* Par = nullptr) const {
     const Par_t* par(Par);
     if (par == nullptr) par = &fPar;
 

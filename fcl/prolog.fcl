@@ -188,6 +188,7 @@ daqana : {
             debugBits      : [ "bit0:0", "bit1:0" ]
             nSamplesBL     : 6
             minPulseHeight : 5.
+            minNSegments   : 0
         }
 
         StationAna: { module_type: StationAna

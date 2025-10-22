@@ -82,10 +82,10 @@ public:
     Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"       ),""};
     Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"     ),""};
     Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"               ),""};
-    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                ),0};
+    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                )};
     Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                )};
     Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"          )};
-    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms"),0};
+    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms")};
     Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     ),1};
     Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
     Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
@@ -95,6 +95,7 @@ public:
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
+    Atom<int>             minNSegments  {Name("minNSegments"  ), Comment("min N(segments)"                     )};
   };
 
   // --- C'tor/d'tor:
@@ -145,6 +146,7 @@ public:
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   int                      _nSamplesBL;
   int                      _minPulseHeight;
+  int                      _minNSegments;
     
   
   int                      _n_adc_samples;
@@ -194,24 +196,25 @@ public:
 
 mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& config) :
     art::EDAnalyzer{config},
-    _debugMode    (config().debugMode    ()),
-    _debugBits    (config().debugBits    ()),
-    _sdCollTag    (config().sdCollTag    ()),
-    _shCollTag    (config().shCollTag    ()),
-    _tcCollTag    (config().tcCollTag    ()),
-    _ksCollTag    (config().ksCollTag    ()),
-    _outputDir    (config().outputDir    ()),
-    _saveWaveforms(config().saveWaveforms()),
-    _makeSD       (config().makeSD       ()),
-    _makeSH       (config().makeSH       ()),
-    _makeCH       (config().makeCH       ()),
-    _makeTC       (config().makeTC       ()),
-    _makeSeg      (config().makeSeg      ()),
-    _makeTrk      (config().makeTrk      ()),
-    _ewLength     (config().ewLength     ()),
-    _nSamplesBL   (config().nSamplesBL   ()),
-    _minPulseHeight(config().minPulseHeight   ()),
-    _art_event    (nullptr)
+    _debugMode     (config().debugMode     ()),
+    _debugBits     (config().debugBits     ()),
+    _sdCollTag     (config().sdCollTag     ()),
+    _shCollTag     (config().shCollTag     ()),
+    _tcCollTag     (config().tcCollTag     ()),
+    _ksCollTag     (config().ksCollTag     ()),
+    _outputDir     (config().outputDir     ()),
+    _saveWaveforms (config().saveWaveforms ()),
+    _makeSD        (config().makeSD        ()),
+    _makeSH        (config().makeSH        ()),
+    _makeCH        (config().makeCH        ()),
+    _makeTC        (config().makeTC        ()),
+    _makeSeg       (config().makeSeg       ()),
+    _makeTrk       (config().makeTrk       ()),
+    _ewLength      (config().ewLength      ()),
+    _nSamplesBL    (config().nSamplesBL    ()),
+    _minPulseHeight(config().minPulseHeight()),
+    _minNSegments  (config().minNSegments  ()),
+    _art_event     (nullptr)
 {
   _n_adc_samples = -1;
 
@@ -931,17 +934,19 @@ int mu2e::MakeDigiNtuple::fillSeg() {
 
     nt_ts->sid     = sid.asUint16();                       // straw ID of the straw=0 of the panel
     nt_ts->nh      = ts->points.size();
+    nt_ts->ntrans  = ts->fNTransitions;
     nt_ts->ngh     = ts->fNGoodHits;
-    nt_ts->nghl[0] = ts->fNghLayer[0];
-    nt_ts->nghl[1] = ts->fNghLayer[1];
-    nt_ts->nmhl[0] = ts->fNMisses[0];                       // number of missing hits/layer
-    nt_ts->nmhl[1] = ts->fNMisses[1];                       // number of missing hits/layer
-    nt_ts->t0      = ts->fPar.T0()+ts->fTMean;
-    nt_ts->chi2d   = ts->fPar.chi2dof;                      // chi2/dof
+    nt_ts->nghl[0] = ts->fNghl[0];
+    nt_ts->nghl[1] = ts->fNghl[1];
+    nt_ts->nmhl[0] = ts->fNmhl[0];                       // number of missing hits/layer
+    nt_ts->nmhl[1] = ts->fNmhl[1];                       // number of missing hits/layer
+    nt_ts->t0      = ts->T0()+ts->fTMean;
+    nt_ts->chi2d   = ts->fPar.chi2dof;                   // chi2/dof
     nt_ts->z0      = -1.;
-    nt_ts->y0      = ts->fPar.Y0();                         // likely, not very useful
-    nt_ts->ymean   = ts->fXMean;                            // local on a panel
-    nt_ts->dzdy    = ts->fPar.DyDx();
+    if (ts->DyDx() != 0) nt_ts->y0 = -ts->Y0()/ts->DyDx();
+    else                 nt_ts->y0 = -1.e6;             
+    nt_ts->ymean   = ts->fXMean;                         // local on a panel
+    nt_ts->dzdy    = ts->DyDx();
     if (_ntracks > 0) {
                                         // transform track parameters into a local coordinate system
                                         // assume one track...
@@ -1001,7 +1006,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       nt_tsh->itrk    = -1;
       nt_tsh->rdrift  = ts->R(pt);            // drift distance
       nt_tsh->doca    = ts->Rho(pt);              // rdrift-(track-wire distance) (assume signed, double check)
-      nt_tsh->drho    = fabs(ts->WsDist(pt))-fabs(ts->R(pt)); // unsigned residual
+      nt_tsh->drho    = fabs(ts->SwDist(pt))-fabs(ts->R(pt)); // unsigned residual
     }
     nsegsh += nt_ts->nh;
   }
@@ -1074,7 +1079,9 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
     print_(std::format("_event->strawdigis->GetEntries():{}\n",_event->nsdtot));
   }
 
-  _tree->Fill();
+  if (_event->nseg >= _minNSegments) {
+    _tree->Fill();
+  }
 
   if (_debugMode > 0) print_("-- END\n");
 }

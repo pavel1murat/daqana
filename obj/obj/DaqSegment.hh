@@ -13,6 +13,7 @@ public:
   int     ngh   ;
   int     nghl[2];                      // N(Good Hits/Layer)
   int     nmhl[2];                      // N(Missing Hits/Layer)
+  int     ntrans;
   float   t0    ;
   float   chi2d ;                       // chi2/dof
   float   y0    ;
