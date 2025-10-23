@@ -1,5 +1,5 @@
 #define digis_cxx
-#include "digis.h"
+#include "daqana/obj/digis.hh"
 #include <TH2.h>
 // #include <TStyle.h>
 // #include <TCanvas.h>
@@ -101,6 +101,22 @@ int digis::FillEventHistograms(EventHist_t* Hist) {
 }
 
 //-----------------------------------------------------------------------------
+int digis::FillSshtHistograms(SshtHist_t* Hist, int I) {
+  Hist->fRDrift->Fill(segsh_rdrift[I]);
+  Hist->fDr->Fill(segsh_doca[I]);
+
+  Hist->fDrho->Fill(segsh_drho[I]);
+  Hist->fDrVsRDrift->Fill(segsh_rdrift[I],segsh_doca[I]);
+  Hist->fDrhoVsRDrift->Fill(segsh_rdrift[I],segsh_drho[I]);
+
+  int straw = (segsh_sid[I] &0x7f);
+  Hist->fDrVsStraw->Fill(straw,segsh_doca[I]);
+  Hist->fDrhoVsStraw->Fill(straw,segsh_drho[I]);
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int digis::FillHistograms(Hist_t* Hist) {
                                         // fill event histograms
 
@@ -159,7 +175,27 @@ int digis::FillHistograms(Hist_t* Hist) {
       else                  FillTwoSegHistograms(Hist->fTwoSeg[2],&par_ss);
     }
   }
-
+//-----------------------------------------------------------------------------
+// segment straw hit histograms (SSHT) ... do that only for good segments
+//-----------------------------------------------------------------------------
+  for (int is=0; is<fNSeg6; is++) {
+    int iseg = fISeg6[is];
+    for (int ish=0; ish<nsegsh; ish++) {
+      if (segsh_iseg[ish] != iseg)         continue;
+      int plane = (segsh_sid[ish] >> 10) & 0x3f;
+      int panel = (segsh_sid[ish] >>  7) & 0x7;
+      int straw = (segsh_sid[ish] >>  0) & 0x7f;
+//-----------------------------------------------------------------------------
+// all together
+//-----------------------------------------------------------------------------
+      FillSshtHistograms(Hist->fSsht[0]   , ish);
+//-----------------------------------------------------------------------------
+// each panel separately
+//-----------------------------------------------------------------------------
+      int iset = 10+plane*6+panel;
+      FillSshtHistograms(Hist->fSsht[iset], ish);
+    }
+  }
   return 0;
 };
 
@@ -194,6 +230,21 @@ int digis::BookTwoSegHistograms(TwoSegHist_t* Hist, const char* Folder) {
   }
   return 0;
 }
+
+//-----------------------------------------------------------------------------
+// add more descriptive titles later
+//-----------------------------------------------------------------------------
+int digis::BookSshtHistograms(SshtHist_t* Hist, const char* Folder) {
+  HBook1F(Hist->fRDrift  ,"rdrift"  ,"rdrift, mm", 100,    0, 5, Folder);
+  HBook1F(Hist->fDr ,"dr"  ,"dr, mm", 500,    -2.5, 2.5, Folder);
+  HBook1F(Hist->fDrho ,"drho"  ,"drho, mm", 500,    -2.5, 2.5, Folder);
+  HBook2F(Hist->fDrVsRDrift   ,"dr_vs_rdrift"   ,"dr_vs_rdrift" ,  100,    0,  5, 250,-2.5,2.5,Folder);
+  HBook2F(Hist->fDrhoVsRDrift   ,"drho_vs_rdrift"   ,"drho_vs_rdrift" ,  100,    0,  5, 250,-2.5,2.5,Folder);
+  HBook2F(Hist->fDrVsStraw   ,"dr_vs_straw"   ,"dr_vs_straw" ,  100,    0,  100, 250,-2.5,2.5,Folder);
+  HBook2F(Hist->fDrhoVsStraw ,"drho_vs_straw"   ,"drho_vs_straw" ,  100,    0,  100, 250,-2.5,2.5,Folder);
+  return 0;
+}
+
 
 //-----------------------------------------------------------------------------
 int digis::BookHistograms(Hist_t* Hist) {
@@ -232,6 +283,7 @@ int digis::BookHistograms(Hist_t* Hist) {
   book_segment_histset[ 3] = 1;	        // segments with 4+ good hits and chi2d<10 and nghl[i] > 0
   book_segment_histset[ 4] = 1;	        // events with 2 such segments
 
+
   for (int i=0; i<kNSegmentHistSets; i++) {
     if (book_segment_histset[i] != 0) {
       sprintf(folder_name,"seg_%i",i);
@@ -259,6 +311,37 @@ int digis::BookHistograms(Hist_t* Hist) {
       if (! fol) fol = fFolder->AddFolder(folder_name,folder_name);
       fHist.fTwoSeg[i] = new TwoSegHist_t;
       BookTwoSegHistograms(fHist.fTwoSeg[i],Form("%s",folder_name));
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// book segment hit (ssht) histograms
+//-----------------------------------------------------------------------------
+  int book_ssht_histset[kNSshtHistSets];
+  for (int i=0; i<kNSshtHistSets; i++) book_ssht_histset[i] = 0;
+
+  book_ssht_histset[ 0] = 1;		// all segments
+
+  book_ssht_histset[10] = 1;	        // segments with 4+ good hits panel#0  (+10)
+  book_ssht_histset[11] = 1;	        // segments with 4+ good hits panel#1
+  book_ssht_histset[12] = 1;	        // segments with 4+ good hits panel#2
+  book_ssht_histset[13] = 1;	        // segments with 4+ good hits panel#3
+  book_ssht_histset[14] = 1;	        // segments with 4+ good hits panel#4
+  book_ssht_histset[15] = 1;	        // segments with 4+ good hits panel#5
+  book_ssht_histset[16] = 1;	        // segments with 4+ good hits panel#6
+  book_ssht_histset[17] = 1;	        // segments with 4+ good hits panel#7
+  book_ssht_histset[18] = 1;	        // segments with 4+ good hits panel#8
+  book_ssht_histset[19] = 1;	        // segments with 4+ good hits panel#9
+  book_ssht_histset[20] = 1;	        // segments with 4+ good hits panel#10
+  book_ssht_histset[21] = 1;	        // segments with 4+ good hits panel#10
+
+  for (int i=0; i<kNSshtHistSets; i++) {
+    if (book_ssht_histset[i] != 0) {
+      sprintf(folder_name,"ssht_%i",i);
+      fol = (TFolder*) fFolder->FindObject(folder_name);
+      if (! fol) fol = fFolder->AddFolder(folder_name,folder_name);
+      fHist.fSsht[i] = new SshtHist_t;
+      BookSshtHistograms(fHist.fSsht[i],Form("%s",folder_name));
     }
   }
 
@@ -328,8 +411,8 @@ void digis::Init(TTree *tree) {
    // (once per file to be processed).
 
    // Set object pointer
-   trksh_DaqStrawHit = 0;
-   segsh_DaqStrawHit = 0;
+   // trksh_DaqStrawHit = 0;
+   // segsh_DaqStrawHit = 0;
    // Set array pointer
    for(int i=0; i<kMaxsd; ++i) sd_adc[i] = 0;
 
@@ -425,7 +508,7 @@ void digis::Init(TTree *tree) {
    fChain->SetBranchAddress("trk.chi2", trk_chi2, &b_trk_chi2);
    fChain->SetBranchAddress("ntrksh", &ntrksh, &b_evt_ntrksh);
    fChain->SetBranchAddress("trksh", &trksh_, &b_evt_trksh_);
-   fChain->SetBranchAddress("trksh.DaqStrawHit", &trksh_DaqStrawHit, &b_trksh_DaqStrawHit);
+   //   fChain->SetBranchAddress("trksh.DaqStrawHit", &trksh_DaqStrawHit, &b_trksh_DaqStrawHit);
    fChain->SetBranchAddress("trksh.rdrift", &trksh_rdrift, &b_trksh_rdrift);
    fChain->SetBranchAddress("trksh.doca", &trksh_doca, &b_trksh_doca);
    fChain->SetBranchAddress("trksh.drho", &trksh_drho, &b_trksh_drho);
@@ -451,7 +534,17 @@ void digis::Init(TTree *tree) {
    fChain->SetBranchAddress("seg.dzdyt", seg_dzdyt, &b_seg_dzdyt);
    fChain->SetBranchAddress("nsegsh", &nsegsh, &b_evt_nsegsh);
    fChain->SetBranchAddress("segsh", &segsh_, &b_evt_segsh_);
-   fChain->SetBranchAddress("segsh.DaqStrawHit", segsh_DaqStrawHit, &b_segsh_DaqStrawHit);
+   fChain->SetBranchAddress("segsh.fUniqueID", sh_fUniqueID, &b_sh_fUniqueID);
+   fChain->SetBranchAddress("segsh.fBits", segsh_fBits, &b_sh_fBits);
+   fChain->SetBranchAddress("segsh.sid", segsh_sid, &b_sh_sid);
+   fChain->SetBranchAddress("segsh.zface", segsh_zface, &b_segsh_zface);
+   fChain->SetBranchAddress("segsh.mnid", segsh_mnid, &b_segsh_mnid);
+   fChain->SetBranchAddress("segsh.time", segsh_time, &b_segsh_time);
+   fChain->SetBranchAddress("segsh.dt"  , segsh_dt, &b_segsh_dt);
+   fChain->SetBranchAddress("segsh.tot0", segsh_tot0, &b_segsh_tot0);
+   fChain->SetBranchAddress("segsh.tot1", segsh_tot1, &b_segsh_tot1);
+   fChain->SetBranchAddress("segsh.edep", segsh_edep, &b_segsh_edep);
+   //   fChain->SetBranchAddress("segsh.DaqStrawHit", segsh_DaqStrawHit, &b_segsh_DaqStrawHit);
    fChain->SetBranchAddress("segsh.rdrift", segsh_rdrift, &b_segsh_rdrift);
    fChain->SetBranchAddress("segsh.doca", segsh_doca, &b_segsh_doca);
    fChain->SetBranchAddress("segsh.drho", segsh_drho, &b_segsh_drho);

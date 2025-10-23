@@ -34,6 +34,7 @@ public :
     kNEventHistSets   = 100,
     kNSegmentHistSets = 100,
     kNTwoSegHistSets  =  10,
+    kNSshtHistSets    = 100,
   };
 
   struct TwoSegPar_t {
@@ -60,9 +61,20 @@ public :
     TH1F* fDt[1100];
   };
 
+  struct SshtHist_t {
+    TH1F* fRDrift;
+    TH1F* fDr;
+    TH1F* fDrho;
+    TH2F* fDrVsRDrift;
+    TH2F* fDrhoVsRDrift;
+    TH2F* fDrhoVsStraw;
+    TH2F* fDrVsStraw;
+  };
+
   struct Hist_t {
     EventHist_t*    fEvent  [kNEventHistSets  ];
     SegmentHist_t*  fSegment[kNSegmentHistSets];
+    SshtHist_t*     fSsht   [kNSshtHistSets   ];
     TwoSegHist_t*   fTwoSeg [kNTwoSegHistSets ];
   };
 
@@ -80,15 +92,17 @@ public :
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
 
-// Fixed size dimensions of array or collections stored in the TTree if any.
-   static constexpr Int_t kMaxsd = 1;
-   static constexpr Int_t kMaxsh = 122;
-   static constexpr Int_t kMaxch = 122;
-   static constexpr Int_t kMaxtc = 2;
-   static constexpr Int_t kMaxtrk = 2;
+// Fixed size dimensions of array or collections stored in the TTree if any... mmm
+// PM: this - max dimensions - is only true for a given file...
+
+   static constexpr Int_t kMaxsd    = 1;
+   static constexpr Int_t kMaxsh    = 122;
+   static constexpr Int_t kMaxch    = 122;
+   static constexpr Int_t kMaxtc    = 2;
+   static constexpr Int_t kMaxtrk   = 2;
    static constexpr Int_t kMaxtrksh = 1;
-   static constexpr Int_t kMaxseg = 10;
-   static constexpr Int_t kMaxsegsh = 85;
+   static constexpr Int_t kMaxseg   = 10;
+   static constexpr Int_t kMaxsegsh = 165;
 
    // Declaration of leaf types
  //DaqEvent        *evt;
@@ -208,9 +222,21 @@ public :
    Float_t         seg_dzdy[kMaxseg];   //[seg_]
    Float_t         seg_y0t[kMaxseg];   //[seg_]
    Float_t         seg_dzdyt[kMaxseg];   //[seg_]
+//-----------------------------------------------------------------------------
+// segment straw hits (SSHT)
+//-----------------------------------------------------------------------------
    Int_t           nsegsh;
    Int_t           segsh_;
-   DaqTrkStrawHit  *segsh_DaqStrawHit;
+   UInt_t          segsh_fUniqueID[kMaxsh];   //[sh_]
+   UInt_t          segsh_fBits[kMaxsh];   //[sh_]
+   Int_t           segsh_sid[kMaxsh];   //[sh_]
+   Int_t           segsh_zface[kMaxsh];   //[sh_]
+   Int_t           segsh_mnid[kMaxsh];   //[sh_]
+   Float_t         segsh_time[kMaxsh];   //[sh_]
+   Float_t         segsh_dt[kMaxsh];   //[sh_]
+   Float_t         segsh_tot0[kMaxsh];   //[sh_]
+   Float_t         segsh_tot1[kMaxsh];   //[sh_]
+   Float_t         segsh_edep[kMaxsh];   //[sh_]
    Float_t         segsh_rdrift[kMaxsegsh];   //[segsh_]
    Float_t         segsh_doca[kMaxsegsh];   //[segsh_]
    Int_t           segsh_drho[kMaxsegsh];   //[segsh_]
@@ -330,7 +356,17 @@ public :
    TBranch        *b_seg_dzdyt;   //!
    TBranch        *b_evt_nsegsh;   //!
    TBranch        *b_evt_segsh_;   //!
-   TBranch        *b_segsh_DaqStrawHit;   //!
+  //   TBranch        *b_segsh_DaqStrawHit;   //!
+   TBranch        *b_segsh_fUniqueID;   //!
+   TBranch        *b_segsh_fBits;   //!
+   TBranch        *b_segsh_sid;   //!
+   TBranch        *b_segsh_zface;   //!
+   TBranch        *b_segsh_mnid;   //!
+   TBranch        *b_segsh_time;   //!
+   TBranch        *b_segsh_dt;   //!
+   TBranch        *b_segsh_tot0;   //!
+   TBranch        *b_segsh_tot1;   //!
+   TBranch        *b_segsh_edep;   //!
    TBranch        *b_segsh_rdrift;   //!
    TBranch        *b_segsh_doca;   //!
    TBranch        *b_segsh_drho;   //!
@@ -344,10 +380,12 @@ public :
 
   int FillTwoSegHistograms (TwoSegHist_t*  Hist, TwoSegPar_t* Par);
   int FillSegmentHistograms(SegmentHist_t* Hist, int I);
+  int FillSshtHistograms   (SshtHist_t*    Hist, int IHit);
   int FillEventHistograms  (EventHist_t*   Hist);
   int FillHistograms       (Hist_t*        Hist);
 
   int BookTwoSegHistograms (TwoSegHist_t*  Hist, const char* Folder);
+  int BookSshtHistograms   (SshtHist_t*    Hist, const char* Folder);
   int BookSegmentHistograms(SegmentHist_t* Hist, const char* Folder);
   int BookEventHistograms  (EventHist_t*   Hist, const char* Folder);
   int BookHistograms       (Hist_t*        Hist);

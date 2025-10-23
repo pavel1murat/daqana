@@ -984,14 +984,14 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     int pln = sid.plane();
     int pnl = sid.panel();
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
-    
+    DaqTrkStrawHit* nt_tsh(nullptr);
     for (int ih=0; ih<nt_ts->nh; ih++) {
       const mu2e::StrawHit* sh = &_shc->at(ih);
       const mu2e::ComboHit* ch = ts->hits[ih];
       Point2D* pt              = ts->Point(ih);
 
       int ihh            = nsegsh+ih;
-      DaqTrkStrawHit* nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();
+      nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();
 
       nt_tsh->sid     = ch->strawId().asUint16();                          // hit id = sid | (segment #) << 16 | (track #) << 24
       nt_tsh->zface   = tpm->zface();                        // z-ordered face ... can be deduced from sid...
@@ -1002,16 +1002,20 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       nt_tsh->tot1    = sh->TOT(mu2e::StrawEnd::hv );
       nt_tsh->edep    = ch->energyDep();
 
-      nt_tsh->iseg    = iseg;
-      nt_tsh->itrk    = -1;
       nt_tsh->rdrift  = ts->R(pt);            // drift distance
       nt_tsh->doca    = ts->Rho(pt);              // rdrift-(track-wire distance) (assume signed, double check)
-      nt_tsh->drho    = fabs(ts->SwDist(pt))-fabs(ts->R(pt)); // unsigned residual
+      double sw_dist  = ts->SwDist(pt);
+      nt_tsh->drho    = fabs(sw_dist)-fabs(nt_tsh->rdrift); // unsigned residual
+
+      nt_tsh->iseg    = iseg;
+      nt_tsh->itrk    = -1;
     }
     nsegsh += nt_ts->nh;
   }
 
-  _event->nseg = _nseg;
+  _event->nseg   = _nseg;
+  _event->nsegsh = nsegsh;
+
 
   return 0;
 }

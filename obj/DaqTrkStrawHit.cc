@@ -5,7 +5,14 @@
 ClassImp(DaqTrkStrawHit)
 
 //-----------------------------------------------------------------------------
-DaqTrkStrawHit::DaqTrkStrawHit() : DaqStrawHit() {
+DaqTrkStrawHit::DaqTrkStrawHit() : TObject() {
+
+  sid  = -1;
+  time = -1;
+  dt   = -1;
+  tot0 = -1.;
+  tot1 = -1.;
+  edep = -1;
                                         // 
   rdrift =  1.e6;                       // 
   doca   =  1.e6;                       // vdot(dist.track-wire,dist.track-hit.unit)
