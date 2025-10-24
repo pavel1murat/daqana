@@ -32,8 +32,23 @@ int init_segment_geometry(TrkSegment* Seg) {
 
   double phix(0), phiy(90), phiz(0), thetax(90), thetay(90), thetaz(0);
   if (Seg->Panel() < 6) { 
-    phix   = atan2(pg0->yc,pg0->xc)*180./M_PI;
-    phiy   = phix+90;
+    // phix   = atan2(pg0->yc,pg0->xc)*180./M_PI;
+    // phiy   = phix+90;
+    phiy   = atan2(pg0->wnx,-pg0->wny)*180./M_PI;
+    phix   = phiy-90;
+    if ((Seg->Plane() % 2) == 1) {
+      if ((Seg->Panel() % 2) == 0) {
+        phix   = phix+180;
+        phiy   = phiy+180;
+      }
+    }
+    else {
+      if ((Seg->Panel() % 2) == 1) {
+        phix   = phix+180;
+        phiy   = phiy+180;
+      }
+    }
+
     phiz   =  0;
     thetax = 90;
     thetay = 90;

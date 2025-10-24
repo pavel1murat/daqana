@@ -20,7 +20,6 @@ public:
 
   SegmentFit(TrkSegment* Seg);
   ~SegmentFit();
-
 //-----------------------------------------------------------------------------
 // F = dChi2/dA (partial derivative)
 // Df/Da = dF/dA, with the second derivatives over b and tau beging zeroes
@@ -29,14 +28,12 @@ public:
   double DfDa(double A);
 
   double B(double A) {
-    double smn = fSts.yMean();
-    double vd  = Point2D::fgVDrift;
+    double smn     = fSts.yMean();
+    double vd      = Point2D::fgVDrift;
 
     double sig_yss = fSys.xMean()-fSys.yMean()*fSys.sigXY();
     double sig_xss = fSxs.xMean()-fSxs.yMean()*fSxs.sigXY();
-
-    //    double x = (sig_yss-A*sig_xss-vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
-    double x = (sig_yss - A*sig_xss + vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
+    double x       = (sig_yss - A*sig_xss + vd*sqrt(1+A*A)*fSts.sigXY())/(1-smn*smn);
 
     return x;
   }

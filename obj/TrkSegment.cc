@@ -7,7 +7,7 @@
 int TrkSegment::fgDebugMode(0);
 
 //
-double const Point2D::fgVDrift    = 65.e-3;   // mm/ns
+double const Point2D::fgVDrift    = 60.e-3;   // mm/ns
 double const TrkSegment::fgRStraw =  2.5;     // mm
 //-----------------------------------------------------------------------------
 TrkSegment::TrkSegment(int Plane, int Panel) {
@@ -196,7 +196,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   fTMean = 0;
 
   if (fgDebugMode != 0) {
-    std::cout << std::format(" i   sid                  XYZ(M)                              XYZ(L)                 time    prtime  rdrift drs\n");
+    std::cout << std::format(" i   sid   flag                 XYZ(M)                              XYZ(L)                 time    prtime  rdrift drs\n");
     std::cout << std::format("--------------------------------------------------------------------------------------\n");
   }
 
@@ -213,7 +213,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 // points have coordinates in the local coordinate system of the panel
 // add all hits, including flagged ones - those will not be used in the fit
 //-----------------------------------------------------------------------------
-    AddPoint(ch->_sid.asUint16(),flag[i], posl[0],posl[2],ch->_etime[ch->_eend],ch->_ptime, ch->correctedTime(), drs[i]);
+    AddPoint(ch->_sid.asUint16(),flag[i], posl[1],posl[2],ch->_etime[ch->_eend],ch->_ptime, ch->correctedTime(), drs[i]);
 //-----------------------------------------------------------------------------
 // to avoid mistakes, perform the subtraction just once
 // hits flagged at this stage will never be unflagged
@@ -221,7 +221,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
     if (flag[i] == 0) {
       fNGoodHits += 1;
-      fXMean     += posl[0];
+      fXMean     += posl[1];
       fYMean     += posl[2];
                                         // time() is the early end time, assum ptime is the propagation time for that end
       fTMean     += ch->time()-ch->_ptime;
@@ -233,7 +233,8 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
     // }
     if (fgDebugMode != 0) {
       int iflag = std::stoi(ch->flag().hex(),nullptr,0);
-      std::cout << std::format("{:2} 0x{:05x} ({:10.3f} {:10.3f} {:10.3f})",i,iflag,ch->pos().x(), ch->pos().y(), ch->pos().z())
+      std::cout << std::format("{:2} 0x{:04x} 0x{:05x} ({:10.3f} {:10.3f} {:10.3f})",i,ch->strawId().asUint16(),
+                               iflag,ch->pos().x(), ch->pos().y(), ch->pos().z())
                 << std::format(" ({:10.3f} {:10.3f} {:10.3f}) {:10.3f} {:7.3f} {:2}",
                                posl[0], posl[1], posl[2], ch->correctedTime(), ch->_ptime, drs[i])
                 << std::endl;
@@ -248,7 +249,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 // calculations; x,y, and t to be used in calculations, their values should be close to zero
 //-----------------------------------------------------------------------------
   if (fgDebugMode != 0) {
-    std::cout << " --- after subtracting the mean values\n";
+    std::cout << " --- after subtracting mean values\n";
     std::cout << std::format(" i      Xloc      Yloc    T\n");
     std::cout << std::format("----------------------------\n");
   }

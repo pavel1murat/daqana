@@ -308,36 +308,49 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
   mu2e::GeomHandle<mu2e::Tracker> handle;
   _tracker = handle.get();
   
-  for (int i=0; i<36; i++) {
-    for (int ip=0; ip<6; ip++) {
-      TrkSegment* ts = &_tseg[i][ip];
-      ts->fPlane = i;
-      ts->fPanel = ip;
+  for (int ipln=0; ipln<36; ipln++) {
+    for (int ipnl=0; ipnl<6; ipnl++) {
+      TrkSegment* ts = &_tseg[ipln][ipnl];
+      ts->fPlane = ipln;
+      ts->fPanel = ipnl;
 //-----------------------------------------------------------------------------
 // 1.build transformation matrix
 //-----------------------------------------------------------------------------
-      const mu2e::Plane* pln = &_tracker->getPlane(i);
-      const mu2e::Panel* pnl = &pln->getPanel(ip);
+      const mu2e::Plane* pln = &_tracker->getPlane(ipln);
+      const mu2e::Panel* pnl = &pln->getPanel(ipnl);
       ts->trkPanel = pnl;
       //      mu2e::StrawId      pid = pnl->id();
   
-      // double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
-      // double phix   = phiy-90;
-      double phix   = atan2(pnl->straw0MidPoint().y(),pnl->straw0MidPoint().x())*180./M_PI;
-      double phiy   = phix+90;
+      double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
+      double phix   = phiy-90;
+      // double phix   = atan2(pnl->straw0MidPoint().y(),pnl->straw0MidPoint().x())*180./M_PI;
+      // double phiy   = phix+90;
       double phiz   =  0;
       double thetax = 90;
       double thetay = 90;
       double thetaz =  0;
-      // if (pnl->wDirection().z() < 0) {
-      //   phix   = phix+180;
+      if (pnl->wDirection().z() < 0) {
+        phix   = phix+180;
+        // phiy   = phiy+180;
+      }
+      // if ((ipln % 2) == 1) {
+      //   if ((ipnl % 2) == 0) {
+      //     phix   = phix+180;
+      //     phiy   = phiy+180;
+      //   }
+      // }
+      // else {
+      //   if ((ipnl % 2) == 1) {
+      //     phix   = phix+180;
+      //     phiy   = phiy+180;
+      //   }
       // }
 
       TGeoRotation* r = new TGeoRotation  ("a",thetax,phix,thetay,phiy,thetaz,phiz);
-      ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",i,ip),0,0,0,r);
+      ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",ipln,ipnl),0,0,0,r);
 
       if (_debugMode != 0) {
-        print_(std::format("-- combitrans for plane:{:2} panel:{}\n",i,ip));
+        print_(std::format("-- combitrans for plane:{:2} panel:{}\n",ipln,ipnl));
         ts->fCombiTrans->Print();
       }
     }
@@ -932,7 +945,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     DaqSegment* nt_ts = new ((*_event->seg)[iseg]) DaqSegment();
     mu2e::StrawId sid = ts->hits[0]->strawId();
 
-    nt_ts->sid     = sid.asUint16();                       // straw ID of the straw=0 of the panel
+    nt_ts->sid     = sid.asUint16() & 0xff80;            // straw ID of the straw=0 of the panel
     nt_ts->nh      = ts->points.size();
     nt_ts->ntrans  = ts->fNTransitions;
     nt_ts->ngh     = ts->fNGoodHits;
@@ -969,7 +982,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       ts->fCombiTrans->MasterToLocalVect(posm, posl);
 
       nt_ts->y0t     = 0;                                     // at z=Z(mid panel) - to be figured
-      nt_ts->dzdyt   = -dirl[2]/dirl[1];                      // dzdy of the track (local coord system)
+      nt_ts->dzdyt   = dirl[2]/dirl[1];                       // dzdy of the track (local coord system)
     }
     else {
       nt_ts->y0t     = 1.e6;                                     // at z=Z(mid panel) - to be figured

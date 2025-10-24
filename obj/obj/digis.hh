@@ -95,14 +95,14 @@ public :
 // Fixed size dimensions of array or collections stored in the TTree if any... mmm
 // PM: this - max dimensions - is only true for a given file...
 
-   static constexpr Int_t kMaxsd    = 1;
-   static constexpr Int_t kMaxsh    = 122;
-   static constexpr Int_t kMaxch    = 122;
-   static constexpr Int_t kMaxtc    = 2;
-   static constexpr Int_t kMaxtrk   = 2;
-   static constexpr Int_t kMaxtrksh = 1;
-   static constexpr Int_t kMaxseg   = 10;
-   static constexpr Int_t kMaxsegsh = 165;
+   static constexpr Int_t kMaxsd    = 1000;
+   static constexpr Int_t kMaxsh    = 1000;
+   static constexpr Int_t kMaxch    = 1000;
+   static constexpr Int_t kMaxtc    = 100;
+   static constexpr Int_t kMaxtrk   = 100;
+   static constexpr Int_t kMaxtrksh = 1000;
+   static constexpr Int_t kMaxseg   = 100;
+   static constexpr Int_t kMaxsegsh = 1000;
 
    // Declaration of leaf types
  //DaqEvent        *evt;
@@ -239,7 +239,7 @@ public :
    Float_t         segsh_edep[kMaxsh];   //[sh_]
    Float_t         segsh_rdrift[kMaxsegsh];   //[segsh_]
    Float_t         segsh_doca[kMaxsegsh];   //[segsh_]
-   Int_t           segsh_drho[kMaxsegsh];   //[segsh_]
+   Float_t         segsh_drho[kMaxsegsh];   //[segsh_]
    Int_t           segsh_iseg[kMaxsegsh];   //[segsh_]
    Int_t           segsh_itrk[kMaxsegsh];   //[segsh_]
 
@@ -373,7 +373,7 @@ public :
    TBranch        *b_segsh_iseg;   //!
    TBranch        *b_segsh_itrk;   //!
 
-   digis(TTree *tree=0);
+   digis(const char* Fn=0);
    virtual ~digis();
 
   int CalculateMissingParameters();
