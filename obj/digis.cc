@@ -125,9 +125,14 @@ int digis::FillHistograms(Hist_t* Hist) {
 
                                         // segment histograms
   for (int i=0; i<nseg; i++) {
+    int panel = (seg_sid[i] >>  7) & 0x7;
+    int plane = (seg_sid[i] >> 10) & 0x3f;
+    int unique_panel = 6*plane+panel;
+
     FillSegmentHistograms(Hist->fSegment[0],i);
     if (seg_nh[i] >= fMinSegNHits) {
       FillSegmentHistograms(Hist->fSegment[1],i);
+      FillSegmentHistograms(Hist->fSegment[unique_panel+10],i);
       if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
         FillSegmentHistograms(Hist->fSegment[2],i);
         if (seg_chi2d[i] <fMaxSegChi2d) {
@@ -283,6 +288,18 @@ int digis::BookHistograms(Hist_t* Hist) {
   book_segment_histset[ 3] = 1;	        // segments with 4+ good hits and chi2d<10 and nghl[i] > 0
   book_segment_histset[ 4] = 1;	        // events with 2 such segments
 
+  book_segment_histset[10] = 1;	        // events with segmentsin panel 0 
+  book_segment_histset[11] = 1;	        // events with segmentsin panel 1
+  book_segment_histset[12] = 1;	        // events with segmentsin panel 2
+  book_segment_histset[13] = 1;	        // events with segmentsin panel 3
+  book_segment_histset[14] = 1;	        // events with segmentsin panel 4
+  book_segment_histset[15] = 1;	        // events with segmentsin panel 5
+  book_segment_histset[16] = 1;	        // events with segmentsin panel 6
+  book_segment_histset[17] = 1;	        // events with segmentsin panel 7
+  book_segment_histset[18] = 1;	        // events with segmentsin panel 8
+  book_segment_histset[19] = 1;	        // events with segmentsin panel 9
+  book_segment_histset[20] = 1;	        // events with segmentsin panel 10
+  book_segment_histset[21] = 1;	        // events with segmentsin panel 11
 
   for (int i=0; i<kNSegmentHistSets; i++) {
     if (book_segment_histset[i] != 0) {

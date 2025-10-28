@@ -350,7 +350,8 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
       ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",ipln,ipnl),0,0,0,r);
 
       if (_debugMode != 0) {
-        print_(std::format("-- combitrans for plane:{:2} panel:{}\n",ipln,ipnl));
+        print_(std::format("-- combitrans for plane:{:2} panel:{} nuX:{:10.5f} nuY:{:10.5f} nZ:{:10.5f}\n",
+                           ipln,ipnl,pnl->vDirection().x(),pnl->vDirection().y(),pnl->wDirection().z()));
         ts->fCombiTrans->Print();
       }
     }

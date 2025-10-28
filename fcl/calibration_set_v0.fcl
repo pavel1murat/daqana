@@ -7,7 +7,7 @@ services.DbService : {
     
     textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-#                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
                  "daqana/calibrations/TrkDelayPanel.txt"    ] ## everything needed
                 
     verbose  : 100
@@ -22,6 +22,7 @@ services.ProditionsService.strawDrift.useDb             : false
 services.ProditionsService.strawPhysics.useDb           : false
 services.ProditionsService.strawResponse.useDb          : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
+services.ProditionsService.trackerPanelMap.useDb        : true
 
 ## :: #include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
 ## services.ProditionsService.trackerPanelMap              : @local::trackerPanelMap

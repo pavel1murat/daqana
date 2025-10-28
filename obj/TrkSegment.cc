@@ -7,8 +7,10 @@
 int TrkSegment::fgDebugMode(0);
 
 //
-double const Point2D::fgVDrift    = 60.e-3;   // mm/ns
-double const TrkSegment::fgRStraw =  2.5;     // mm
+double const Point2D::fgTOffset   = 0. ; // 1.6;       // ns
+double const Point2D::fgVDrift    = 61.3e-3;   // mm/ns
+// double const Point2D::fgVDrift    = 59.e-3;   // mm/ns
+double const TrkSegment::fgRStraw =  2.5;      // mm
 //-----------------------------------------------------------------------------
 TrkSegment::TrkSegment(int Plane, int Panel) {
   Clear();

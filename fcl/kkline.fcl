@@ -1,0 +1,67 @@
+#------------------------------------------------------------------------------
+# this is a clone of a KKLine part of Richie's driftfit...
+#------------------------------------------------------------------------------
+physics.producers.KKLine.ModuleSettings.ParameterConstraints : [0.0,0.2,0.0,0.0,0.0,1e-4]
+physics.producers.KKLine.KKFitSettings.MaxStrawUposBuffer : 200
+physics.producers.KKLine.ModuleSettings.SampleTimeBuffer : 10
+physics.producers.KKLine.KKFitSettings.UseCaloCluster : false
+physics.producers.KKLine.ExtensionSettings.BFieldCorrection: false
+physics.producers.KKLine.ExtensionSettings.MetaIterationSettings : [
+      # annealing temp, strawhit updater algorithms
+      [ 2.0, "CADSHU" ],
+      [ 1.0, "CADSHU" ],
+      [ 0.3, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ],
+      [ 0.0, "CADSHU" ]
+    ]
+physics.producers.KKLine.ExtensionSettings.CADSHUSettings : [
+      # maxdoca, maxderr, minrdrift, maxrdrift, flag, allow, freeze, diag
+      [ 10.0, 20.0, 5.0, 5.0, "TOT:LongVal", "Null:Inactive", "", 1 ],
+      [ 10.0, 20.0, 5.0, 4.0, "TOT:LongVal", "Null:Inactive", "", 1 ],
+      [ 8.0,  16.0, 5.0, 3.0, "TOT:NullDriftVar:LongVal", "Null:Inactive", "", 1 ],
+      [ 8.0,  16.0, 5.0, 3.0, "TOT:NullDriftVar:LongVal", "Null:Inactive", "", 1 ],
+      [ 6.0,  10.0, 2.25, 3.0, "TOT:NullDriftVar:LongVal", "Null:Inactive:Drift", "", 1 ],
+      [ 5.0,  10.0, 2.25, 3.0, "TOT:NullDriftVar:LongVal:DriftDt", "Null:Inactive:Drift", "", 1 ],
+      [ 5.0,  10.0, 2.0, 3.0, "TOT:NullDriftVar:LongVal:DriftDt", "Null:Inactive:Drift", "", 1 ],
+      [ 5.0,  10.0, 1.5, 3.0, "TOT:NullDriftVar:LongVal:DriftDt", "Null:Inactive:Drift", "", 1 ],
+      [ 5.0,  10.0, 1.0, 3.0, "TOT:NullDriftVar:LongVal:DriftDt", "Null:Inactive:Drift", "", 1 ],
+      [ 5.0,  10.0, 0.5, 3.0, "TOT:NullDriftVar:LongVal:DriftDt", "Null:Inactive:Drift", "", 1 ]
+    ]
+physics.producers.KKLine.ExtensionSettings.BkgANNSHUSettings : [
+    ]
+physics.producers.KKLine.ExtensionSettings.DriftANNSHUSettings : [
+    ]
+physics.producers.KKLine.ExtensionSettings.Chi2SHUSettings : [
+    ]
+physics.producers.KKLine.ExtensionSettings.StrawXingUpdaterSettings : [
+      # maxdoca, maxdoca unaveraged, maxdoca error unaveraged,  scale with temp?
+#       [ 10.0, -1.0,  true, 0 ],
+#       [ 5.0,  -1.0,  true, 0 ],
+#       [ 4.0,  -1.0,  true, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ],
+#       [ 4.0,  -1.0, false, 0 ]
+# 
+      [ 10.0, 100.0,  true, 0 ],
+      [ 5.0,  100.0,  true, 0 ],
+      [ 4.0,  100.0,  true, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ],
+      [ 4.0,  100.0, false, 0 ]
+     ]
+# @local::Mu2eKinKal.KKNOEX
+# physics.producers.KKLine.ExtensionSettings : { @table::Mu2eKinKal.KKNOEXT }  ## @local::Mu2eKinKal.CHSEEDEXT
+# physics.producers.KKLine.ExtensionSettings : { @table::Mu2eKinKal.CHSEEDEXT }  ## @local::Mu2eKinKal.CHSEEDEXT

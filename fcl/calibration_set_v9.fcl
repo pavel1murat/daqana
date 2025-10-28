@@ -9,8 +9,8 @@ services.DbService : {
     textFile : [ "trkvst/stationfcl/TrackerStatus.txt",
                  "trkvst/stationfcl/TrackerAlign.txt" ,
                  "trkvst/stationfcl/TrkDelayPanel.txt" ,
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use DB
                  "trkvst/stationfcl/calib107894.txt"   
-#                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
                 ]
                 
     verbose  : 100
@@ -26,6 +26,7 @@ services.ProditionsService.strawElectronics.useDb       : true        ## default
 services.ProditionsService.strawElectronics.verbose     : 10
 services.ProditionsService.alignedTracker.useDb         : true
 services.ProditionsService.trackerStatus.Settings.useDb : true ## false
+services.ProditionsService.trackerPanelMap.useDb        : false ## false
 
 services.ProditionsService.strawResponse.eBins : 2
 services.ProditionsService.strawResponse.eBinWidth : 1.0
@@ -43,5 +44,4 @@ services.ProditionsService.strawResponse.totDriftError : [ 11.10 ]
 ## #include "trkvst/stationfcl/DefaultCalibrations.fcl"
 #include "trkvst/stationfcl/calib107894.fcl"
 
-## :: include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
 ## services.ProditionsService.trackerPanelMap.verbose      : 10

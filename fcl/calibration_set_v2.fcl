@@ -1,4 +1,5 @@
 # -*- mode:tcl -*-
+# V2 still uses the FCL alignment....
 # services.DbService : @local::DbEmpty
 services.DbService : {
     purpose  : EMPTY
@@ -9,7 +10,7 @@ services.DbService : {
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
 #                 "trkvst/stationfcl/TrackerAlign.txt"   ,
                  "daqana/calibrations/TrkAlign_Station_0_10_22.txt"   ,
-#                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
                  "daqana/calibrations/TrkDelayPanel_v3.txt" ]
                 
     verbose  : 100
@@ -24,6 +25,6 @@ services.ProditionsService.strawDrift.useDb             : false
 services.ProditionsService.strawPhysics.useDb           : false
 services.ProditionsService.strawResponse.useDb          : true       ## ??? 
 services.ProditionsService.trackerStatus.Settings.useDb : false
+services.ProditionsService.trackerPanelMap.useDb        : false
 
-## :: include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
 ## services.ProditionsService.trackerPanelMap.verbose      : 10

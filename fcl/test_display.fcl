@@ -1,0 +1,151 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# read output of reconstruction. run event display
+# make sure the combohit collection name passed to the event display
+# is the same as used by the reconstruction
+#------------------------------------------------------------------------------
+BEGIN_PROLOG
+  TRIGGER_PATHS                     : [ p1 ]
+  COMBO_HIT_COLL_TAG @protect_ignore: "makeSH"
+END_PROLOG
+
+#include "Stntuple/fcl/stntuple.fcl"
+# #include "daqana/fcl/calibration_set_v2.fcl"
+# #include "daqana/fcl/calibration_set_v9.fcl"
+#include "daqana/fcl/calibration_set_v3.fcl"
+
+process_name : Display
+
+source       : { module_type : RootInput   }
+
+physics : {
+    producers  : { @table::stntuple.producers 
+        FlagBkgHits : { @table::stntuple.producers.DeltaFinder }
+    }
+    filters    : {
+        @table::stntuple.filters
+        EventIDFilter: { module_type: EventIDFilter }
+    }
+    analyzers  : { @table::stntuple.analyzers }
+
+    p0 : [ makeSD, makeSH ]
+    p1 : [ @sequence::CaloReco.Reco,
+	   @sequence::CaloCluster.Reco,
+	   @sequence::TrkHitReco.PrepareHits   ## [ PBTFSD, makeSH, makePH, FlagBkgHits ] 
+                                               ##  see Offline/TrkHitReco/prolog.fcl
+           , TZClusterFinder
+	  ]
+    
+    p2 : [ EventIDFilter ]
+
+    e1 : [ MuHitDisplay ]
+
+    trigger_paths : [ p2 ]  ## p1 ]
+    out           : [    ]  ## [detectorOutput] # defined in Stntuple/fcl/stntuple.fcl]
+    end_paths     : [ e1 ]  ## , out ]
+}
+#------------------------------------------------------------------------------
+# uncomment the next 2 lines if you want the DST file to be written out
+#-----------------------------------------------------------------------------
+# physics.out                               : [ detectorOutput ]
+# outputs.e1.SelectEvents                   : [ p2 ]
+outputs.detectorOutput.fileName           : "sim.user.display.xxx.000001.art"
+#------------------------------------------------------------------------------
+# uncomment 'primaryParticleTag' line do display more particles
+# uncomment 'rootMacro' line to execute test macro
+# see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org for more details
+#------------------------------------------------------------------------------
+physics.analyzers.MuHitDisplay.primaryParticleTag   : ""
+physics.analyzers.MuHitDisplay.timeClusterCollTag   : "SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.phiClusterCollTag    : "SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.comboHitCollTag      : @local::COMBO_HIT_COLL_TAG    ## "makePH" "FlagBkgHits"
+physics.analyzers.MuHitDisplay.strawHitCollTag      : "makeSH"  ## "FlagBkgHits"
+physics.analyzers.MuHitDisplay.kffCollTag           : "KKLine"  ##
+
+physics.analyzers.MuHitDisplay.visManager.ewLength  : 100000.
+physics.analyzers.MuHitDisplay.visManager.tMax      : 100000.
+physics.analyzers.MuHitDisplay.visManager.minEDep   : -0.0003
+
+physics.analyzers.MuHitDisplay.visManager.evdPanelDebugLevel : 2  ## print panel transform matrices
+
+physics.analyzers.MuHitDisplay.geoManager.bField    : 0.
+# physics.analyzers.MuHitDisplay.THistModule.TModule.interactiveMode : 2
+# physics.analyzers.MuHitDisplay.THistModule.TModule.rootMacro  : "test_display_plot_yz.C"
+
+physics.producers.StrawDigisFromArtdaqFragments.saveWaveforms :  1
+
+# scan 20 events
+
+physics.analyzers.MuHitDisplay.SelectEvents : [ "p2" ]
+physics.filters.EventIDFilter.idsToMatch :
+[
+# supposedly mostly good events
+#  "107995:*:716,1224,1451,1506,1545,1939,2172",
+#  "107995:*:2561,2679,3200,3206,3877,3896,3933,3955,5554,5628,5698,6409,7184,7457,7701,8015,8126,8440"
+# "107995:*:8440"
+
+ # # supposedly bad events
+#  "107995:*:5091,7100,7301,8760,10448,11994,12437,13253,13737,13910,14778,15035,18443,20698"
+
+# good events
+# "107995:1:2561",
+# "107995:1:3885,3896,5030,7701,8440,9947",
+# "107995:1:10143,12366,12917",
+ # "107995:1:13947,14072,17078,17548,20488,21521,23332,23793,24082,30022"
+
+# events with reconstructed tracks
+#------------------------------------------------------------------------------
+# "107995:1:1545,3896,8728,9554,10448",
+# "107995:1:9649"
+# "107995:1:13947,14778,14878,15762,16699,17973,19037",
+#"107995:1:20879,21125,22352,29368,34967,40132,43015,43088,46026,47756,48355,49643",
+# "107995:1:49643"
+# "107995:1:9554"
+# "107995:1:10448"
+# "107995:1:15762"
+# "107995:1:20698"
+ "107995:1:29368"
+# "107995:1:34822"
+# "107995:1:46026"
+# "107995:1:47756"
+# "107995:1:49643"
+# "107995:1:52651"
+
+# events with max N(hits/panel) >= 8
+# "107995:1:1224"
+# , "107995:1:1939"
+#  "107995:1:3955"
+# , "107995:1:5091"
+# , "107995:1:5554"
+# "107995:1:5628"
+#  "107995:1:5698"
+#, "107995:1:7301"
+#, "107995:1:7701"
+#   "107995:1:8728"
+# , "107995:1:9673"
+# , "107995:1:10448"
+# , "107995:1:10495"
+#   "107995:1:11994"
+#,   "107995:1:11998"
+#,   "107995:1:12295"
+#,   "107995:1:12917"
+#,   "107995:1:13253"
+#    "107995:1:13520"
+# ,   "107995:1:13947"
+# ,   "107995:1:14778"
+# ,   "107995:1:15363"
+# ,   "107995:1:15439"
+#     "107995:1:13451"
+# ,   "107995:1:15590"
+# ,   "107995:1:15762"
+# ,   "107995:1:17973"
+# ,   "107995:1:19037"
+ #  "107995:1:437486"            # event with two long segments - many missing hits
+#  "107995:1:8440" 
+]
+
+source.fileNames:
+[
+ "rec.mu2e.trk.vst00s000r010n000.107995_000001.art"
+
+]

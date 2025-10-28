@@ -4,6 +4,12 @@
 // drif velocity as a function of drift radius
 // V in volts, R in cm
 //-----------------------------------------------------------------------------
+#include "TGraph.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TCanvas.h"
+#include "TRandom3.h"
+
 double vdrift_argon_co2(double R, float HV) {
   // Ar:Co2 80:20 from NIMA 340 (1994) 485-490 ; 80:20 - last column
   float data[] {
@@ -104,5 +110,72 @@ int time_vs_distance(double HV) {
     time += dt;
     printf("-- dist:%12.4f time:%12.4f\n",dist,time);
   }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// returns drift time in ns
+//-----------------------------------------------------------------------------
+double drift_time(double R, double HV) {
+
+  double dist(0), time(0);
+  double step = R/100;
+
+  for (int i=0; i<100; i++) {
+    dist += step;
+    double vdr = vdrift_argon_co2(dist, HV);
+    double dt  = step*1e4/vdr; // in ns
+    time      += dt;
+  }
+  return time;
+}
+
+
+//-----------------------------------------------------------------------------
+// preferred solution: R = 61.3*(T+1.6)
+//------------------------------------------------------------------------------
+int test_resolution(int NEvents, double VDrift=60.3, double MinR=0, double MaxR=2500, double HV=1400) {
+
+  TRandom3 rn3;
+
+  TCanvas* c = new TCanvas("c","c",1200,800);
+  c->Divide(2,1);
+  
+  c->cd(1);
+  TH1F* h  = new TH1F("h","h",1000,-5,5);
+  c->cd(2);
+  TH2F* h2 = new TH2F("h2","h2",250,0,2500,500,-2.5,2.5);
+  
+  for (int i=0; i<NEvents; i++) {
+    double dist = MinR+rn3.Rndm()*(MaxR-MinR);   // in um
+    double t1   = dist/VDrift-1.6;
+    double t2   = drift_time(dist*1.e-4,HV);
+    h->Fill(t1-t2);
+    h2->Fill(dist,t1-t2);
+  }
+
+  c->cd(1);
+  h->Draw();
+  
+  c->cd(2);
+  h2->Draw();
+  
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+int plot_v_vs_r(double HV=1400) {
+
+  int const npt(100);
+  double r[npt], v[npt];
+  for (int i=0; i<100; i++) {
+    r[i] = 0.0025*i;
+    v[i] = vdrift_argon_co2(r[i], HV);
+  }
+
+  TGraph* gr = new TGraph(npt,r,v);
+  gr->SetTitle("Vdrift vs R(mm)");
+  gr->Draw("ALP");
   return 0;
 }

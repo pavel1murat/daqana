@@ -43,6 +43,7 @@ struct Point2D {
   double fR;                            // updated 
 
   static double const fgVDrift;
+  static double const fgTOffset;
 
   Point2D(int Sid, int Mask, double X, double Y, double Time, double TProp, double TCorr, int Sign = 0) {
     sid        = Sid;
@@ -156,7 +157,7 @@ public:
     double t0 = HitT0;
     if (t0 > 1.e10) t0 = T0();
 
-    double t    = Pt->t-t0;
+    double t    = Pt->t-t0 + Point2D::fgTOffset;
     return t;
   }
 
