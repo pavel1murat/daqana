@@ -3,3 +3,8 @@
 *.pcm
 *.so
 *.d
+.#*
+*#
+*/*/__pycache__/*
+*.pyc
+*.save
