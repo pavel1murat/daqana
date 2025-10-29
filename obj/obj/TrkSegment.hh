@@ -82,7 +82,7 @@ public:
 
   static double const  fgRStraw;
 
-  const mu2e::Panel*   fTrkPanel;
+  mu2e::Panel*         fTrkPanel;
   int                  fMask;           // 0: OK
   int                  fPlane;
   int                  fPanel;

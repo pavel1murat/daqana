@@ -139,11 +139,13 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
         fNTransitions += 1;
                                         // z becomes Y in points
-        if (last_hit->pos().z() > hit->pos().z()) {
+        double dz = (last_hit->pos().z()-hit->pos().z())*fTrkPanel->dsToPanel().rotation().zz();
+        //        if (last_hit->pos().z() > hit->pos().z()) {
+        if (dz > 0) {
           drs[last_i]      = -1; // those are uint16_t, so use sign+2
           drs[i]           =  1;
         }
-        else if (last_hit->pos().z() < hit->pos().z()) {
+        else {
           drs[last_i]      =  1;
           drs[i]           = -1;
         }
@@ -278,34 +280,6 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   return rc;
 }
 
-//-----------------------------------------------------------------------------
-void TrkSegment::print(const char* Message, std::ostream& Stream) {
-
-  Stream << "--------------------------------------------- Segment parameters:";
-  if (Message) Stream << " " << Message;
-  Stream << std::endl;
-                                        // no points, if N(hits) < 4...
-  int nhits = hits.size();
-  int npt   = points.size();
-
-  Stream << std::format(" plane:{:2} panel:{} nhits:{} fNGoodHits:{} n_transitions:{} seed hits: {}:{} good hits/layer: {:2}:{:2} misses/layer: {:2}{:2} Npoints:{}\n",
-                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1],npt)
-         << std::format(" Parameters: DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
-                        fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
-
-  Stream << std::format(" i   sid   mask       x      y        t        time   tprop tdrift   radius drs      rho  fixed\n");
-  Stream <<             "-----------------------------------------------------------------------------------------------\n" ;
-  double t0 = fPar.T0();
-  for (int i=0; i<npt; i++) {
-    Point2D* pt = &points[i];
-    Stream << std::format("{:2d} 0x{:04x} 0x{:04x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:5d}",
-                          i,pt->sid,pt->fMask,pt->x,pt->y,pt->t,pt->time,pt->tprop,
-                          DriftTime(pt,t0),R(pt,t0),pt->drs,Rho(pt,&fPar),pt->sign_fixed)
-           << std::endl;
-  }
-}
-
-
 //------------------------------------------------------------------------------
 // in general, the worst hit could be not the one which has the largest chi2
 //-----------------------------------------------------------------------------
@@ -403,6 +377,8 @@ int TrkSegment::DefineTangentLine() {
   double dyr   = dy/dr;    
   double nx    = -alpdr*dyr-dxr*sqrt(1-alpdr*alpdr);
   double ny    =  alpdr*dxr-dyr*sqrt(1-alpdr*alpdr);
+  // double nx    =  alpdr*dxr-dyr*sqrt(1-alpdr*alpdr);
+  // double ny    =  alpdr*dyr+dxr*sqrt(1-alpdr*alpdr);
 
   if (nx < 0) {
                                         // force nx > 0
@@ -432,4 +408,31 @@ int TrkSegment::DefineTangentLine() {
                              __func__,rc,fTangentLine.a,fTangentLine.b,fTangentLine.nx,fTangentLine.ny);
   }
   return rc;
+}
+
+//-----------------------------------------------------------------------------
+void TrkSegment::print(const char* Message, std::ostream& Stream) {
+
+  Stream << "--------------------------------------------- Segment parameters:";
+  if (Message) Stream << " " << Message;
+  Stream << std::endl;
+                                        // no points, if N(hits) < 4...
+  int nhits = hits.size();
+  int npt   = points.size();
+
+  Stream << std::format(" plane:{:2} panel:{} nhits:{} fNGoodHits:{} n_transitions:{} seed hits: {}:{} good hits/layer: {:2}:{:2} misses/layer: {:2}{:2} Npoints:{}\n",
+                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1],npt)
+         << std::format(" Parameters: DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
+                        fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
+
+  Stream << std::format(" i   sid   mask       x      y        t     time      tprop  tdrift  radius drs      rho  fixed\n");
+  Stream <<             "-----------------------------------------------------------------------------------------------\n" ;
+  double t0 = fPar.T0();
+  for (int i=0; i<npt; i++) {
+    Point2D* pt = &points[i];
+    Stream << std::format("{:2d} 0x{:04x} 0x{:04x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:5d}",
+                          i,pt->sid,pt->fMask,pt->x,pt->y,pt->t,pt->time,pt->tprop,
+                          DriftTime(pt,t0),R(pt,t0),pt->drs,Rho(pt,&fPar),pt->sign_fixed)
+           << std::endl;
+  }
 }
