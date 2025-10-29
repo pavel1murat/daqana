@@ -318,41 +318,11 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 //-----------------------------------------------------------------------------
       const mu2e::Plane* pln = &_tracker->getPlane(ipln);
       const mu2e::Panel* pnl = &pln->getPanel(ipnl);
-      ts->trkPanel = pnl;
-      //      mu2e::StrawId      pid = pnl->id();
-  
-      double phiy   = atan2(pnl->vDirection().y(),pnl->vDirection().x())*180./M_PI;
-      double phix   = phiy-90;
-      // double phix   = atan2(pnl->straw0MidPoint().y(),pnl->straw0MidPoint().x())*180./M_PI;
-      // double phiy   = phix+90;
-      double phiz   =  0;
-      double thetax = 90;
-      double thetay = 90;
-      double thetaz =  0;
-      if (pnl->wDirection().z() < 0) {
-        phix   = phix+180;
-        // phiy   = phiy+180;
-      }
-      // if ((ipln % 2) == 1) {
-      //   if ((ipnl % 2) == 0) {
-      //     phix   = phix+180;
-      //     phiy   = phiy+180;
-      //   }
-      // }
-      // else {
-      //   if ((ipnl % 2) == 1) {
-      //     phix   = phix+180;
-      //     phiy   = phiy+180;
-      //   }
-      // }
-
-      TGeoRotation* r = new TGeoRotation  ("a",thetax,phix,thetay,phiy,thetaz,phiz);
-      ts->fCombiTrans = new TGeoCombiTrans(Form("plane_%02i_%i",ipln,ipnl),0,0,0,r);
+      ts->fTrkPanel = pnl;
 
       if (_debugMode != 0) {
-        print_(std::format("-- combitrans for plane:{:2} panel:{} nuX:{:10.5f} nuY:{:10.5f} nZ:{:10.5f}\n",
-                           ipln,ipnl,pnl->vDirection().x(),pnl->vDirection().y(),pnl->wDirection().z()));
-        ts->fCombiTrans->Print();
+        print_(std::format("-- HepTransform for plane:{:2}:{}\n",ipln,ipnl));
+        std::cout << ts->fTrkPanel->dsToPanel() << std::endl;
       }
     }
   }
@@ -671,7 +641,6 @@ int mu2e::MakeDigiNtuple::fillCH() {
     const mu2e::ComboHit* ch = &_chc->at(i);
     int pln = ch->strawId().plane();
     int pnl = ch->strawId().panel();
-    //    const TrkPanelMap_t* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     DaqComboHit* nt_ch = new ((*_event->ch)[i]) DaqComboHit();
@@ -971,16 +940,11 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       ROOT::Math::XYZVector  dir = kspar->momentum3(nt_ts->t0);
       ROOT::Math::XYZTVector pos = kspar->position4(nt_ts->t0);
 
-      double dirm[3], dirl[3], posm[3], posl[3];
-      dirm[0] = dir.x();
-      dirm[1] = dir.y();
-      dirm[2] = dir.z();
-      ts->fCombiTrans->MasterToLocalVect(dirm, dirl);
+      CLHEP::Hep3Vector dirm(dir.x(),dir.y(),dir.z());
+      CLHEP::Hep3Vector dirl = ts->fTrkPanel->dsToPanel()*dirm;
 
-      posm[0] = pos.x();
-      posm[1] = pos.y();
-      posm[2] = pos.z();
-      ts->fCombiTrans->MasterToLocalVect(posm, posl);
+      CLHEP::Hep3Vector posm(pos.x(),pos.y(),pos.z());
+      CLHEP::Hep3Vector posl = ts->fTrkPanel->dsToPanel()*posm;
 
       nt_ts->y0t     = 0;                                     // at z=Z(mid panel) - to be figured
       nt_ts->dzdyt   = dirl[2]/dirl[1];                       // dzdy of the track (local coord system)
@@ -1007,17 +971,17 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       int ihh            = nsegsh+ih;
       nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();
 
-      nt_tsh->sid     = ch->strawId().asUint16();                          // hit id = sid | (segment #) << 16 | (track #) << 24
-      nt_tsh->zface   = tpm->zface();                        // z-ordered face ... can be deduced from sid...
-      nt_tsh->mnid    = tpm->mnid();                         // Minnesota panel ID 
-      nt_tsh->time    = sh->time(mu2e::StrawEnd::cal);   // 0:CAL
+      nt_tsh->sid     = ch->strawId().asUint16();      // hit id = sid | (segment #) << 16 | (track #) << 24
+      nt_tsh->zface   = tpm->zface();                  // z-ordered face ... can be deduced from sid...
+      nt_tsh->mnid    = tpm->mnid();                   // Minnesota panel ID 
+      nt_tsh->time    = sh->time(mu2e::StrawEnd::cal); // 0:CAL
       nt_tsh->dt      = sh->dt();      // cal-hv
       nt_tsh->tot0    = sh->TOT(mu2e::StrawEnd::cal);
       nt_tsh->tot1    = sh->TOT(mu2e::StrawEnd::hv );
       nt_tsh->edep    = ch->energyDep();
 
-      nt_tsh->rdrift  = ts->R(pt);            // drift distance
-      nt_tsh->doca    = ts->Rho(pt);              // rdrift-(track-wire distance) (assume signed, double check)
+      nt_tsh->rdrift  = ts->R(pt);               // drift distance
+      nt_tsh->doca    = ts->Rho(pt);             // rdrift-(track-wire distance) (assume signed, double check)
       double sw_dist  = ts->SwDist(pt);
       nt_tsh->drho    = fabs(sw_dist)-fabs(nt_tsh->rdrift); // unsigned residual
 

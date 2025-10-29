@@ -1,0 +1,19 @@
+// -*- mode: c++ -*-
+//-----------------------------------------------------------------------------
+// test if conversions of 130 MeV photons are reconstructable at all in full field
+// at all
+// converter thickness 100 um
+//-----------------------------------------------------------------------------
+#include "pipenu/common/geom_baseline.txt"
+#include "pipenu/common/degrader_v04.txt"
+//
+bool   degrader.build                 =  true;  // DEFAULT: false
+double degrader.rotation              =  60.0;  // 60:in the beam, 120: out of beam (degrees)
+
+double degrader.filter.halfLength     =  6.35; // full thickness of half-inch, the old default (12 --> 24 mm)
+
+double degrader.converter.rIn         = 269.9;
+double degrader.converter.rOut        = 270.0;
+double degrader.converter.halfLength  =  20.0;
+double degrader.converter.dz          =   0.0;  // this is a negative shift, zero by default
+

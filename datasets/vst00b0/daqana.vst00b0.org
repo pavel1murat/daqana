@@ -1,0 +1,203 @@
+f# -*- mode:org -*-
+#+startup:fold
+  *rpc14b0* : particle gun, 129.4 MeV photons converting at R=285 mm, nominal field
+  CH2-only degrader:
+  the simulated thickness of the Au foil is 100 um
+  start from pi- stops in CH2
+# ----------------------------------------------------------------------------------------------------
+ - directory       : file:./
+ - configuration   : [[file:./init_project.py][init_project.py]]
+ - grid input      : file:../../../tmp/pipenu/fcl
+ - grid output     : file:/pnfs/mu2e/scratch/users/murat/workflow
+ - output_location : file:/exp/mu2e/data/projects/pipenu
+ - log files       : file:/exp/mu2e/data/projects/pipenu/log::/rpc14b0/
+ - stntuples       : file:/exp/mu2e/data/projects/pipenu/stntuple
+ - catalogs        : file:./catalog
+ - summary         : [[file:../../doc/][../../doc/]]
+ - fcl             : 
+# ----------------------------------------------------------------------------------------------------
+
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+| job          | input dsid      | Nevents | Resampling | Nfiles | Nfiles | Njobs | output_dsid     | Nfiles | Nevents | Nev   | upload | comments |
+|              |                 |         |     factor |        |  / job |       |                 |        |         | /file |        |          |
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+| s3_gen_sim   | rpc14b0s21r0000 | 5000000 |          1 |      1 |      1 |     1 | rpc14b0s31r0000 |        |  166325 |       |        |          |
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+| s4_digi_trig | rpc14b0s31r0000 |  167138 |          1 |      1 |      1 |     1 | rpc14b0s41r0000 |      1 |    6200 |       |        |          |
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+| s5_reco_kk   | rpc14b0s41r0000 |    6200 |          1 |      1 |      1 |     1 | rpc14b0s51r0100 |      1 |    6200 |       |        |          |
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+| s5_stn_kk    | rpc14b0s51r0100 |    6200 |          1 |      1 |      1 |     1 | rpc14b0s51r0100 |      1 |    6200 |       |        |          |
+|--------------+-----------------+---------+------------+--------+--------+-------+-----------------+--------+---------+-------+--------+----------|
+
+* ---------------------------------------------------------------------------------------------------------------
+* data formats                                                                                                
+* ---------------------------------------------------------------------------------------------------------------
+* dts.user.rpc14b0s41r0000.pipenu.art                                                                         
+murat@mu2ebuild01:/exp/mu2e/app/users/murat/muse_002>mu2e -c Offline/Print/fcl/dumpDataProducts.fcl -s /exp/mu2e/data/projects/pipenu/datasets/rpc14b0s31r0000/murat/dts.murat.rpc14b0s31r0000.pipenu.001210_00000000.art 
+   ************************** Mu2e Offline **************************
+     art v3_14_03    root v6_28_10a    KinKal v02_05_00b
+     build  /exp/mu2e/app/users/murat/muse_002
+     build  sl7-prof-e28-p055    03/24/24 10:06:55
+   ******************************************************************
+24-Mar-2024 10:29:18 CDT  Initiating request to open input file "/exp/mu2e/data/projects/pipenu/datasets/rpc14b0s31r0000/murat/dts.murat.rpc14b0s31r0000.pipenu.001210_00000000.art"
+24-Mar-2024 10:29:19 CDT  Opened input file "/exp/mu2e/data/projects/pipenu/datasets/rpc14b0s31r0000/murat/dts.murat.rpc14b0s31r0000.pipenu.001210_00000000.art"
+Begin processing the 1st record. run: 1210 subRun: 0 event: 1 at 24-Mar-2024 10:29:20 CDT
+Found 13 data products in this Event
+Data products: 
+                                Friendly Class Name         Module Label    Instance Name  Process Name     Product ID
+                                art::TriggerResults       TriggerResults                        Primary   295524022
+                                 mu2e::GenParticles   compressDetStepMCs                        Primary   828754613
+                              mu2e::CaloShowerSteps   compressDetStepMCs                        Primary  1068845632
+mu2e::SimParticleart::Ptrmu2e::MCTrajectorystd::map   compressDetStepMCs                        Primary  1347746658
+                                mu2e::SimParticlemv   compressDetStepMCs                        Primary  1654144812
+                                 mu2e::StepPointMCs   compressDetStepMCs   stoppingtarget       Primary  1793089545
+                                     mu2e::StatusG4                g4run                        Primary  1820700010
+                                 mu2e::StepPointMCs   compressDetStepMCs  virtualdetector       Primary  2163254307
+                                     mu2e::CrvSteps   compressDetStepMCs                        Primary  2800030113
+                              mu2e::PrimaryParticle        FindMCPrimary                        Primary  3038438559
+                                mu2e::StrawGasSteps   compressDetStepMCs                        Primary  3564764404
+                                 mu2e::StepPointMCs   compressDetStepMCs   protonabsorber       Primary  3893820483
+                                      art::EventIDs  TargetStopResampler                        Primary  4151855573
+
+Found 1 data products in this SubRun
+Data products: 
+Friendly Class Name  Module Label  Instance Name  Process Name     Product ID
+mu2e::GenEventCount    genCounter                      Primary  2659886210
+
+Found 0 data products in this Run
+24-Mar-2024 10:29:21 CDT  Closed input file "/exp/mu2e/data/projects/pipenu/datasets/rpc14b0s31r0000/murat/dts.murat.rpc14b0s31r0000.pipenu.001210_00000000.art"
+Art has completed and will exit with status 0.
+* dig.murat.rpc14b0s41r0000.pipenu.art                                                                        
+murat@mu2ebuild02:/exp/mu2e/app/users/murat/muse_al9>mu2e -c Offline/Print/fcl/dumpDataProducts.fcl -s results/2024-06-06-08-42.s4_digi_trig_rpc14b0.mu2ebuild02.3736308/dig.mu2e.rpc14b0s41r0000.pipenu.001210_00000000.art 
+   ************************** Mu2e Offline **************************
+     art v3_14_03    root v6_28_10a    KinKal v02_05_00b
+     build  /exp/mu2e/app/users/murat/muse_al9
+     build  al9-debug-e28-p056    06/06/24 08:27:08
+   ******************************************************************
+07-Jun-2024 09:45:19 CDT  Initiating request to open input file "results/2024-06-06-08-42.s4_digi_trig_rpc14b0.mu2ebuild02.3736308/dig.mu2e.rpc14b0s41r0000.pipenu.001210_00000000.art"
+07-Jun-2024 09:45:20 CDT  Opened input file "results/2024-06-06-08-42.s4_digi_trig_rpc14b0.mu2ebuild02.3736308/dig.mu2e.rpc14b0s41r0000.pipenu.001210_00000000.art"
+Begin processing the 1st record. run: 1210 subRun: 0 event: 4 at 07-Jun-2024 09:45:21 CDT
+Found 25 data products in this Event
+Data products: 
+                                Friendly Class Name     Module Label    Instance Name  Process Name     Product ID
+                                art::TriggerResults   TriggerResults                        Primary   295524022
+                            mu2e::ProtonBunchTimeMC      EWMProducer                         S4Digi   308577467
+                              mu2e::CaloShowerSteps  compressDigiMCs                         S4Digi   609364269
+mu2e::SimParticleart::Ptrmu2e::MCTrajectorystd::map  compressDigiMCs                         S4Digi  1053189294
+                                mu2e::SimParticlemv  compressDigiMCs                         S4Digi  1105776846
+                                 mu2e::StepPointMCs  compressDigiMCs  virtualdetector        S4Digi  1340925977
+                                 mu2e::StepPointMCs  compressDigiMCs   protonabsorber        S4Digi  1515516505
+                                mu2e::CaloShowerROs  compressDigiMCs                         S4Digi  1719572767
+                                     mu2e::StatusG4            g4run                        Primary  1820700010
+                            mu2e::EventWindowMarker      EWMProducer                         S4Digi  2030615861
+                                   mu2e::StrawDigis           makeSD                         S4Digi  2166256422
+                              mu2e::ProtonBunchTime      EWMProducer                         S4Digi  2352589440
+                                   mu2e::CrvDigiMCs  compressDigiMCs                         S4Digi  2357687454
+                                art::TriggerResults   TriggerResults                         S4Digi  2505664162
+                                 mu2e::GenParticles  compressDigiMCs                         S4Digi  2558710106
+                              mu2e::PrimaryParticle  compressDigiMCs                         S4Digi  2622908547
+                                mu2e::StrawGasSteps  compressDigiMCs                         S4Digi  2678734716
+                                 mu2e::StepPointMCs  compressDigiMCs   stoppingtarget        S4Digi  2755426575
+                         mu2e::ProtonBunchIntensity           PBISim                         S4Digi  3015531818
+                                    mu2e::CaloDigis    CaloDigiMaker                         S4Digi  3264368242
+                        mu2e::StrawDigiADCWaveforms           makeSD                         S4Digi  3743567522
+                               mu2e::CaloShowerSims  compressDigiMCs                         S4Digi  3795473155
+                                     mu2e::CrvSteps  compressDigiMCs                         S4Digi  3827785517
+                                 mu2e::StrawDigiMCs  compressDigiMCs                         S4Digi  3833959220
+                                     mu2e::CrvDigis          CrvDigi                         S4Digi  4038702950
+
+Found 2 data products in this SubRun
+Data products: 
+       Friendly Class Name  Module Label  Instance Name  Process Name     Product ID
+mu2e::ProtonBunchIntensity        PBISim  MeanIntensity        S4Digi  2388004991
+       mu2e::GenEventCount    genCounter                      Primary  2659886210
+
+Found 0 data products in this Run
+07-Jun-2024 09:45:21 CDT  Closed input file "results/2024-06-06-08-42.s4_digi_trig_rpc14b0.mu2ebuild02.3736308/dig.mu2e.rpc14b0s41r0000.pipenu.001210_00000000.art"
+Art has completed and will exit with status 0.
+* mcs.mu2e.rpc14b0s54r0100.pipenu.art                                                                         
+murat@mu2ebuild02:/exp/mu2e/app/users/murat/pbar2m02>mu2e -c Offline/Print/fcl/dumpDataProducts.fcl results/2024-09-13-15-47.s5_reco_kk_rpc14b0.mu2ebuild02.1696880/mcs.user.rpc14b0s51r0001.pipenu.001210_00000000.art 
+   ************************** Mu2e Offline **************************
+     art v3_14_03    root v6_30_04    KinKal v02_05_00b
+     build  /exp/mu2e/app/users/murat/pbar2m02
+     build  al9-debug-e28-p057    09/12/24 21:38:56
+   ******************************************************************
+13-Sep-2024 15:51:46 CDT  Initiating request to open input file "results/2024-09-13-15-47.s5_reco_kk_rpc14b0.mu2ebuild02.1696880/mcs.user.rpc14b0s51r0001.pipenu.001210_00000000.art"
+13-Sep-2024 15:51:46 CDT  Opened input file "results/2024-09-13-15-47.s5_reco_kk_rpc14b0.mu2ebuild02.1696880/mcs.user.rpc14b0s51r0001.pipenu.001210_00000000.art"
+Begin processing the 1st record. run: 1210 subRun: 0 event: 2 at 13-Sep-2024 15:51:48 CDT
+Found 59 data products in this Event
+Data products: 
+                                Friendly Class Name           Module Label    Instance Name  Process Name     Product ID
+                                art::TriggerResults         TriggerResults                        Primary   295524022
+                            mu2e::ProtonBunchTimeMC            EWMProducer                         S4Digi   308577467
+                                   mu2e::HelixSeeds          HelixFinderDe         Positive        S5Reco   354380613
+                                 mu2e::TimeClusters            FlagBkgHits                         S5Reco   372647698
+                                 mu2e::TimeClusters        TZClusterFinder                         S5Reco   426524433
+                                 mu2e::TimeClusters      CalTimePeakFinder                         S5Reco   433942212
+                              mu2e::CaloShowerSteps        compressDigiMCs                         S4Digi   609364269
+                           mu2e::ComboHitCollection            FlagBkgHits                         S5Reco   670200675
+                                   mu2e::HelixSeeds       CalHelixFinderDe         Negative        S5Reco   934987395
+                                 mu2e::SurfaceSteps        compressDigiMCs                         S4Digi   969546544
+mu2e::SimParticleart::Ptrmu2e::MCTrajectorystd::map        compressDigiMCs                         S4Digi  1053189294
+                                   mu2e::HelixSeeds                  MHDeM                         S5Reco  1092177889
+                                mu2e::SimParticlemv        compressDigiMCs                         S4Digi  1105776846
+                                mu2e::CaloRecoDigis      CaloRecoDigiMaker                         S5Reco  1153742571
+                                     mu2e::KalSeeds              KKDeMHPar                         S5Reco  1201493993
+                                 mu2e::TimeClusters                  MHDeM                         S5Reco  1288493691
+                                     mu2e::CaloHits           CaloHitMaker                         S5Reco  1338955140
+                                 mu2e::StepPointMCs        compressDigiMCs  virtualdetector        S4Digi  1340925977
+                                 mu2e::StepPointMCs        compressDigiMCs   protonabsorber        S4Digi  1515516505
+                           mu2e::ComboHitCollection                 makeSH                         S5Reco  1685887312
+                                mu2e::CaloShowerROs        compressDigiMCs                         S4Digi  1719572767
+                                     mu2e::StatusG4                  g4run                        Primary  1820700010
+                           mu2e::ComboHitCollection            FlagBkgHits        StrawHits        S5Reco  1932755004
+                     mu2e::IntensityInfoTimeCluster            FlagBkgHits                         S5Reco  1933173690
+                           mu2e::ComboHitCollection                makeSTH                         S5Reco  2020601002
+                            mu2e::EventWindowMarker            EWMProducer                         S4Digi  2030615861
+                                   mu2e::StrawDigis                 makeSD                         S4Digi  2166256422
+                              mu2e::ProtonBunchTime                 PBTFSD                         S5Reco  2328122442
+                              mu2e::ProtonBunchTime            EWMProducer                         S4Digi  2352589440
+                                   mu2e::CrvDigiMCs        compressDigiMCs                         S4Digi  2357687454
+                            mu2e::CaloProtoClusters  CaloProtoClusterMaker             main        S5Reco  2375731718
+                                   mu2e::HelixSeeds          HelixFinderDe         Negative        S5Reco  2443755132
+                                   mu2e::HelixSeeds                  MHDeP                         S5Reco  2471052729
+                                art::TriggerResults         TriggerResults                         S4Digi  2505664162
+                                 mu2e::TimeClusters             MHFinderDe                         S5Reco  2507134218
+                                 mu2e::CaloClusters       CaloClusterMaker                         S5Reco  2520950669
+                                 mu2e::GenParticles        compressDigiMCs                         S4Digi  2558710106
+                              mu2e::PrimaryParticle        compressDigiMCs                         S4Digi  2622908547
+                                 mu2e::TimeClusters                  MHDeP                         S5Reco  2661077027
+                                mu2e::StrawGasSteps        compressDigiMCs                         S4Digi  2678734716
+                     mu2e::IntensityInfoTrackerHits                 makeSH                         S5Reco  2719782748
+                                 mu2e::StepPointMCs        compressDigiMCs   stoppingtarget        S4Digi  2755426575
+                                art::TriggerResults         TriggerResults                         S5Reco  2854250439
+                                   mu2e::HelixSeeds       CalHelixFinderDe         Positive        S5Reco  3003978682
+                         mu2e::ProtonBunchIntensity                 PBISim                         S4Digi  3015531818
+                              mu2e::PrimaryParticle          FindMCPrimary                        Primary  3038438559
+                                   mu2e::HelixSeeds             MHFinderDe                         S5Reco  3131798203
+                                    mu2e::StrawHits                 makeSH                         S5Reco  3150302477
+                     mu2e::IntensityInfoTimeCluster        TZClusterFinder                         S5Reco  3176511871
+         mu2e::HelixSeedmu2e::KalSeedvoidart::Assns              KKDeMHPar                         S5Reco  3186089484
+                                    mu2e::CaloDigis          CaloDigiMaker                         S4Digi  3264368242
+                            mu2e::CaloProtoClusters  CaloProtoClusterMaker            split        S5Reco  3512963609
+                        mu2e::StrawDigiADCWaveforms                 makeSD                         S4Digi  3743567522
+                               mu2e::CaloShowerSims        compressDigiMCs                         S4Digi  3795473155
+                                     mu2e::CrvSteps        compressDigiMCs                         S4Digi  3827785517
+                                 mu2e::StrawDigiMCs        compressDigiMCs                         S4Digi  3833959220
+                                     mu2e::CrvDigis                CrvDigi                         S4Digi  4038702950
+                                      art::EventIDs    TargetStopResampler                        Primary  4151855573
+                           mu2e::ComboHitCollection                 makePH                         S5Reco  4255055697
+
+Found 2 data products in this SubRun
+Data products: 
+       Friendly Class Name  Module Label  Instance Name  Process Name     Product ID
+mu2e::ProtonBunchIntensity        PBISim  MeanIntensity        S4Digi  2388004991
+       mu2e::GenEventCount    genCounter                      Primary  2659886210
+
+Found 0 data products in this Run
+13-Sep-2024 15:51:48 CDT  Closed input file "results/2024-09-13-15-47.s5_reco_kk_rpc14b0.mu2ebuild02.1696880/mcs.user.rpc14b0s51r0001.pipenu.001210_00000000.art"
+Art has completed and will exit with status 0.
+* ---------------------------------------------------------------------------------------------------------------
+* back to summary: [[file:../../doc/dataset_summary.org][pipenu/doc/dataset_summary.org]]
+* ---------------------------------------------------------------------------------------------------------------

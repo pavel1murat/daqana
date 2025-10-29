@@ -16,14 +16,12 @@ TrkSegment::TrkSegment(int Plane, int Panel) {
   Clear();
   fPlane      = Plane;
   fPanel      = Panel;
-  fCombiTrans = nullptr; // geometry - to be initialized just once
-  trkPanel    = nullptr;
+  //  fCombiTrans = nullptr; // geometry - to be initialized just once
+  fTrkPanel    = nullptr;
 }
 
 //-----------------------------------------------------------------------------
 void TrkSegment::Clear(){
-  // trkPanel    = nullptr;
-  // fCombiTrans = nullptr;
   fMask       = 0;
   fIhit[0]    = -1;
   fIhit[1]    = -1;
@@ -185,7 +183,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   if (fgDebugMode != 0) {
     std::cout << std::format("fIhit[0]:{:2d} fIhit[1]:{:2d} ngh: {} {} miss: {} {}\n",
                              fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1]);
-    fCombiTrans->Print();
+    //    fCombiTrans->Print();
   }
 //-----------------------------------------------------------------------------
 // add Point2D's :
@@ -206,11 +204,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   for (int i=0; i<nhits; i++) {
     const mu2e::ComboHit* ch = hits[i];
 
-    double posm[3], posl[3];
-    posm[0] = ch->pos().x();
-    posm[1] = ch->pos().y();
-    posm[2] = ch->pos().z();
-    fCombiTrans->MasterToLocalVect(posm, posl);
+    CLHEP::Hep3Vector posl = fTrkPanel->dsToPanel()*ch->posCLHEP();
 //-----------------------------------------------------------------------------
 // points have coordinates in the local coordinate system of the panel
 // add all hits, including flagged ones - those will not be used in the fit

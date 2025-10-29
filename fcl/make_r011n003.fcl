@@ -10,7 +10,7 @@
 #include "Offline/fcl/standardServices.fcl"
 
 #include "Offline/DAQ/fcl/prolog.fcl"
-#include "Offline/DAQ/fcl/panel_map.fcl"
+## #include "Offline/DAQ/fcl/panel_map.fcl"
 
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
@@ -61,28 +61,6 @@ physics : {
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
-        
-        makePH : { @table::TrkHitReco.producers.makePH
-            ComboHitCollection    : "makeSH"
-            EventWindowMarker     : "EWMProducer"
-            StrawHitSelectionBits : [ ]                 ## "EnergySelection", "TimeSelection", "RadiusSelection"]
-            StrawHitMask          : ["Dead"]
-            MaxDt                 : 45 # ns
-            UseTOT                : false               ## true
-            MaxWireDistDiffPull   : 10.                 ## 5.0
-            MaxDS                 : 10                  ## 3
-            UError                : 20.                 ## 10.0 # mm
-            MinimumTime           : 0                   ## 410.0 # ns
-            MaximumTime           : 300000              ## 1700.0 # ns
-            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
-            MaximumEnergy         : 0.006               ## 0.0045 # MeV
-            MinimumRadius         : 300.                ## 380.0 # mm
-            MaximumRadius         : 1000.               ## 700.0 # mm
-            MinimumNHits          : 1
-            MaximumNHits          : 1                   ## 8
-            CheckWres             : false               ## true
-            Unsorted              : false               ## VST data are readout by panel
-        }
         
         SimpleTimeCluster : { @table::CosmicReco.producers.SimpleTimeCluster
             HitNonNoiseSelectionBits : ["EnergySelection"]

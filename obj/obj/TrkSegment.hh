@@ -3,7 +3,6 @@
 #include <format>
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/TrackerGeom/inc/Panel.hh"
-#include "TGeoMatrix.h"
 
 #include "daqana/obj/ComboHitData_t.hh"
 
@@ -83,7 +82,7 @@ public:
 
   static double const  fgRStraw;
 
-  const mu2e::Panel*   trkPanel;
+  const mu2e::Panel*   fTrkPanel;
   int                  fMask;           // 0: OK
   int                  fPlane;
   int                  fPanel;
@@ -91,7 +90,6 @@ public:
   int                  fNGoodHits;                  // total number of good hits
   int                  fNghl[2];                    // # good hits in each layer
   int                  fNmhl[2];                    // # of straws w/o hits in each layer
-  TGeoCombiTrans*      fCombiTrans;                 // global to local transform
   std::vector<const mu2e::ComboHit*> hits;          // initialization (from a time cluster) in the ntuple making code
   double               fXMean;
   double               fYMean;
@@ -106,7 +104,7 @@ public:
   static int           fgDebugMode;
 
   TrkSegment(int Plane = -1, int Panel = -1);
-  ~TrkSegment() { if (fCombiTrans) delete fCombiTrans ; }
+  ~TrkSegment() { }
 
   void Clear();
 
@@ -162,9 +160,18 @@ public:
   }
 
   double  R(const Point2D* Pt, double T0=1.e12)  const {
+    static int nerr(0), last_printed(0), nprinted(0), step(1);
     double r    = DriftTime(Pt,T0)*Point2D::fgVDrift;
     if (r < 0) {
-      std::cout << ">>> ERROR: negative radius: point:" << " r:" << r << std::endl;
+      nerr++;
+      if (nerr-last_printed >= step) {
+        std::cout << ">>> ERROR: nerr:" << std::setw(14) << nerr <<" negative radius: point:" << " r:" << r << std::endl;
+        nprinted++;
+      }
+      if (nprinted > 10) {
+        step      = step*2;
+        nprinted  = 0;
+      }
       r = 0;
     }
     return r;
