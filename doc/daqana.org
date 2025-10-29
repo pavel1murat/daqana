@@ -1,6 +1,6 @@
 #+startup:fold -*- buffer-read-only:t -*-
 * ------------------------------------------------------------------------------
-* setup in the spack-based environment                                           
+* setup in the spack-based environment                                       
 #+begin_src
 pushd spack-repos
 git clone https://github.com/pavel1murat/spack_packages murat-spack
@@ -25,15 +25,15 @@ mu2e -c daqana/fcl/hex_dump.fcl -s your_file -n 10
 * ROC simulation                                                             
 - add to rootlogon.C (needs libStntuple_loop.so)
 - can used gh1 and friends to plot:
-#+begin_src  
+#+begin_src
 gSystem->Load("$MUSE_BUILD_DIR/daqana/lib/libdaqana_ana.so");
 rs = new TRocSim("a",281)
 rs->Run(100000)
 rs->SaveHistograms("rocsim.000281.hist")
 gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
 #+end_src
-* TODO make digi ntuples 
-* ntuple datasets and the dataset naming (MakeDigiNtuple)           
+* TODO make digi ntuples
+* ntuple datasets and the dataset naming (MakeDigiNtuple)                    
   following the Mu2e naming conventions, the names look like this :
 
       nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root

@@ -18,7 +18,8 @@
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v1.fcl"
+## // #include "daqana/fcl/calibration_set_v1.fcl"
+#include "daqana/fcl/calibration_set_v3.fcl"
 
 process_name : MakeDaqNtuple
 
@@ -48,16 +49,15 @@ physics : {
     
     producers : {
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
-            SpillType:          0   ## offspill
-            RecoFromMCTruth: false  ## default
-            RecoFromMCTruthErr: 0   ## default
-            InitialPhaseShift:  0   ## optional, set it to zero just in case
+            SpillType          : 0     ## offspill
+            RecoFromMCTruth    : false ## default
+            RecoFromMCTruthErr : 0     ## default
+            InitialPhaseShift  : 0     ## optional, set it to zero just in case
         }
 
         makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
             saveWaveforms :  true
-            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -83,32 +83,10 @@ physics : {
             CheckWres             : false               ## true
             Unsorted              : false               ## VST data are readout by panel
         }
-
-        TZClusterFinder : { @table::CalPatRec.producers.TZClusterFinder
-            diagLevel                  : 0
-            debugLevel                 : 0
-            printFrequency             : 1000
-            runDisplay                 : 0
-            useCCs                     : 1
-            recoverCCs                 : 1
-            chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
-            chCollLabel2               : "makeSH"
-            tcCollLabel                : "TimeClusterFinderDe"
-            ccCollLabel                : "CaloClusterMaker"
-            hitBkgBits                 : ["Noisy","Dead","Background"]
-            radSelect                  : 0        ## 1
-            chunkSep                   : 5
-            chunkWindow                : 300.0    ## 20.0
-            chunkThresh                : 5        ## 3
-            combineWindow              : 300.0    ## 30.0
-            maxCombineSep              : 2500.0
-            chunkFitThresh             : 5
-            recoverWindow              : 30.0
-            clusterThresh              : 5        ## 15
-            minCaloSize                : 2
-            minCaloEnergy              : 50.0
-            caloDtMax                  : 30.0
-            doRefine                   : 1        ## 0
+        
+        SimpleTimeCluster : { @table::CosmicReco.producers.SimpleTimeCluster
+            HitNonNoiseSelectionBits : ["EnergySelection"]
+            minNStrawHits : 6
         }
     }
     
@@ -122,21 +100,24 @@ physics : {
             makeTC    : 1
             makeSeg   : 1
             makeTrk   : 1
-            tcCollTag : "TZClusterFinder"
+            tcCollTag : "SimpleTimeCluster"
             ksCollTag : "KKLine"
+            debugMode : 1
+            # debugBits      : [ "bit0:0", "bit3:1" ]
+            minNSegments : 1
         }
     }
 
     p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster ]
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
-    trigger_paths  : [ p2 ] 
+    trigger_paths  : [ p1 ]  ## no need to re-reconstruct time clusters
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+# overrides
 #------------------------------------------------------------------------------
 services.TFileService.fileName   : "nts.mu2e.trk.vst00s000r011n003.%06r_%06s.root"
