@@ -70,7 +70,7 @@ int digis::CalculateMissingParameters() {
 //-----------------------------------------------------------------------------
 int digis::FillTwoSegHistograms(TwoSegHist_t* Hist, TwoSegPar_t* Par) {
 
-  printf("Par->hid:%i Par->dt: %10.3f hist:0x%8p\n",Par->hid,Par->dt,Hist->fDt[Par->hid]);
+  printf("Par->hid:%i Par->dt: %10.3f hist:0x%8p\n",Par->hid,Par->dt,(void*) Hist->fDt[Par->hid]);
 
   Hist->fDt[Par->hid]->Fill(Par->dt);
 
@@ -162,8 +162,8 @@ int digis::FillHistograms(Hist_t* Hist) {
 //-----------------------------------------------------------------------------
 // two "good" segments, figure the histogram id
 //-----------------------------------------------------------------------------
-      int   hid;
-      float dt;
+      // int   hid;
+      // float dt;
       if (ip1 < ip2) {
         par_ss.hid = 100*ip1+ip2;
         par_ss.dt  = seg_t0[iseg1]-seg_t0[iseg2];
@@ -189,7 +189,7 @@ int digis::FillHistograms(Hist_t* Hist) {
       if (segsh_iseg[ish] != iseg)         continue;
       int plane = (segsh_sid[ish] >> 10) & 0x3f;
       int panel = (segsh_sid[ish] >>  7) & 0x7;
-      int straw = (segsh_sid[ish] >>  0) & 0x7f;
+      // int straw = (segsh_sid[ish] >>  0) & 0x7f;
 //-----------------------------------------------------------------------------
 // all together
 //-----------------------------------------------------------------------------

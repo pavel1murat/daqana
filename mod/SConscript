@@ -2,7 +2,7 @@
 #
 # Script to build the files found in this directory.
 #------------------------------------------------------------------------------
-import os
+import os, subprocess
 Import('daqana_env')
 Import('stntuple_helper')
 #------------------------------------------------------------------------------
@@ -15,15 +15,35 @@ def local_build():
     rootlibs  = local_env['ROOTLIBS']
 
     if ( not ("EG" in rootlibs)): rootlibs.insert(rootlibs.index("Physics")+1,"EG");
+    if ( not ("Geom" in rootlibs)): rootlibs.insert(rootlibs.index("Physics")+1,"Geom");
 
     helper = stntuple_helper(local_env);
+#------------------------------------------------------------------------------
+# work around a bug in fhiclcpp 4.19.00-4.19.01:
+# don't generate the ROOT dictionary for MuHitDisplay module for those versions
+#------------------------------------------------------------------------------
+    cmd = "spack find fhicl-cpp | grep fhicl-cpp | awk -F @ '{print $2}'"
+    p = subprocess.Popen(cmd,
+                         executable="/bin/bash",
+                         shell=True,
+                         stderr=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         encoding="utf-8")
+    (out, err) = p.communicate();
+    fhiclcpp_ver=out.strip();
+    # print(f'out_2:{out} len(out):{len(out)} fhiclcpp_ver:{fhiclcpp_ver}')
+    
+    skip_dicts = []
+    if (fhiclcpp_ver == '4.19.00') or (fhiclcpp_ver == '4.19.01'):
+        skip_dicts.append('TrkFragmentAna_module_linkdef.h')
 
-    helper.handle_dictionaries();
+    helper.handle_dictionaries(skip_list=skip_dicts);
 
     libs      = [                
                   'Stntuple_loop',
                   'Stntuple_base',
                   'Stntuple_val',
+                  'daqana_obj',
 #
                   'mu2e_CalPatRec',
                   'mu2e_TrkReco',
@@ -45,6 +65,8 @@ def local_build():
                   # 'mu2e_Mu2eInterfaces',
                   'mu2e_DbService',
                   'mu2e_DbTables',
+                 'KinKal_Trajectory',
+                 'KinKal_General',
                   babarlibs,
                   'art_Framework_Core',
                   'art_Framework_Principal',
@@ -72,7 +94,6 @@ def local_build():
                   'artdaq-core-mu2e_Data',
                   'artdaq-core_Data',
                   'tracelib'
-                  # 'DTCInterface'
               ];
 
     list_of_cc_files = Glob('*.cc'       , strings=True)
@@ -81,7 +102,7 @@ def local_build():
     skip_list        = list_of_modules+list_of_plugins
 
     helper.build_libs(list_of_cc_files,skip_list,libs);
-    helper.build_modules(list_of_modules+list_of_plugins,[],libs)
+    helper.build_modules(list_of_modules+list_of_plugins,[],libs=libs,skip_dict_list=skip_dicts)
 #------------------------------------------------------------------------------
 local_build()
 

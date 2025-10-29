@@ -24,7 +24,7 @@ namespace fhiclcpp {
 };
 #endif
 
-#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
+#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
 // Mu2e includes

@@ -155,6 +155,7 @@ unsigned int reverseBits(unsigned int num) {
   TrkFragmentAna::TrkFragmentAna(fhicl::ParameterSet const& PSet) : 
     THistModule            (PSet,PSet.get<fhicl::ParameterSet>("THistModule"),"TrkFragmentAna") ,
 
+    _debugChannels         (PSet.get<std::vector<int>>("debugChannels"         )),
     _debugMode             (PSet.get<int>             ("debugMode"             )), 
     _minNBytes             (PSet.get<int>             ("minNBytes"             )), 
     _maxNBytes             (PSet.get<int>             ("maxNBytes"             )), 
@@ -176,8 +177,7 @@ unsigned int reverseBits(unsigned int num) {
     _fillHistograms        (PSet.get<int>             ("fillHistograms"        )),
     _fillWaveformHistograms(PSet.get<int>             ("fillWaveformHistograms")),
     _rocDataFormat         (PSet.get<int>             ("rocDataFormat"         )),
-    _dtcHeaderPresent      (PSet.get<int>             ("dtcHeaderPresent"      )),
-    _debugChannels         (PSet.get<std::vector<int>>("debugChannels"         ))
+    _dtcHeaderPresent      (PSet.get<int>             ("dtcHeaderPresent"      ))
   {
     _activeLinks[0] = &_activeLinks_0;
     _activeLinks[1] = &_activeLinks_1;
