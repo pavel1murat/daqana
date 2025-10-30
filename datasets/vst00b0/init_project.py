@@ -60,7 +60,7 @@ class Project(ProjectBase):
         # job.fNEventsPerSegment       =  100000
         job.fResample                = 'no'   # yes/no        # for resampling, need to define the run number again
         job.fRequestedTime           = '1h'   
-        job.fIfdh                    = 'ifdh' ## 'xrootd'               # ifdh/xrootd
+        job.fIfdh                    = 'xrootd' ## 'xrootd'               # ifdh/xrootd
         job.fMaxMemory               = '3000MB'
 
         output_stream                = self.fInputDataset.output_stream()

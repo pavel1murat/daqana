@@ -31,10 +31,10 @@ class digis {
 public :
 
   enum {
-    kNEventHistSets   = 100,
-    kNSegmentHistSets = 100,
-    kNTwoSegHistSets  =  10,
-    kNSshtHistSets    = 100,
+    kNEventHistSets   =  100,
+    kNSegmentHistSets = 1000,
+    kNTwoSegHistSets  =   20,
+    kNSshtHistSets    = 1000,
   };
 
   struct TwoSegPar_t {
@@ -80,11 +80,13 @@ public :
 
   Hist_t          fHist;
 
+  int             fNSeg4;
+  int             fISeg4[100];   // index of a 4+ hit segments
   int             fNSeg6;
   int             fISeg6[100];   // index of a 6+ hit segments
 
                                         // to be initialized at start up
-  int             fMinSegNHits;
+  int             fMinSegNHits[10];
   int             fMinSegNghl;
   float           fMaxSegChi2d;
 

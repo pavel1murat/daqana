@@ -54,10 +54,16 @@ void digis::Loop() {
 //-----------------------------------------------------------------------------
 int digis::CalculateMissingParameters() {
 
+  fNSeg4 = 0;
   fNSeg6 = 0;
                                         // seelct "good" segments
   for (int i=0; i<nseg; i++) {
-    if ((seg_ngh[i] >= fMinSegNHits) and (seg_chi2d[i] < fMaxSegChi2d) and
+    if ((seg_ngh[i] >= fMinSegNHits[0]) and (seg_chi2d[i] < fMaxSegChi2d) and
+        (seg_nghl[i][0] >= fMinSegNghl) and  (seg_nghl[i][1] >= fMinSegNghl)) {
+      fISeg4[fNSeg4] = i;
+      fNSeg4        += 1;
+    }
+    if ((seg_ngh[i] >= fMinSegNHits[1]) and (seg_chi2d[i] < fMaxSegChi2d) and
         (seg_nghl[i][0] >= fMinSegNghl) and  (seg_nghl[i][1] >= fMinSegNghl)) {
       fISeg6[fNSeg6] = i;
       fNSeg6        += 1;
@@ -130,25 +136,78 @@ int digis::FillHistograms(Hist_t* Hist) {
     int unique_panel = 6*plane+panel;
 
     FillSegmentHistograms(Hist->fSegment[0],i);
-    if (seg_nh[i] >= fMinSegNHits) {
-      FillSegmentHistograms(Hist->fSegment[1],i);
-      FillSegmentHistograms(Hist->fSegment[unique_panel+10],i);
+//-----------------------------------------------------------------------------
+// fMinSegNHits[0]: 4-hit segments
+//-----------------------------------------------------------------------------
+    if (seg_nh[i] >= fMinSegNHits[0]) {
+      FillSegmentHistograms(Hist->fSegment[401],i);
+      FillSegmentHistograms(Hist->fSegment[unique_panel+410],i);
       if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
-        FillSegmentHistograms(Hist->fSegment[2],i);
+        FillSegmentHistograms(Hist->fSegment[402],i);
         if (seg_chi2d[i] <fMaxSegChi2d) {
-          FillSegmentHistograms(Hist->fSegment[3],i);
+          FillSegmentHistograms(Hist->fSegment[403],i);
           if (fNSeg6 >= 2) {
-            FillSegmentHistograms(Hist->fSegment[4],i);
+            FillSegmentHistograms(Hist->fSegment[404],i);
+          }
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// fMinSegNHits[1]: 6-hit segments
+//-----------------------------------------------------------------------------
+    if (seg_nh[i] >= fMinSegNHits[1]) {
+      FillSegmentHistograms(Hist->fSegment[601],i);
+      FillSegmentHistograms(Hist->fSegment[unique_panel+610],i);
+      if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
+        FillSegmentHistograms(Hist->fSegment[602],i);
+        if (seg_chi2d[i] <fMaxSegChi2d) {
+          FillSegmentHistograms(Hist->fSegment[603],i);
+          if (fNSeg6 >= 2) {
+            FillSegmentHistograms(Hist->fSegment[604],i);
           }
         }
       }
     }
   }
 //-----------------------------------------------------------------------------  
-// dt between two 6+ chi2d<10 segments
+// dt between two 4+ chi2d<10 segments
 //-----------------------------------------------------------------------------
   TwoSegPar_t par_ss;
 
+  for (int i1=0; i1<fNSeg4-1; i1++) {
+    int iseg1 = fISeg4[i1];
+    int plane1 = plane(seg_sid[iseg1]);
+    int panel1 = panel(seg_sid[iseg1]);
+    int ip1    = 6*plane1+panel1;
+    for (int i2=i1+1; i2<fNSeg4; i2++) {
+      int iseg2  = fISeg4[i2];
+      int plane2 = plane(seg_sid[iseg2]);
+      int panel2 = panel(seg_sid[iseg2]);
+      int ip2    = 6*plane2+panel2;
+//-----------------------------------------------------------------------------
+// two "good" 4-hit segments, figure the histogram id
+//-----------------------------------------------------------------------------
+      // int   hid;
+      // float dt;
+      if (ip1 < ip2) {
+        par_ss.hid = 100*ip1+ip2;     // 4-hit ones start from hist_id=40
+        par_ss.dt  = seg_t0[iseg1]-seg_t0[iseg2];
+      }
+      else {
+        par_ss.hid = 100*ip2+ip1;
+        par_ss.dt  = seg_t0[iseg2]-seg_t0[iseg1];
+      }
+      if (plane1 == plane2) par_ss.diff_planes = 0;
+      else                  par_ss.diff_planes = 1;
+
+      FillTwoSegHistograms(Hist->fTwoSeg[0],&par_ss);
+      if (seg_dzdy[i1] > 0) FillTwoSegHistograms(Hist->fTwoSeg[1],&par_ss);
+      else                  FillTwoSegHistograms(Hist->fTwoSeg[2],&par_ss);
+    }
+  }
+//-----------------------------------------------------------------------------  
+// dt between two 6+ chi2d<10 segments
+//-----------------------------------------------------------------------------
   for (int i1=0; i1<fNSeg6-1; i1++) {
     int iseg1 = fISeg6[i1];
     int plane1 = plane(seg_sid[iseg1]);
@@ -160,28 +219,44 @@ int digis::FillHistograms(Hist_t* Hist) {
       int panel2 = panel(seg_sid[iseg2]);
       int ip2    = 6*plane2+panel2;
 //-----------------------------------------------------------------------------
-// two "good" segments, figure the histogram id
+// two "good" 6-hit segments, figure the histogram id
 //-----------------------------------------------------------------------------
       // int   hid;
       // float dt;
       if (ip1 < ip2) {
-        par_ss.hid = 100*ip1+ip2;
+        par_ss.hid = 100*ip1+ip2;     // 4-hit ones start from hist_id=40
         par_ss.dt  = seg_t0[iseg1]-seg_t0[iseg2];
       }
       else {
         par_ss.hid = 100*ip2+ip1;
-        par_ss.dt = seg_t0[iseg2]-seg_t0[iseg1];
+        par_ss.dt  = seg_t0[iseg2]-seg_t0[iseg1];
       }
       if (plane1 == plane2) par_ss.diff_planes = 0;
       else                  par_ss.diff_planes = 1;
 
-      FillTwoSegHistograms(Hist->fTwoSeg[0],&par_ss);
-      if (seg_dzdy[i1] > 0) FillTwoSegHistograms(Hist->fTwoSeg[1],&par_ss);
-      else                  FillTwoSegHistograms(Hist->fTwoSeg[2],&par_ss);
+      FillTwoSegHistograms(Hist->fTwoSeg[10],&par_ss);
+      if (seg_dzdy[i1] > 0) FillTwoSegHistograms(Hist->fTwoSeg[11],&par_ss);
+      else                  FillTwoSegHistograms(Hist->fTwoSeg[12],&par_ss);
     }
   }
 //-----------------------------------------------------------------------------
-// segment straw hit histograms (SSHT) ... do that only for good segments
+// 4-hit segment straw hit histograms (SSHT) ... do that only for good segments
+//-----------------------------------------------------------------------------
+  for (int is=0; is<fNSeg4; is++) {
+    int iseg = fISeg4[is];
+    for (int ish=0; ish<nsegsh; ish++) {
+      if (segsh_iseg[ish] != iseg)         continue;
+      int plane = (segsh_sid[ish] >> 10) & 0x3f;
+      int panel = (segsh_sid[ish] >>  7) & 0x7;
+//-----------------------------------------------------------------------------
+// each panel separately
+//-----------------------------------------------------------------------------
+      int iset = 400+plane*6+panel;
+      FillSshtHistograms(Hist->fSsht[iset], ish);
+    }
+  }
+//-----------------------------------------------------------------------------
+// 6-hit segment straw hit histograms (SSHT) ... do that only for good segments
 //-----------------------------------------------------------------------------
   for (int is=0; is<fNSeg6; is++) {
     int iseg = fISeg6[is];
@@ -189,15 +264,10 @@ int digis::FillHistograms(Hist_t* Hist) {
       if (segsh_iseg[ish] != iseg)         continue;
       int plane = (segsh_sid[ish] >> 10) & 0x3f;
       int panel = (segsh_sid[ish] >>  7) & 0x7;
-      // int straw = (segsh_sid[ish] >>  0) & 0x7f;
-//-----------------------------------------------------------------------------
-// all together
-//-----------------------------------------------------------------------------
-      FillSshtHistograms(Hist->fSsht[0]   , ish);
 //-----------------------------------------------------------------------------
 // each panel separately
 //-----------------------------------------------------------------------------
-      int iset = 10+plane*6+panel;
+      int iset = 600+plane*6+panel;
       FillSshtHistograms(Hist->fSsht[iset], ish);
     }
   }
@@ -282,24 +352,43 @@ int digis::BookHistograms(Hist_t* Hist) {
   int book_segment_histset[kNSegmentHistSets];
   for (int i=0; i<kNSegmentHistSets; i++) book_segment_histset[i] = 0;
 
-  book_segment_histset[ 0] = 1;		// all segments
-  book_segment_histset[ 1] = 1;	        // segments with 4+ good hits
-  book_segment_histset[ 2] = 1;	        // segments with 4+ good hits and chi2d<10
-  book_segment_histset[ 3] = 1;	        // segments with 4+ good hits and chi2d<10 and nghl[i] > 0
-  book_segment_histset[ 4] = 1;	        // events with 2 such segments
+  book_segment_histset[  0] = 1;		// all segments
 
-  book_segment_histset[10] = 1;	        // events with segmentsin panel 0 
-  book_segment_histset[11] = 1;	        // events with segmentsin panel 1
-  book_segment_histset[12] = 1;	        // events with segmentsin panel 2
-  book_segment_histset[13] = 1;	        // events with segmentsin panel 3
-  book_segment_histset[14] = 1;	        // events with segmentsin panel 4
-  book_segment_histset[15] = 1;	        // events with segmentsin panel 5
-  book_segment_histset[16] = 1;	        // events with segmentsin panel 6
-  book_segment_histset[17] = 1;	        // events with segmentsin panel 7
-  book_segment_histset[18] = 1;	        // events with segmentsin panel 8
-  book_segment_histset[19] = 1;	        // events with segmentsin panel 9
-  book_segment_histset[20] = 1;	        // events with segmentsin panel 10
-  book_segment_histset[21] = 1;	        // events with segmentsin panel 11
+  book_segment_histset[401] = 1;	        // segments with 4+ good hits
+  book_segment_histset[402] = 1;	        // segments with 4+ good hits and chi2d<10
+  book_segment_histset[403] = 1;	        // segments with 4+ good hits and chi2d<10 and nghl[i] > 0
+  book_segment_histset[404] = 1;	        // events with 2 such segments
+
+  book_segment_histset[410] = 1;	        // events with segmentsin panel 0 
+  book_segment_histset[411] = 1;	        // events with segmentsin panel 1
+  book_segment_histset[412] = 1;	        // events with segmentsin panel 2
+  book_segment_histset[413] = 1;	        // events with segmentsin panel 3
+  book_segment_histset[414] = 1;	        // events with segmentsin panel 4
+  book_segment_histset[415] = 1;	        // events with segmentsin panel 5
+  book_segment_histset[416] = 1;	        // events with segmentsin panel 6
+  book_segment_histset[417] = 1;	        // events with segmentsin panel 7
+  book_segment_histset[418] = 1;	        // events with segmentsin panel 8
+  book_segment_histset[419] = 1;	        // events with segmentsin panel 9
+  book_segment_histset[420] = 1;	        // events with segmentsin panel 10
+  book_segment_histset[421] = 1;	        // events with segmentsin panel 11
+
+  book_segment_histset[601] = 1;	        // segments with 4+ good hits
+  book_segment_histset[602] = 1;	        // segments with 4+ good hits and chi2d<10
+  book_segment_histset[603] = 1;	        // segments with 4+ good hits and chi2d<10 and nghl[i] > 0
+  book_segment_histset[604] = 1;	        // events with 2 such segments
+
+  book_segment_histset[610] = 1;	        // events with segmentsin panel 0 
+  book_segment_histset[611] = 1;	        // events with segmentsin panel 1
+  book_segment_histset[612] = 1;	        // events with segmentsin panel 2
+  book_segment_histset[613] = 1;	        // events with segmentsin panel 3
+  book_segment_histset[614] = 1;	        // events with segmentsin panel 4
+  book_segment_histset[615] = 1;	        // events with segmentsin panel 5
+  book_segment_histset[616] = 1;	        // events with segmentsin panel 6
+  book_segment_histset[617] = 1;	        // events with segmentsin panel 7
+  book_segment_histset[618] = 1;	        // events with segmentsin panel 8
+  book_segment_histset[619] = 1;	        // events with segmentsin panel 9
+  book_segment_histset[620] = 1;	        // events with segmentsin panel 10
+  book_segment_histset[621] = 1;	        // events with segmentsin panel 11
 
   for (int i=0; i<kNSegmentHistSets; i++) {
     if (book_segment_histset[i] != 0) {
@@ -317,9 +406,12 @@ int digis::BookHistograms(Hist_t* Hist) {
   int book_twoseg_histset[kNTwoSegHistSets];
   for (int i=0; i<kNTwoSegHistSets; i++) book_twoseg_histset[i] = 0;
 
-  book_twoseg_histset[ 0] = 1;		// all twosegs
-  book_twoseg_histset[ 1] = 1;		// dzdy(p1) > 0
-  book_twoseg_histset[ 2] = 1;		// dzdy(p1) < 0
+  book_twoseg_histset[ 0] = 1;		// all twosegs nhits >= 4
+  book_twoseg_histset[ 1] = 1;		// all twosegs nhits >= 4 dzdy(p1) > 0
+  book_twoseg_histset[ 2] = 1;		// all twosegs nhits >= 4 dzdy(p1) < 0
+  book_twoseg_histset[10] = 1;		// all twosegs nhits >= 6
+  book_twoseg_histset[11] = 1;		// all twosegs nhits >= 6 dzdy(p1) > 0
+  book_twoseg_histset[12] = 1;		// all twosegs nhits >= 6 dzdy(p1) < 0
 
   for (int i=0; i<kNTwoSegHistSets; i++) {
     if (book_twoseg_histset[i] != 0) {
@@ -337,20 +429,31 @@ int digis::BookHistograms(Hist_t* Hist) {
   int book_ssht_histset[kNSshtHistSets];
   for (int i=0; i<kNSshtHistSets; i++) book_ssht_histset[i] = 0;
 
-  book_ssht_histset[ 0] = 1;		// all segments
+  book_ssht_histset[400] = 1;	        // good segments with 4+ hits panel#0  (+10)
+  book_ssht_histset[401] = 1;	        // good segments with 4+ hits panel#1
+  book_ssht_histset[402] = 1;	        // good segments with 4+ hits panel#2
+  book_ssht_histset[403] = 1;	        // good segments with 4+ hits panel#3
+  book_ssht_histset[404] = 1;	        // good segments with 4+ hits panel#4
+  book_ssht_histset[405] = 1;	        // good segments with 4+ hits panel#5
+  book_ssht_histset[406] = 1;	        // good segments with 4+ hits panel#6
+  book_ssht_histset[407] = 1;	        // good segments with 4+ hits panel#7
+  book_ssht_histset[408] = 1;	        // good segments with 4+ hits panel#8
+  book_ssht_histset[409] = 1;	        // good segments with 4+ hits panel#9
+  book_ssht_histset[410] = 1;	        // good segments with 4+ hits panel#10
+  book_ssht_histset[411] = 1;	        // good segments with 4+ hits panel#10
 
-  book_ssht_histset[10] = 1;	        // segments with 4+ good hits panel#0  (+10)
-  book_ssht_histset[11] = 1;	        // segments with 4+ good hits panel#1
-  book_ssht_histset[12] = 1;	        // segments with 4+ good hits panel#2
-  book_ssht_histset[13] = 1;	        // segments with 4+ good hits panel#3
-  book_ssht_histset[14] = 1;	        // segments with 4+ good hits panel#4
-  book_ssht_histset[15] = 1;	        // segments with 4+ good hits panel#5
-  book_ssht_histset[16] = 1;	        // segments with 4+ good hits panel#6
-  book_ssht_histset[17] = 1;	        // segments with 4+ good hits panel#7
-  book_ssht_histset[18] = 1;	        // segments with 4+ good hits panel#8
-  book_ssht_histset[19] = 1;	        // segments with 4+ good hits panel#9
-  book_ssht_histset[20] = 1;	        // segments with 4+ good hits panel#10
-  book_ssht_histset[21] = 1;	        // segments with 4+ good hits panel#10
+  book_ssht_histset[600] = 1;	        // good segments with 6+ hits panel#0  (+10)
+  book_ssht_histset[601] = 1;	        // good segments with 6+ hits panel#1
+  book_ssht_histset[602] = 1;	        // good segments with 6+ hits panel#2
+  book_ssht_histset[603] = 1;	        // good segments with 6+ hits panel#3
+  book_ssht_histset[604] = 1;	        // good segments with 6+ hits panel#4
+  book_ssht_histset[605] = 1;	        // good segments with 6+ hits panel#5
+  book_ssht_histset[606] = 1;	        // good segments with 6+ hits panel#6
+  book_ssht_histset[607] = 1;	        // good segments with 6+ hits panel#7
+  book_ssht_histset[608] = 1;	        // good segments with 6+ hits panel#8
+  book_ssht_histset[609] = 1;	        // good segments with 6+ hits panel#9
+  book_ssht_histset[610] = 1;	        // good segments with 6+ hits panel#10
+  book_ssht_histset[611] = 1;	        // good segments with 6+ hits panel#10
 
   for (int i=0; i<kNSshtHistSets; i++) {
     if (book_ssht_histset[i] != 0) {
@@ -381,9 +484,10 @@ digis::digis(const char* Fn) : fChain(0) {
 
   TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
 
-  fMinSegNHits =  4 ;
-  fMinSegNghl  =  1;
-  fMaxSegChi2d = 10.;
+  fMinSegNHits[0] =  4;
+  fMinSegNHits[1] =  6;
+  fMinSegNghl     =  1;
+  fMaxSegChi2d    = 10.;
 
   fFolder = gROOT->GetRootFolder()->AddFolder("digis","digis");
 

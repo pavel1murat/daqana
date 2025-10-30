@@ -318,7 +318,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 //-----------------------------------------------------------------------------
       const mu2e::Plane* pln = &_tracker->getPlane(ipln);
       const mu2e::Panel* pnl = &pln->getPanel(ipnl);
-      ts->fTrkPanel = pnl;
+      ts->fTrkPanel = (mu2e::Panel*) pnl;
 
       if (_debugMode != 0) {
         print_(std::format("-- HepTransform for plane:{:2}:{}\n",ipln,ipnl));
