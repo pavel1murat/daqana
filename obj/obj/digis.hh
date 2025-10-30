@@ -91,8 +91,8 @@ public :
   float           fMaxSegChi2d;
 
   TFolder*        fFolder;
-  TTree          *fChain;   //!pointer to the analyzed TTree or TChain
-  Int_t           fCurrent; //!current Tree number in a TChain
+  TChain          *fChain;   //! pointer to the analyzed TTree or TChain
+  Int_t           fCurrent;  //! current Tree number in a TChain
 
 // Fixed size dimensions of array or collections stored in the TTree if any... mmm
 // PM: this - max dimensions - is only true for a given file...
@@ -375,8 +375,8 @@ public :
    TBranch        *b_segsh_iseg;   //!
    TBranch        *b_segsh_itrk;   //!
 
-   digis(const char* Fn=0);
-   virtual ~digis();
+  digis(const char* Fn, int DsID);
+  virtual ~digis();
 
   int CalculateMissingParameters();
 
@@ -395,7 +395,7 @@ public :
   virtual Int_t    Cut(Long64_t entry);
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
-  virtual void     Init(TTree *tree);
+  virtual void     Init();
   virtual void     Loop();
   virtual bool     Notify();
   virtual void     Show(Long64_t entry = -1);

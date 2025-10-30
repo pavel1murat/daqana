@@ -76,7 +76,7 @@ int digis::CalculateMissingParameters() {
 //-----------------------------------------------------------------------------
 int digis::FillTwoSegHistograms(TwoSegHist_t* Hist, TwoSegPar_t* Par) {
 
-  printf("Par->hid:%i Par->dt: %10.3f hist:0x%8p\n",Par->hid,Par->dt,(void*) Hist->fDt[Par->hid]);
+  //  printf("Par->hid:%i Par->dt: %10.3f hist:0x%8p\n",Par->hid,Par->dt,(void*) Hist->fDt[Par->hid]);
 
   Hist->fDt[Par->hid]->Fill(Par->dt);
 
@@ -440,7 +440,7 @@ int digis::BookHistograms(Hist_t* Hist) {
   book_ssht_histset[408] = 1;	        // good segments with 4+ hits panel#8
   book_ssht_histset[409] = 1;	        // good segments with 4+ hits panel#9
   book_ssht_histset[410] = 1;	        // good segments with 4+ hits panel#10
-  book_ssht_histset[411] = 1;	        // good segments with 4+ hits panel#10
+  book_ssht_histset[411] = 1;	        // good segments with 4+ hits panel#11
 
   book_ssht_histset[600] = 1;	        // good segments with 6+ hits panel#0  (+10)
   book_ssht_histset[601] = 1;	        // good segments with 6+ hits panel#1
@@ -453,7 +453,7 @@ int digis::BookHistograms(Hist_t* Hist) {
   book_ssht_histset[608] = 1;	        // good segments with 6+ hits panel#8
   book_ssht_histset[609] = 1;	        // good segments with 6+ hits panel#9
   book_ssht_histset[610] = 1;	        // good segments with 6+ hits panel#10
-  book_ssht_histset[611] = 1;	        // good segments with 6+ hits panel#10
+  book_ssht_histset[611] = 1;	        // good segments with 6+ hits panel#11
 
   for (int i=0; i<kNSshtHistSets; i++) {
     if (book_ssht_histset[i] != 0) {
@@ -470,28 +470,47 @@ int digis::BookHistograms(Hist_t* Hist) {
 
 
 //-----------------------------------------------------------------------------
-digis::digis(const char* Fn) : fChain(0) {
+// if Dsid < 0, a single file
+// otherwise, a specific dataset, ignore Fn
+//-----------------------------------------------------------------------------
+digis::digis(const char* Fn, int DsID) : fChain(0) {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
-  std::string filename;
-  if (Fn) filename = Fn;
-  else    filename = "nts/nts.mu2e.trk.vst00s000r011n003.107995_000001.root";
+  // std::string filename;
+  // if (Fn) filename = Fn;
+  // else    filename = "nts/nts.mu2e.trk.vst00s000r011n003.107995_000001.root";
 
-  TFile* f = (TFile*)gROOT->GetListOfFiles()->FindObject(filename.data());
-  if (!f || !f->IsOpen()) {
-    f = new TFile(filename.data());
-  }
+  // TFile* f = (TFile*)gROOT->GetListOfFiles()->FindObject(filename.data());
+  // if (!f || !f->IsOpen()) {
+  //   f = new TFile(filename.data());
+  // }
 
-  TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
+  //  TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
 
   fMinSegNHits[0] =  4;
   fMinSegNHits[1] =  6;
   fMinSegNghl     =  1;
   fMaxSegChi2d    = 10.;
 
-  fFolder = gROOT->GetRootFolder()->AddFolder("digis","digis");
+  fFolder  = gROOT->GetRootFolder()->AddFolder("digis","digis");
 
-  Init(tree);
+  fChain    = new TChain("/MakeDigiNtuple/digis");
+
+  if (DsID < 0) {
+    fChain->AddFile(Fn,TChain::kBigNumber);
+  }
+  else if (DsID == 107995) {
+    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000001.root",TChain::kBigNumber);
+    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000148.root",TChain::kBigNumber);
+    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000288.root",TChain::kBigNumber);
+    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000429.root",TChain::kBigNumber);
+  }
+
+  //  fChain   = tree;
+  fCurrent = -1;
+  fChain->SetMakeClass(1);
+
+  Init();
 
   BookHistograms(&fHist);
 }
@@ -524,7 +543,7 @@ Long64_t digis::LoadTree(Long64_t entry) {
 }
 
 //-----------------------------------------------------------------------------
-void digis::Init(TTree *tree) {
+void digis::Init() {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
    // pointers of the tree will be set.
@@ -540,10 +559,6 @@ void digis::Init(TTree *tree) {
    for(int i=0; i<kMaxsd; ++i) sd_adc[i] = 0;
 
    // Set branch addresses and branch pointers
-   if (!tree) return;
-   fChain = tree;
-   fCurrent = -1;
-   fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("run", &run, &b_evt_run);
    fChain->SetBranchAddress("srn", &srn, &b_evt_srn);
