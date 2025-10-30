@@ -571,10 +571,10 @@ digis::digis(const char* Fn, int DsID) : fChain(0) {
     fChain->AddFile(Fn,TChain::kBigNumber);
   }
   else if (DsID == 107995) {
-    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000001.root",TChain::kBigNumber);
-    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000148.root",TChain::kBigNumber);
-    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000288.root",TChain::kBigNumber);
-    fChain->AddFile("nts.murat.vst00s0s10r0000.daqana.107995_000429.root",TChain::kBigNumber);
+    fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000001.root",TChain::kBigNumber);
+    fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000148.root",TChain::kBigNumber);
+    fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000288.root",TChain::kBigNumber);
+    fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000429.root",TChain::kBigNumber);
   }
 
   //  fChain   = tree;
