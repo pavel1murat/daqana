@@ -84,6 +84,8 @@ public :
   int             fISeg4[100];   // index of a 4+ hit segments
   int             fNSeg6;
   int             fISeg6[100];   // index of a 6+ hit segments
+  int             fNSeg8;
+  int             fISeg8[100];   // index of a 8+ hit segments
 
                                         // to be initialized at start up
   int             fMinSegNHits[10];
