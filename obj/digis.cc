@@ -5,10 +5,11 @@
 // #include <TCanvas.h>
 #include <TROOT.h>
 #include <iostream>
+#include <fstream>
 #include <format>
 
 //-----------------------------------------------------------------------------
-void digis::Loop() {
+void digis::Loop(long int NEvents) {
 //   In a ROOT session, you can do:
 //      root> .L digis.C
 //      root> digis t
@@ -36,9 +37,12 @@ void digis::Loop() {
    if (fChain == 0) return;
 
    Long64_t nentries = fChain->GetEntriesFast();
+
+   long int nevents = NEvents;
+   if (nevents < 0) nevents = nentries;
    Long64_t nbytes = 0, nb = 0;
 
-   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+   for (Long64_t jentry=0; jentry<nevents; jentry++) {
      Long64_t ientry = LoadTree(jentry);
      if (ientry < 0) break;
      nb = fChain->GetEntry(jentry);   nbytes += nb;
@@ -124,6 +128,14 @@ int digis::FillSshtHistograms(SshtHist_t* Hist, int I) {
   int straw = (segsh_sid[I] &0x7f);
   Hist->fDrVsStraw->Fill(straw,segsh_doca[I]);
   Hist->fDrhoVsStraw->Fill(straw,segsh_drho[I]);
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int digis::FillPanelShHistograms(PanelShHist_t* Hist, int I) {
+  Hist->fRdrift->Fill(segsh_rdrift[I]);
+  Hist->fDrhoVsRdrift->Fill(segsh_rdrift[I],segsh_drho[I]);
 
   return 0;
 }
@@ -263,6 +275,7 @@ int digis::FillHistograms(Hist_t* Hist) {
   }
 //-----------------------------------------------------------------------------
 // 4-hit segment straw hit histograms (SSHT) ... do that only for good segments
+// and use only hits with 0.5 < R < 2.0 mm
 //-----------------------------------------------------------------------------
   for (int is=0; is<fNSeg4; is++) {
     int iseg = fISeg4[is];
@@ -273,12 +286,16 @@ int digis::FillHistograms(Hist_t* Hist) {
 //-----------------------------------------------------------------------------
 // each panel separately
 //-----------------------------------------------------------------------------
-      int iset = 400+plane*6+panel;
-      FillSshtHistograms(Hist->fSsht[iset], ish);
+      float rdrift = segsh_rdrift[ish];
+      if ((rdrift > 0.5) and (rdrift < 2.0)) {
+        int iset = 400+plane*6+panel;
+        FillSshtHistograms(Hist->fSsht[iset], ish);
+      }
     }
   }
 //-----------------------------------------------------------------------------
 // 6-hit segment straw hit histograms (SSHT) ... do that only for good segments
+// and use only hits with 0.5 < R < 2.0 mm
 //-----------------------------------------------------------------------------
   for (int is=0; is<fNSeg6; is++) {
     int iseg = fISeg6[is];
@@ -289,12 +306,16 @@ int digis::FillHistograms(Hist_t* Hist) {
 //-----------------------------------------------------------------------------
 // each panel separately
 //-----------------------------------------------------------------------------
-      int iset = 600+plane*6+panel;
-      FillSshtHistograms(Hist->fSsht[iset], ish);
+      float rdrift = segsh_rdrift[ish];
+      if ((rdrift > 0.5) and (rdrift < 2.0)) {
+        int iset = 600+plane*6+panel;
+        FillSshtHistograms(Hist->fSsht[iset], ish);
+      }
     }
   }
 //-----------------------------------------------------------------------------
 // 8-hit segment straw hit histograms (SSHT) ... do that only for good segments
+// and use only hits with 0.5 < R < 2.0 mm
 //-----------------------------------------------------------------------------
   for (int is=0; is<fNSeg8; is++) {
     int iseg = fISeg8[is];
@@ -302,11 +323,16 @@ int digis::FillHistograms(Hist_t* Hist) {
       if (segsh_iseg[ish] != iseg)         continue;
       int plane = (segsh_sid[ish] >> 10) & 0x3f;
       int panel = (segsh_sid[ish] >>  7) & 0x7;
+      int unique_panel = 6*plane+panel;
+       FillPanelShHistograms(Hist->fPanelSh[unique_panel],ish);
 //-----------------------------------------------------------------------------
 // each panel separately
 //-----------------------------------------------------------------------------
-      int iset = 800+plane*6+panel;
-      FillSshtHistograms(Hist->fSsht[iset], ish);
+      float rdrift = segsh_rdrift[ish];
+      if ((rdrift > 0.5) and (rdrift < 2.0)) {
+        int iset = 800+plane*6+panel;
+        FillSshtHistograms(Hist->fSsht[iset], ish);
+      }
     }
   }
   return 0;
@@ -355,6 +381,16 @@ int digis::BookSshtHistograms(SshtHist_t* Hist, const char* Folder) {
   HBook2F(Hist->fDrhoVsRDrift   ,"drho_vs_rdrift"   ,"drho_vs_rdrift" ,  100,    0,  5, 250,-2.5,2.5,Folder);
   HBook2F(Hist->fDrVsStraw   ,"dr_vs_straw"   ,"dr_vs_straw" ,  100,    0,  100, 250,-2.5,2.5,Folder);
   HBook2F(Hist->fDrhoVsStraw ,"drho_vs_straw"   ,"drho_vs_straw" ,  100,    0,  100, 250,-2.5,2.5,Folder);
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// add more descriptive titles later
+//-----------------------------------------------------------------------------
+int digis::BookPanelShHistograms(PanelShHist_t* Hist, const char* Folder) {
+  HBook1F(Hist->fRdrift      ,"r"        ,"rdrift, mm"   , 100,    0, 5, Folder);
+  HBook2F(Hist->fDrhoVsRdrift,"drho_vs_r","drho_vs_r, mm",  100,   0, 5, 200,-1,1,Folder);
   return 0;
 }
 
@@ -534,6 +570,35 @@ int digis::BookHistograms(Hist_t* Hist) {
     }
   }
 
+//-----------------------------------------------------------------------------
+// book panel straw hit histograms
+//-----------------------------------------------------------------------------
+  int book_panel_sh_histset[kNPanelShHistSets];
+  for (int i=0; i<kNPanelShHistSets; i++) book_panel_sh_histset[i] = 0;
+
+  book_panel_sh_histset[ 0] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 1] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 2] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 3] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 4] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 5] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 6] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 7] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 8] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[ 9] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[10] = 1;		// panel hist for segments with nhits >= 8
+  book_panel_sh_histset[11] = 1;		// panel hist for segments with nhits >= 8
+
+  for (int i=0; i<kNTwoSegHistSets; i++) {
+    if (book_panel_sh_histset[i] != 0) {
+      sprintf(folder_name,"psh_%i",i);
+      fol = (TFolder*) fFolder->FindObject(folder_name);
+      if (! fol) fol = fFolder->AddFolder(folder_name,folder_name);
+      fHist.fPanelSh[i] = new PanelShHist_t;
+      BookPanelShHistograms(fHist.fPanelSh[i],Form("%s",folder_name));
+    }
+  }
+
   return 0;
 };
 
@@ -542,19 +607,17 @@ int digis::BookHistograms(Hist_t* Hist) {
 // if Dsid < 0, a single file
 // otherwise, a specific dataset, ignore Fn
 //-----------------------------------------------------------------------------
-digis::digis(const char* Fn, int DsID) : fChain(0) {
-// if parameter tree is not specified (or zero), connect the file
-// used to generate this class and read the Tree.
-  // std::string filename;
-  // if (Fn) filename = Fn;
-  // else    filename = "nts/nts.mu2e.trk.vst00s000r011n003.107995_000001.root";
-
-  // TFile* f = (TFile*)gROOT->GetListOfFiles()->FindObject(filename.data());
-  // if (!f || !f->IsOpen()) {
-  //   f = new TFile(filename.data());
-  // }
-
-  //  TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
+digis::digis(const std::string& Fn, const std::string& Fileset) : fChain(0) {
+  struct NestedFunctor {
+    std::string operator()(std::string& s) {
+      std::string x = s;
+      size_t start = x.find_first_not_of(" \t\r\n");
+      size_t end   = x.find_last_not_of (" \t\r\n");
+      if (start == std::string::npos) return "";
+      x = x.substr(start, end - start + 1);
+      return x;
+    }
+  };
 
   fMinSegNHits[0] =  4;
   fMinSegNHits[1] =  6;
@@ -567,17 +630,36 @@ digis::digis(const char* Fn, int DsID) : fChain(0) {
 
   fChain    = new TChain("/MakeDigiNtuple/digis");
 
-  if (DsID < 0) {
-    fChain->AddFile(Fn,TChain::kBigNumber);
+  if (Fileset == "file") {
+    fChain->AddFile(Fn.data(),TChain::kBigNumber);
   }
-  else if (DsID == 107995) {
+  else if (Fn == "vst00s0s10r0000") {
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000001.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000148.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000288.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000429.root",TChain::kBigNumber);
   }
+  else if (Fn == "vst04s0s10r0000") {
+                                        // read text file from a catalog
+    std::string fn = "daqana/datasets/vst04s0/catalog/nts.murat."+Fn+".daqana.root.files";
+    if (Fileset != "") fn = fn + "." + Fileset;
 
-  //  fChain   = tree;
+    // std::cout << "fn:" << fn << std::endl;
+    std::ifstream input(fn);
+    std::string line;
+    NestedFunctor nested_trim;
+    while (std::getline(input, line)) {
+      std::string trimmed_line = nested_trim(line);
+      //      std::cout << std::format("line:{} trimmed_line:{}\n",line,trimmed_line);
+      if (trimmed_line.empty() or (trimmed_line[0] == '#'))                   continue;
+//------------------------------------------------------------------------------
+// expect the line to contain the filename
+//-----------------------------------------------------------------------------
+      fChain->AddFile(trimmed_line.data(),TChain::kBigNumber);
+    }
+    input.close();
+  }
+
   fCurrent = -1;
   fChain->SetMakeClass(1);
 

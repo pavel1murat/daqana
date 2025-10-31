@@ -8,8 +8,8 @@ class Project(ProjectBase):
 #------------------------------------------------------------------------------
 # datasets of this family
 #-------v----------------------------------------------------------------------
-        self.add_dataset(Dataset('raw.mu2e.trk.vst.art'               ,'vst00b0s00r0000','local'))
-        self.add_dataset(Dataset('rec.mu2e.vst00s0s10r0000.daqana.art','vst00b0s10r0000','local'))
+        self.add_dataset(Dataset('raw.mu2e.trk.vst.art'               ,'vst04s0s00r0000','local'))
+        self.add_dataset(Dataset('rec.mu2e.vst04s0s10r0000.daqana.art','vst04s0s10r0000','local'))
 #------------------------------------------------------------------------------
 # a job always has an input dataset, but...
 #------------------------------------------------------------------------------
@@ -19,17 +19,18 @@ class Project(ProjectBase):
 
     def __init__(self,idsid=None):
         
-        ProjectBase.__init__(self,project='daqana',family_id='vst00s0',idsid=idsid);
+        ProjectBase.__init__(self,project='daqana',family_id='vst04s0',idsid=idsid);
         self.init_datasets();
 #------------------------------------------------------------------------------
 # stage 1
 # -------
-# s1:reco : InputDsID is 'vst00b0s00r0000'
-#           reconstruction job has only one output stream
+# s1:cosmic_reco : InputDsID is 'vst04s0s00r0000'
+#                  reconstruction job has only one output stream
 #------------------------------------------------------------------------------        
         s                            = self.new_stage('s1');
         input_dsid                   = idsid;
-        if (input_dsid == None): input_dsid = 'vst00b0s00r0000'
+        if (input_dsid == None): input_dsid = 'vst04s0s00r0000'
+        
         job                          = s.new_job('cosmic_reco',input_dsid);
 
         job.fNInputFiles             = -1                     # number of segments defined by the input dataset
@@ -40,9 +41,11 @@ class Project(ProjectBase):
         job.fIfdh                    = 'ifdh' ## 'xrootd'               # ifdh/xrootd
         job.fMaxMemory               = '3000MB'
 
+        # job.fInputDataset.print()
+            
         output_stream                = job.fInputDataset.output_stream()
 
-        odsid                        = self.fFamilyID+s.name()+output_stream+'r0000';
+        odsid                        = self.fFamilyID+s.name()+output_stream+'r0000'; # i.e. +'s10r0000'
 
         job.fOutputStream            = ['defaultOutput'                ]
         job.fOutputDsID              = [odsid                          ]
@@ -51,26 +54,26 @@ class Project(ProjectBase):
 #------------------------------------------------------------------------------
 # s1:make_dgn : ntupling job has only one output stream
 #------------------------------------------------------------------------------        
-        if (input_dsid == None): input_dsid = 'vst00b0s10r0000'
+        if (input_dsid == None): input_dsid = 'vst04s0s10r0000'
         job                          = s.new_job('make_dgn',input_dsid);
 
         job.fNInputFiles             = -1                     # number of segments defined by the input dataset
              
-        job.fMaxInputFilesPerSegment =  20
+        job.fMaxInputFilesPerSegment =  10
         # job.fNEventsPerSegment       =  100000
         job.fResample                = 'no'   # yes/no        # for resampling, need to define the run number again
-        job.fRequestedTime           = '1h'   
-        job.fIfdh                    = 'xrootd' ## 'xrootd'               # ifdh/xrootd
+        job.fRequestedTime           = '3h'   
+        job.fIfdh                    = 'ifdh' ## 'xrootd'               # ifdh/xrootd
         job.fMaxMemory               = '3000MB'
 
         output_stream                = job.fInputDataset.output_stream()
 
         odsid                        = self.fFamilyID+s.name()+output_stream+'r0000';
 
-        job.fOutputStream            = ['InitStntuple'    ]
-        job.fOutputDsID              = [odsid             ]
-        job.fOutputFnPattern         = ['nts.mu2e.'+odsid ]
-        job.fOutputFormat            = ['stn'             ]
+        job.fOutputStream            = ['InitStntuple'     ]
+        job.fOutputDsID              = [odsid              ]
+        job.fOutputFnPattern         = ['nts.murat.'+odsid ]
+        job.fOutputFormat            = ['root'             ]
 #------------------------------------------------------------------------------
 # end
 #------------------------------------------------------------------------------

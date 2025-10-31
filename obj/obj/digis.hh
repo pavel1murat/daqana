@@ -35,6 +35,7 @@ public :
     kNSegmentHistSets = 1000,
     kNTwoSegHistSets  =   20,
     kNSshtHistSets    = 1000,
+    kNPanelShHistSets =  100,
   };
 
   struct TwoSegPar_t {
@@ -71,11 +72,17 @@ public :
     TH2F* fDrVsStraw;
   };
 
+  struct PanelShHist_t {
+    TH1F* fRdrift;
+    TH2F* fDrhoVsRdrift;
+  };
+
   struct Hist_t {
     EventHist_t*    fEvent  [kNEventHistSets  ];
     SegmentHist_t*  fSegment[kNSegmentHistSets];
     SshtHist_t*     fSsht   [kNSshtHistSets   ];
     TwoSegHist_t*   fTwoSeg [kNTwoSegHistSets ];
+    PanelShHist_t*  fPanelSh[kNPanelShHistSets];
   };
 
   Hist_t          fHist;
@@ -376,8 +383,11 @@ public :
    TBranch        *b_segsh_drho;   //!
    TBranch        *b_segsh_iseg;   //!
    TBranch        *b_segsh_itrk;   //!
-
-  digis(const char* Fn, int DsID);
+//-----------------------------------------------------------------------------
+// DsID    = -1     : single file
+// Fileset = nullptr: full dataset
+//-----------------------------------------------------------------------------
+  digis(const std::string& Fn, const std::string& Fileset = "file");
   virtual ~digis();
 
   int CalculateMissingParameters();
@@ -385,11 +395,13 @@ public :
   int FillTwoSegHistograms (TwoSegHist_t*  Hist, TwoSegPar_t* Par);
   int FillSegmentHistograms(SegmentHist_t* Hist, int I);
   int FillSshtHistograms   (SshtHist_t*    Hist, int IHit);
+  int FillPanelShHistograms(PanelShHist_t* Hist, int IHit);
   int FillEventHistograms  (EventHist_t*   Hist);
   int FillHistograms       (Hist_t*        Hist);
 
   int BookTwoSegHistograms (TwoSegHist_t*  Hist, const char* Folder);
   int BookSshtHistograms   (SshtHist_t*    Hist, const char* Folder);
+  int BookPanelShHistograms(PanelShHist_t* Hist, const char* Folder);
   int BookSegmentHistograms(SegmentHist_t* Hist, const char* Folder);
   int BookEventHistograms  (EventHist_t*   Hist, const char* Folder);
   int BookHistograms       (Hist_t*        Hist);
@@ -398,7 +410,7 @@ public :
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
   virtual void     Init();
-  virtual void     Loop();
+  virtual void     Loop(long int NEvents = -1);
   virtual bool     Notify();
   virtual void     Show(Long64_t entry = -1);
 
