@@ -1,5 +1,6 @@
-//
-
+///////////////////////////////////////////////////////////////////////////////
+// run fit_c2c_drho before
+///////////////////////////////////////////////////////////////////////////////
 #ifndef __read_trk_preamp_straw__
 #define __read_trk_preamp_straw__
 
@@ -58,7 +59,7 @@ struct C2cFitsData_t {
 };
 
 //-----------------------------------------------------------------------------
-// read combohit printout, extract hits with a given panel and plane
+// read file with TrkPreampStraw calibrations, correct using the fits
 //-----------------------------------------------------------------------------
 int read_trk_preamp_straw(const char* Fn, std::vector<TrkPreampStrawData_t>& Data) {
   std::ifstream file(Fn);
@@ -193,7 +194,7 @@ void printData(std::vector<TrkPreampStrawData_t> Data, int PrintLevel) {
 }
 
 //-----------------------------------------------------------------------------
-  int test_read_trk_preamp_straw(const char* fn_TrkPreampStraw, const char* fn_C2cFits, int PrintLevel = 0, const char* fn_Out = nullptr) {
+int update_trk_preamp_straw(const char* fn_TrkPreampStraw, const char* fn_C2cFits, int PrintLevel = 0, const char* fn_Out = nullptr) {
 
   std::vector<TrkPreampStrawData_t> tps;
   std::vector<C2cFitsData_t> c2cf;

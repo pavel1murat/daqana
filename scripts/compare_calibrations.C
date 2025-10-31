@@ -16,7 +16,7 @@
 #include "TString.h"
 #include "TFolder.h"
 
-#include "daqana/scripts/read_trk_preamp_straw.C"
+#include "daqana/scripts/update_trk_preamp_straw.C"
 #include "daqana/obj/digis.hh"
 
 class CompareCalibrations {

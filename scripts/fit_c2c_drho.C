@@ -9,13 +9,18 @@
 #include "TH2.h"
 
 //-----------------------------------------------------------------------------
-int fit_c2c_drho(int RunNumber,int Panel) {
+// example DsID: vst04s0s10r000
+//-----------------------------------------------------------------------------
+int fit_c2c_drho(const char* DsID, int RunNumber,int Panel) {
 
   char fn[200];
 
-  //  const char* hist_dir = "/srv/mu2e/data/projects/tracker/vst/hist";
-  const char* hist_dir = "./hist";
-  sprintf(fn,"%s/hst.murat.vst00s0s10r0000.daqana.%06i_000001.root",hist_dir,RunNumber);
+  // const char* hist_dir = "/srv/mu2e/data/projects/tracker/vst/hist";
+  // const char* hist_dir = "./hist";
+  const char* hist_dir = "/projects/mu2e/data/projects/vst/hist";
+  sprintf(fn,"%s/hst.murat.%s.daqana.%06i_000001.root",hist_dir,DsID,RunNumber);
+
+  printf("histfile:%s\n",fn);
 
   TFile* f = TFile::Open(fn);
 
