@@ -1,0 +1,35 @@
+# -*- mode:tcl -*-
+# V3 : uses the DB alignment
+# V4 : first  pass on C2C time offsets: TrkPreampStraw_v3
+# V5 : second pass on C2C time offsets: TrkPreampStraw_v4
+#------------------------------------------------------------------------------
+# services.DbService : @local::DbEmpty
+services.DbService : {
+    purpose  : EMPTY
+    version  : v0                          ## ignored
+    dbName   : "mu2e_conditions_prd"       ## ignored
+    
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v4.txt",
+                 "daqana/calibrations/TrkDelayRStraw.txt"   ,
+                 "daqana/calibrations/TrkAlign_Station_0_10_22.txt",
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt"  , ## use DB
+                 "daqana/calibrations/TrkDelayPanel_v3.txt" ]
+                
+    verbose  : 100
+}
+#------------------------------------------------------------------------------
+# where the tables are coming from
+#------------------------------------------------------------------------------
+services.ProditionsService.alignedTracker.useDb         : true
+services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.strawElectronics.useDb       : true        ## default false
+services.ProditionsService.fullReadoutStraw.useDb       : false
+services.ProditionsService.strawDrift.useDb             : false
+services.ProditionsService.strawPhysics.useDb           : false
+services.ProditionsService.strawResponse.useDb          : true       ## default:false
+services.ProditionsService.trackerStatus.Settings.useDb : false
+services.ProditionsService.trackerPanelMap.useDb        : true
+
+services.ProditionsService.strawElectronics.verbose     : 10
+
+## services.ProditionsService.trackerPanelMap.verbose      : 10
