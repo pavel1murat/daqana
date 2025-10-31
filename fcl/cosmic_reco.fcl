@@ -29,7 +29,7 @@ services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etr
 #------------------------------------------------------------------------------
 ## include "daqana/fcl/calibration_set_v2.fcl"
 ## include "daqana/fcl/calibration_set_v9.fcl"
-#include "daqana/fcl/calibration_set_v3.fcl"
+#include "daqana/fcl/calibration_set_v4.fcl"
 services.ProditionsService.strawResponse.truncateLongitudinal : false
 
 source : {

@@ -983,6 +983,9 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       nt_tsh->rdrift  = ts->R(pt);               // drift distance
       nt_tsh->doca    = ts->Rho(pt);             // rdrift-(track-wire distance) (assume signed, double check)
       double sw_dist  = ts->SwDist(pt);
+//-----------------------------------------------------------------------------
+// if drho is positive, the hit drift radius needs to be increased, and the T0 - reduced...
+//-----------------------------------------------------------------------------
       nt_tsh->drho    = fabs(sw_dist)-fabs(nt_tsh->rdrift); // unsigned residual
 
       nt_tsh->iseg    = iseg;

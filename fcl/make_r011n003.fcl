@@ -19,7 +19,8 @@
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 ## // #include "daqana/fcl/calibration_set_v1.fcl"
-#include "daqana/fcl/calibration_set_v3.fcl"
+## #include "daqana/fcl/calibration_set_v3.fcl"
+#include "daqana/fcl/calibration_set_v4.fcl"
 
 process_name : MakeDaqNtuple
 

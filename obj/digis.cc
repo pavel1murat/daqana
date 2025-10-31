@@ -921,7 +921,7 @@ int  digis::SaveFolder(TFolder* Folder, TDirectory* Dir) {
 // 	   o->ClassName());
 
     if (strcmp(o->ClassName(),"TFolder") == 0) {
-      SaveFolder((TFolder*) o, dir);
+      digis::SaveFolder((TFolder*) o, dir);
       //      dir->cd();
     }
     else if (! o->InheritsFrom("TStnModule")) {
@@ -942,7 +942,7 @@ void digis::SaveHist(const char* Filename) {
 
   TFile* f = new TFile(Filename,"recreate");
 
-  SaveFolder(fFolder,f);
+  digis::SaveFolder(fFolder,f);
 
   f->Close();
   delete f;

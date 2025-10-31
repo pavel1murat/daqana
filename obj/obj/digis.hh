@@ -438,8 +438,8 @@ public :
 	       Double_t YMin, Double_t YMax,
 	       const char* FolderName = "Hist");
 
-  int  SaveFolder(TFolder* Folder, TDirectory* Dir);
-  void SaveHist  (const char* Filename);
+  static int  SaveFolder(TFolder* Folder, TDirectory* Dir);
+  void        SaveHist  (const char* Filename);
 };
 
 #endif
