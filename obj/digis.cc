@@ -607,7 +607,7 @@ int digis::BookHistograms(Hist_t* Hist) {
 // if Dsid < 0, a single file
 // otherwise, a specific dataset, ignore Fn
 //-----------------------------------------------------------------------------
-digis::digis(const std::string& Fn, const std::string& Fileset) : fChain(0) {
+digis::digis(const std::string& DsID, const std::string& Fileset) : fChain(0) {
   struct NestedFunctor {
     std::string operator()(std::string& s) {
       std::string x = s;
@@ -631,17 +631,18 @@ digis::digis(const std::string& Fn, const std::string& Fileset) : fChain(0) {
   fChain    = new TChain("/MakeDigiNtuple/digis");
 
   if (Fileset == "file") {
-    fChain->AddFile(Fn.data(),TChain::kBigNumber);
+    fChain->AddFile(DsID.data(),TChain::kBigNumber);
   }
-  else if (Fn == "vst00s0s10r0000") {
+  else if (DsID == "vst00s0s10r0000") {
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000001.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000148.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000288.root",TChain::kBigNumber);
     fChain->AddFile("./nts/nts.murat.vst00s0s10r0000.daqana.107995_000429.root",TChain::kBigNumber);
   }
-  else if (Fn == "vst04s0s10r0000") {
-                                        // read text file from a catalog
-    std::string fn = "daqana/datasets/vst04s0/catalog/nts.murat."+Fn+".daqana.root.files";
+  else {
+                                        // read text file from a catalog v
+    std::string family_id = DsID.substr(0,7);
+    std::string fn = "daqana/datasets/"+family_id+"/catalog/nts.murat."+DsID+".daqana.root.files";
     if (Fileset != "") fn = fn + "." + Fileset;
 
     // std::cout << "fn:" << fn << std::endl;

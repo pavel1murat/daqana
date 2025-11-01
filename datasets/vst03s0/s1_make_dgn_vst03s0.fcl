@@ -15,17 +15,14 @@
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
 #include "Stntuple/fcl/stntuple_templates.fcl"
-
-process_name : MakeDaqNtuple
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v4.fcl"
-services.GeometryService.inputFile    : "daqana/datasets/vst04s0/geom_daqana_vst04s0.txt"
-#------------------------------------------------------------------------------
-# output ntuple
-#------------------------------------------------------------------------------
-services.TFileService.fileName        : "nts.murat.vst04s0s10r0000.daqana.107995_000001.root"
+#include "daqana/fcl/calibration_set_v3.fcl"
+services.GeometryService.inputFile    : "daqana/datasets/vst03s0/geom_daqana_vst03s0.txt"
+services.TFileService.fileName        : "nts.murat.vst03s0s10r0000.daqana.107995_000001.root"
+
+process_name : MakeDaqNtuple
 
 source : {
     module_type : RootInput
