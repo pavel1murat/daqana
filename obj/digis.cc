@@ -665,7 +665,8 @@ int digis::BookHistograms(Hist_t* Hist) {
 // otherwise, a specific dataset, ignore Fn
 //-----------------------------------------------------------------------------
 digis::digis(const std::string& DsID, const std::string& Fileset) : fChain(0) {
-  struct NestedFunctor {
+                                        // make it an "internal" function (use functor)
+  struct NestedTrim {
     std::string operator()(std::string& s) {
       std::string x = s;
       size_t start = x.find_first_not_of(" \t\r\n");
@@ -705,9 +706,9 @@ digis::digis(const std::string& DsID, const std::string& Fileset) : fChain(0) {
     // std::cout << "fn:" << fn << std::endl;
     std::ifstream input(fn);
     std::string line;
-    NestedFunctor nested_trim;
+    NestedTrim  trim;
     while (std::getline(input, line)) {
-      std::string trimmed_line = nested_trim(line);
+      std::string trimmed_line = trim(line);
       //      std::cout << std::format("line:{} trimmed_line:{}\n",line,trimmed_line);
       if (trimmed_line.empty() or (trimmed_line[0] == '#'))                   continue;
 //------------------------------------------------------------------------------

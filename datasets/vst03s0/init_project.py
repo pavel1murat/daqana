@@ -19,7 +19,7 @@ class Project(ProjectBase):
 
     def __init__(self,idsid=None):
         
-        ProjectBase.__init__(self,project='daqana',family_id='vst00s0',idsid=idsid);
+        ProjectBase.__init__(self,project='daqana',family_id='vst03s0',idsid=idsid);
         self.init_datasets();
 #------------------------------------------------------------------------------
 # stage 1
@@ -67,10 +67,10 @@ class Project(ProjectBase):
 
         odsid                        = self.fFamilyID+s.name()+output_stream+'r0000';
 
-        job.fOutputStream            = ['InitStntuple'    ]
-        job.fOutputDsID              = [odsid             ]
-        job.fOutputFnPattern         = ['nts.mu2e.'+odsid ]
-        job.fOutputFormat            = ['stn'             ]
+        job.fOutputStream            = ['InitStntuple'     ]
+        job.fOutputDsID              = [odsid              ]
+        job.fOutputFnPattern         = ['nts.murat.'+odsid ]
+        job.fOutputFormat            = ['root'             ]
 #------------------------------------------------------------------------------
 # end
 #------------------------------------------------------------------------------
