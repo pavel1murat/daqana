@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// fit histograms produced by Stntuple/mod/TrkFragmentAna_module.cc
+// fit drho histograms to produce T0 channel-to-channel offsets
 //-----------------------------------------------------------------------------
 
 #include "TFitResult.h"
@@ -37,7 +37,7 @@ int fit_c2c_drho(const char* DsID, int RunNumber,int Panel) {
   TH2F* h0 = (TH2F*) f->Get(Form("//digis/ssht_%3i/drho_vs_straw",800+Panel));
 
   for (int i=0; i<96; i++) {
-    printf("-- straw %02i\n",i);
+    // printf("-- straw %02i\n",i);
     int bin  = i+1;
 
     hpy[i] = h0->ProjectionY(Form("hpy_%02i",i),bin,bin);
