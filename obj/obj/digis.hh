@@ -36,6 +36,7 @@ public :
     kNTwoSegHistSets  =   20,
     kNSshtHistSets    = 1000,
     kNPanelShHistSets =  100,
+    kNTrkHistSets     =  100,
   };
 
   struct TwoSegPar_t {
@@ -46,6 +47,7 @@ public :
 
   struct EventHist_t {
     TH1F*     fNSeg[2];
+    TH1F*     fNTrk;
   };
 
   struct SegmentHist_t {
@@ -77,12 +79,21 @@ public :
     TH2F* fDrhoVsRdrift;
   };
 
+  struct TrkHist_t {
+    TH1F* fNHits;
+    TH1F* fChi2d;
+    TH1F* fT0;
+    TH1F* fDzDy;
+    TH1F* fDxDy;
+  };
+
   struct Hist_t {
     EventHist_t*    fEvent  [kNEventHistSets  ];
     SegmentHist_t*  fSegment[kNSegmentHistSets];
     SshtHist_t*     fSsht   [kNSshtHistSets   ];
     TwoSegHist_t*   fTwoSeg [kNTwoSegHistSets ];
     PanelShHist_t*  fPanelSh[kNPanelShHistSets];
+    TrkHist_t*      fTrk    [kNTrkHistSets    ];
   };
 
   Hist_t          fHist;
@@ -397,6 +408,7 @@ public :
   int FillSshtHistograms   (SshtHist_t*    Hist, int IHit);
   int FillPanelShHistograms(PanelShHist_t* Hist, int IHit);
   int FillEventHistograms  (EventHist_t*   Hist);
+  int FillTrkHistograms    (TrkHist_t*     Hist, int ITrk);
   int FillHistograms       (Hist_t*        Hist);
 
   int BookTwoSegHistograms (TwoSegHist_t*  Hist, const char* Folder);
@@ -404,6 +416,7 @@ public :
   int BookPanelShHistograms(PanelShHist_t* Hist, const char* Folder);
   int BookSegmentHistograms(SegmentHist_t* Hist, const char* Folder);
   int BookEventHistograms  (EventHist_t*   Hist, const char* Folder);
+  int BookTrkHistograms    (TrkHist_t*     Hist, const char* Folder);
   int BookHistograms       (Hist_t*        Hist);
 
   virtual Int_t    Cut(Long64_t entry);

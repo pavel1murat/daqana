@@ -9,7 +9,7 @@ class Project(ProjectBase):
 # datasets of this family
 #-------v----------------------------------------------------------------------
         self.add_dataset(Dataset('raw.mu2e.trk.vst.art'               ,'vst03s0s00r0000','local'))
-        self.add_dataset(Dataset('rec.mu2e.vst00s0s10r0000.daqana.art','vst03s0s10r0000','local'))
+        self.add_dataset(Dataset('rec.mu2e.vst03s0s10r0000.daqana.art','vst03s0s10r0000','local'))
 #------------------------------------------------------------------------------
 # a job always has an input dataset, but...
 #------------------------------------------------------------------------------
@@ -56,11 +56,11 @@ class Project(ProjectBase):
 
         job.fNInputFiles             = -1                     # number of segments defined by the input dataset
              
-        job.fMaxInputFilesPerSegment =  20
+        job.fMaxInputFilesPerSegment =  10
         # job.fNEventsPerSegment       =  100000
         job.fResample                = 'no'   # yes/no        # for resampling, need to define the run number again
-        job.fRequestedTime           = '1h'   
-        job.fIfdh                    = 'xrootd' ## 'xrootd'               # ifdh/xrootd
+        job.fRequestedTime           = '3h'   
+        job.fIfdh                    = 'ifdh' ## 'xrootd'     # ifdh/xrootd
         job.fMaxMemory               = '3000MB'
 
         output_stream                = job.fInputDataset.output_stream()

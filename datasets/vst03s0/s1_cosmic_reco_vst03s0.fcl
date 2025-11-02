@@ -67,7 +67,7 @@ outputs:  {
 #------------------------------------------------------------------------------
 source.fileNames : [ "/projects/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.107995_000001.art" ]
 # outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r030n000.%06r_%06s.art"   # 011 or 111: after cosmic reco
-outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r030n000.107995_000001.art"   # 011 or 111: after cosmic reco
+outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst03s0s10r0000.107995_000001.art"   # 011 or 111: after cosmic reco
 
 physics : {
     producers : {

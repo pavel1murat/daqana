@@ -112,6 +112,7 @@ int digis::FillSegmentHistograms(SegmentHist_t* Hist, int I) {
 int digis::FillEventHistograms(EventHist_t* Hist) {
   Hist->fNSeg[0]->Fill(nseg  );
   Hist->fNSeg[1]->Fill(fNSeg6);
+  Hist->fNTrk->Fill(ntrk  );
 
   return 0;
 }
@@ -141,11 +142,22 @@ int digis::FillPanelShHistograms(PanelShHist_t* Hist, int I) {
 }
 
 //-----------------------------------------------------------------------------
+int digis::FillTrkHistograms(TrkHist_t* Hist, int I) {
+  Hist->fNHits->Fill(trk_nhits[I]);
+  Hist->fT0->Fill(trk_t0[I]);
+  Hist->fChi2d->Fill(trk_chi2[I]);
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int digis::FillHistograms(Hist_t* Hist) {
                                         // fill event histograms
 
   FillEventHistograms(Hist->fEvent[0]);
-  if (fNSeg6 >= 2) FillEventHistograms(Hist->fEvent[1]);
+  if (fNSeg4 >= 2) FillEventHistograms(Hist->fEvent[1]);
+  if (fNSeg6 >= 2) FillEventHistograms(Hist->fEvent[2]);
+  if (fNSeg8 >= 2) FillEventHistograms(Hist->fEvent[3]);
 
                                         // segment histograms
   for (int i=0; i<nseg; i++) {
@@ -160,7 +172,7 @@ int digis::FillHistograms(Hist_t* Hist) {
     if (seg_nh[i] >= fMinSegNHits[0]) {
       FillSegmentHistograms(Hist->fSegment[401],i);
       FillSegmentHistograms(Hist->fSegment[unique_panel+410],i);
-      if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
+      if ((seg_nghl[i][0] > 1) and (seg_nghl[i][1] > 1)) {
         FillSegmentHistograms(Hist->fSegment[402],i);
         if (seg_chi2d[i] <fMaxSegChi2d) {
           FillSegmentHistograms(Hist->fSegment[403],i);
@@ -176,7 +188,7 @@ int digis::FillHistograms(Hist_t* Hist) {
     if (seg_nh[i] >= fMinSegNHits[1]) {
       FillSegmentHistograms(Hist->fSegment[601],i);
       FillSegmentHistograms(Hist->fSegment[unique_panel+610],i);
-      if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
+      if ((seg_nghl[i][0] > 1) and (seg_nghl[i][1] > 1)) {
         FillSegmentHistograms(Hist->fSegment[602],i);
         if (seg_chi2d[i] <fMaxSegChi2d) {
           FillSegmentHistograms(Hist->fSegment[603],i);
@@ -192,7 +204,7 @@ int digis::FillHistograms(Hist_t* Hist) {
     if (seg_nh[i] >= fMinSegNHits[2]) {
       FillSegmentHistograms(Hist->fSegment[801],i);
       FillSegmentHistograms(Hist->fSegment[unique_panel+810],i);
-      if ((seg_nghl[i][0] > 0) and (seg_nghl[i][1] > 0)) {
+      if ((seg_nghl[i][0] > 1) and (seg_nghl[i][1] > 1)) {
         FillSegmentHistograms(Hist->fSegment[802],i);
         if (seg_chi2d[i] <fMaxSegChi2d) {
           FillSegmentHistograms(Hist->fSegment[803],i);
@@ -335,6 +347,15 @@ int digis::FillHistograms(Hist_t* Hist) {
       }
     }
   }
+//-----------------------------------------------------------------------------
+// fill track histograms
+//-----------------------------------------------------------------------------
+  for (int it=0; it<ntrk; it++) {
+    FillTrkHistograms(Hist->fTrk[0],it);
+    if (fNSeg4 > 1) FillTrkHistograms(Hist->fTrk[1],it);
+    if (fNSeg6 > 1) FillTrkHistograms(Hist->fTrk[2],it);
+    if (fNSeg8 > 1) FillTrkHistograms(Hist->fTrk[3],it);
+  }
   return 0;
 };
 
@@ -342,6 +363,7 @@ int digis::FillHistograms(Hist_t* Hist) {
 int digis::BookEventHistograms(EventHist_t* Hist, const char* Folder) {
   HBook1F(Hist->fNSeg[0],"nseg_0","nseg_0",20,0,20, Folder);
   HBook1F(Hist->fNSeg[1],"nseg_1","nseg_1",20,0,20, Folder);
+  HBook1F(Hist->fNTrk   ,"ntrk"  ,"ntrk"  ,10,0,10, Folder);
   return 0;
 }
 
@@ -396,6 +418,18 @@ int digis::BookPanelShHistograms(PanelShHist_t* Hist, const char* Folder) {
 
 
 //-----------------------------------------------------------------------------
+// add more descriptive titles later
+//-----------------------------------------------------------------------------
+int digis::BookTrkHistograms(TrkHist_t* Hist, const char* Folder) {
+  
+  HBook1F(Hist->fNHits     ,"nhits"        ,"nhits"    , 100,    0, 100, Folder);
+  HBook1F(Hist->fChi2d     ,"chi2d"        ,"chi2d, mm", 100,    0, 50, Folder);
+  HBook1F(Hist->fT0        ,"t0"           ,"t0"       , 1000,   0, 100000,Folder);
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 int digis::BookHistograms(Hist_t* Hist) {
   TH1::AddDirectory(0);
   
@@ -406,7 +440,9 @@ int digis::BookHistograms(Hist_t* Hist) {
   for (int i=0; i<kNEventHistSets; i++) book_event_histset[i] = 0;
 
   book_event_histset[ 0] = 1;		// all events
-  book_event_histset[ 1] = 1;	        // events with 2 6+ segments
+  book_event_histset[ 1] = 1;	        // events with 2 4+ segments
+  book_event_histset[ 2] = 1;	        // events with 2 6+ segments
+  book_event_histset[ 3] = 1;	        // events with 2 8+ segments
 
   TFolder* fol;
   char folder_name[64];
@@ -596,6 +632,27 @@ int digis::BookHistograms(Hist_t* Hist) {
       if (! fol) fol = fFolder->AddFolder(folder_name,folder_name);
       fHist.fPanelSh[i] = new PanelShHist_t;
       BookPanelShHistograms(fHist.fPanelSh[i],Form("%s",folder_name));
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// book trk histograms
+//-----------------------------------------------------------------------------
+  int book_trk_histset[kNTrkHistSets];
+  for (int i=0; i<kNTrkHistSets; i++) book_trk_histset[i] = 0;
+
+  book_trk_histset[ 0] = 1;		// all tracks 
+  book_trk_histset[ 1] = 1;		// tracks in events with 2 4+ seg 
+  book_trk_histset[ 2] = 1;		// tracks in events with 2 6+ seg 
+  book_trk_histset[ 3] = 1;		// tracks in events with 2 8+ seg 
+
+  for (int i=0; i<kNTrkHistSets; i++) {
+    if (book_trk_histset[i] != 0) {
+      sprintf(folder_name,"trk_%i",i);
+      fol = (TFolder*) fFolder->FindObject(folder_name);
+      if (! fol) fol = fFolder->AddFolder(folder_name,folder_name);
+      fHist.fTrk[i] = new TrkHist_t;
+      BookTrkHistograms(fHist.fTrk[i],Form("%s",folder_name));
     }
   }
 
