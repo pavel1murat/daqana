@@ -21,10 +21,13 @@ public:
   TCanvas*    mCanvas;
   TH2F*       mH2;
   TrkSegment* mTs;
-  SegmentFit* sfitter;
+  SegmentFit* fSfitter;
 
   test3() {
-    mTs = nullptr;
+    mTs     = nullptr;
+    fSfitter = nullptr;
+    mCanvas = nullptr;
+    mH2     = nullptr;
   }
 
   int init_segment_geometry(TrkSegment* Seg);

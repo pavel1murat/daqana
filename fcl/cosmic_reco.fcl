@@ -27,9 +27,7 @@ services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etr
 #------------------------------------------------------------------------------
 # update DB section
 #------------------------------------------------------------------------------
-## include "daqana/fcl/calibration_set_v2.fcl"
-## include "daqana/fcl/calibration_set_v9.fcl"
-#include "daqana/fcl/calibration_set_v4.fcl"
+#include "daqana/fcl/calibration_set_v5.fcl"
 services.ProditionsService.strawResponse.truncateLongitudinal : false
 
 source : {
@@ -155,6 +153,9 @@ physics : {
 #------------------------------------------------------------------------------
 #include "daqana/fcl/kkline.fcl"
 
-# physics.producers.KKLine.ModuleSettings.PrintLevel : 100
 # physics.producers.makeSD.debugMode : 1
 # physics.producers.makeSD.debugBits : [ "bit0:1", "bit1:1" ]
+physics.producers.KKLine.ModuleSettings.PrintLevel    : 100
+physics.producers.KKLine.FitSettings.PrintLevel       : 100
+physics.producers.KKLine.KKFitSettings.PrintLevel     : 100
+physics.producers.KKLine.ExtensionSettings.PrintLevel : 100

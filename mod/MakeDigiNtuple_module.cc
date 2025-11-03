@@ -935,13 +935,13 @@ int mu2e::MakeDigiNtuple::fillSeg() {
                                         // assume one track...
       
       const mu2e::KalSeed*   ks = &_ksc->at(0);
-      mu2e::KalSeed::KLPTPtr kspar = ks->kinematicLineFitTrajectory();
 
-      ROOT::Math::XYZVector  dir = kspar->momentum3(nt_ts->t0);
-      ROOT::Math::XYZTVector pos = kspar->position4(nt_ts->t0);
-
+      KinKal::KinematicLine   kline = ks->nearestSegment(ts->hits[0]->pos())->kinematicLine();
+      ROOT::Math::XYZVector   pos   = kline.pos0();
+      ROOT::Math::XYZVector   dir   = kline.direction();
+     
       CLHEP::Hep3Vector dirm(dir.x(),dir.y(),dir.z());
-      CLHEP::Hep3Vector dirl = ts->fTrkPanel->dsToPanel()*dirm;
+      CLHEP::Hep3Vector dirl = ts->fTrkPanel->dsToPanel().rotation()*dirm;
 
       CLHEP::Hep3Vector posm(pos.x(),pos.y(),pos.z());
       CLHEP::Hep3Vector posl = ts->fTrkPanel->dsToPanel()*posm;

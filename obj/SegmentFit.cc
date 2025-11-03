@@ -1,4 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
+// fgDebugMode = 1: enables debug printouts, some printouts require specific 
+//                  fgDebugBits to be non-zero
+// fgDebugBits[0] = 1 : pritnout from DisplaySegment
+///////////////////////////////////////////////////////////////////////////////
 #include "TLine.h"
 #include "TEllipse.h"
 
@@ -6,7 +10,8 @@
 #include <memory>
 
 
-int SegmentFit::fgDebugMode(0);
+int SegmentFit::fgDebugMode{0};
+int SegmentFit::fgDebugBits[100] = {}; 
 
 //-----------------------------------------------------------------------------
 SegmentFit::SegmentFit(TrkSegment* Seg) {
@@ -240,7 +245,7 @@ int SegmentFit::DisplaySegment() {
   double t0 = fSegment->T0();
   for (int i=0; i<nhits; i++) {
     Point2D* pt = &fSegment->points[i];
-    if (fgDebugMode) pt->print();
+    if (fgDebugMode and fgDebugBits[0]) pt->print();
     // straw
     TEllipse* e = new TEllipse(pt->x,pt->y,2.5,0,0,360);
     e->SetLineColor(kRed);

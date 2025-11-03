@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # example :
-#        v001/daqana/scripts/submit_mu2e_job.py --v=a.fcl --rn=105935 --idsid=vst --calib=v9 --diag_level=10
+#        v001/daqana/scripts/submit_mu2e_job.py --c=a.fcl --rn=105935 --idsid=vst --calib=v9 --diag_level=10
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime, socket
 import sys, string, getopt, glob, os, time, re, array
@@ -19,7 +19,6 @@ class SubmitJob:
         self.run_number  = None
         self.diag_level  = 0;
         self.source      = None;
-        
 # ---------------------------------------------------------------------
     def Print(self,Name,level,Message):
         if (level > self.diag_level): return 0;

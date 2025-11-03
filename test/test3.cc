@@ -82,13 +82,13 @@ int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
 //-----------------------------------------------------------------------------
   mTs->InitHits(&chhits);
 //-----------------------------------------------------------------------------
-  if (sfitter != nullptr) delete sfitter;
-  sfitter = new SegmentFit(mTs);
+  if (fSfitter != nullptr) delete fSfitter;
+  fSfitter = new SegmentFit(mTs);
 
-  mTs->print("-- segment after creating sfitter");
+  mTs->print("-- segment after creating fSfitter");
 
                                         // this needs to be done just once
-  sfitter->DefineDriftDirections();
+  fSfitter->DefineDriftDirections();
 
   mTs->print("-- segment after SegmentFit::DefineDriftDirections");
 //-----------------------------------------------------------------------------  
@@ -112,11 +112,11 @@ int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
 // pin=nullptr: use fSegment->fPar to start
 //-----------------------------------------------------------------------------
   Par_t par;
-  int converged = sfitter->Fit(NIter,0, nullptr, &par);
+  int converged = fSfitter->Fit(NIter,0, nullptr, &par);
   mTs->print(Form("-- after SegmentFit::Fit converged:%i",converged));
 
   mH2->Draw();
-  sfitter->DisplaySegment();
+  fSfitter->DisplaySegment();
 
   return rc;
 }

@@ -8,6 +8,7 @@ class SegmentFit {
 public:
 
   static int fgDebugMode;
+  static int fgDebugBits[100];
 
   TrkSegment* fSegment;                 // cached segment
 
@@ -78,6 +79,12 @@ public:
   int    DisplaySegment();
                                         // if nullptr, use fTangentLine
   int    DefineTangentLine(Par_t* Par = nullptr);
+
+  static int DebugMode()      { return fgDebugMode;    }
+  static int DebugBit (int I) { return fgDebugBits[I]; }
+
+  static void SetDebugMode(int Mode) { fgDebugMode = Mode; }
+  static void DebugBit(int I, int Val) { fgDebugBits[I] = Val; }
 };
 
 #endif

@@ -12,7 +12,7 @@ process_name : WriteGdml
 
 services : { @table::Services.Sim }
 services.SeedService.baseSeed      : 8
-services.GeometryService.inputFile : "pipenu/datasets/rpc14b0/geom_pipenu_rpc14b0.txt"
+services.GeometryService.inputFile : "daqana/datasets/vst05s0/geom_daqana_vst05s0.txt"
 
 source : {
   module_type : EmptyEvent

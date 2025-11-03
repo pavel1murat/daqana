@@ -178,7 +178,7 @@ public:
   }
 //-----------------------------------------------------------------------------
 // signed distance between the drift circle and the segment (DOCA),
-// definition of the sign - to be clarified
+// definition of the sign - to be clarified, but looks projected to (Nux(),Nuy())
 // use segment T0
 // parameters of the line have to be defined
 //-----------------------------------------------------------------------------
