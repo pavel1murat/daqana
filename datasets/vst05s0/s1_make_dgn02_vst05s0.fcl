@@ -1,0 +1,104 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# make digi ntuple with: a) straw hits and b) time clusters  (NO DIGIS)
+#
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# 
+# use calibration set v5
+#-----------------------------------------------------------------------------
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/DAQ/fcl/prolog.fcl"
+## #include "Offline/DAQ/fcl/panel_map.fcl"
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+process_name : MakeDaqNtuple
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v5.fcl"
+
+services.GeometryService.inputFile    : "daqana/datasets/vst05s0/geom_daqana_vst05s0.txt"
+services.TFileService.fileName        : "nts.murat.vst05s0s10r0002.daqana.107995_000001.root"
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "trk_fragment_ana.art"
+#        SelectEvents  : [ @sequence::TRIGGER_PATHS ]
+#        outputCommands: [
+#                         "drop *_*_*_*",
+#                         "keep *_*_*_*"
+#                        ]
+    }
+}
+
+physics : {
+    
+    producers : {
+        EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+            SpillType          : 0     ## offspill
+            RecoFromMCTruth    : false ## default
+            RecoFromMCTruthErr : 0     ## default
+            InitialPhaseShift  : 0     ## optional, set it to zero just in case
+        }
+
+        makeSD: { @table::DAQ.producers.makeSD
+            diagLevel     :  0 ## 10
+            saveWaveforms :  true
+        }
+        
+        makeSH: { @table::TrkHitReco.producers.makeSH }
+        
+        SimpleTimeCluster : { @table::CosmicReco.producers.SimpleTimeCluster
+            HitNonNoiseSelectionBits : ["EnergySelection"]
+            minNStrawHits : 6
+        }
+    }
+    
+    filters   : {                       }
+    
+    analyzers : {
+        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeSD    : 0
+            makeSH    : 1
+            makeCH    : 1
+            makeTC    : 1
+            makeSeg   : 1
+            makeTrk   : 1
+            tcCollTag : "SimpleTimeCluster"
+            ksCollTag : "KKLine"
+            # debugMode : 1
+            # debugBits      : [ "bit0:0", "bit3:1" ]
+            minNSegments : 1
+        }
+    }
+
+    p1 : [ EWMProducer, makeSD, makeSH ]
+    p2 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster ]
+
+    e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    # e1 : []
+
+    trigger_paths  : [ p1 ]  ## no need to re-reconstruct time clusters
+    end_paths      : [ e1 ]
+}
+#------------------------------------------------------------------------------
+# other overrides
+#------------------------------------------------------------------------------
+physics.analyzers.MakeDigiNtuple.vDrift  : 64.7e-3 ##
+physics.analyzers.MakeDigiNtuple.tOffset :  0.7    ## -0.5  ##

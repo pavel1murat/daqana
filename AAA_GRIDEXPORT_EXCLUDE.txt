@@ -28,12 +28,24 @@ libmu2e_CommonMC_SimParticleDaughterSelector_module.so
 libmu2e_CommonMC_StoppedParticlesFinder_module.so
 libmu2e_CommonMC_SurfaceStepDiag_module.so
 libmu2e_CommonReco_SelectReco_module.so
-# libmu2e_CosmicReco_*.so
+#
+libmu2e_CosmicReco_CosmicAnalyzer_module.so
+libmu2e_CosmicReco_CosmicFitDisplay_module.so
 # libmu2e_CosmicReco*.so
+#
 libmu2e_CRVAnalysis.so
+#
+libmu2e_CRVReco_CrvCalibration_module.so
+libmu2e_CRVReco_CrvCoincidenceFinder_module.so
+libmu2e_CRVReco_CrvDQMcollector_module.so
+libmu2e_CRVReco_CrvWidebandTriggerFilter_module.so
+#
 libmu2e_CRVFilters_CrvCoincidenceClusterFilter_module.so
 libmu2e_CRVResponse_*.so
 # libmu2e_DAQ_*.so
+libmu2e_DAQ_STMWaveformDigisFromFragments_module.so
+libmu2e_DAQ_CrvGRdataFromArtdaqFragments_module.so
+#
 libmu2e_ExtinctionMonitorFNAL_*_module.*
 libmu2e_ExtinctionMonitorFNAL_Analyses.so
 libmu2e_ExtinctionMonitorFNAL_Digitization.so
@@ -68,14 +80,22 @@ libmu2e_Filters_ParticleCodeFilter_module.so
 libmu2e_Filters_RecoMomFilter_module.so
 libmu2e_Filters_SelectStepPointsByTime_module.so
 libmu2e_Filters_StepPointsInDigis_module.so
+libmu2e_Filters_StepPointMCCollectionUpdater_module.so
+libmu2e_Filters_StrawDigiMCFilter_module.so
+libmu2e_Filters_TrackerStepPointFilter_module.so
 libmu2e_Filters_TrackSummaryTruthUpdater_module.so
 libmu2e_Filters_TrkPatRecFilter_module.so
 libmu2e_Filters_TrkQualFilter_module.so
 libmu2e_Filters_VetoIncorrectHits_module.so
+libmu2e_Filters_WeightSamplingFilter_module.so
 #
 libmu2e_HelloWorld_*.so
 #
 libmu2e_Mu2eG4_ConstructEnv*.so
+libmu2e_Mu2eG4_AtomicVolumeSamplerTool_tool.so
+libmu2e_Mu2eG4_BoundMuonDecayFractionSamplerTool_tool.so
+libmu2e_Mu2eG4_CompositeMaterialGenerator_module.so
+
 #
 libmu2e_ParticleID_AvikPID*.so
 libmu2e_ParticleID_*.so
@@ -124,6 +144,7 @@ libStntuple_val.so
 #
 libmu2e_murat_CaloClusterCheck_module.so
 libmu2e_murat_ComboHitSorter_module.so
+libmu2e_murat_DetStepAna_module.so
 libmu2e_murat_Dump*
 libmu2e_murat_GenpHist_module.so
 libmu2e_murat_PrintBField_module.so

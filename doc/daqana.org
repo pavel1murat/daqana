@@ -44,7 +44,11 @@ gh1("rocsim.000281.hist","rocsim","ch_00/nh_00")->Draw()
  'n001'  : marks ntupling configuration
 
  public location:
-* data datasets                                                              
+* datasets                                                              
+** vst06s0 : calibrations v6
+- everything like in V5, plus layers in panels 0 and 1 are offset by 0.1 mm
+  - same sign corection for straw # 0
+
 ** vst00s001r001n000 : "filter_straw_hits" - 1 hit - don't keep reco objects                          
 *** format:                                                                  
 #+begin_src 
