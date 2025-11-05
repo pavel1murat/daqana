@@ -96,6 +96,8 @@ public:
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
     Atom<int>             minNSegments  {Name("minNSegments"  ), Comment("min N(segments)"                     )};
+    Atom<float>           vDrift        {Name("vDrift"        ), Comment("vDrift, um/ns")               };
+    Atom<float>           tOffset       {Name("tOffset"       ), Comment("T0 offset, ns")               };
   };
 
   // --- C'tor/d'tor:
@@ -147,6 +149,8 @@ public:
   int                      _nSamplesBL;
   int                      _minPulseHeight;
   int                      _minNSegments;
+  float                    _vDrift;
+  float                    _tOffset;
     
   
   int                      _n_adc_samples;
@@ -181,6 +185,7 @@ public:
   const mu2e::TimeClusterCollection*           _tcc;
   const mu2e::KalSeedCollection*               _ksc;
 
+  ProditionsHandle<Tracker>                    _alignedTracker_h;
   const mu2e::Tracker*                         _tracker;
   
   ProditionsHandle<TrackerPanelMap>            _tpm_h;
@@ -214,6 +219,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _nSamplesBL    (config().nSamplesBL    ()),
     _minPulseHeight(config().minPulseHeight()),
     _minNSegments  (config().minNSegments  ()),
+    _vDrift        (config().vDrift        ()),
+    _tOffset       (config().tOffset       ()),
     _art_event     (nullptr)
 {
   _n_adc_samples = -1;
@@ -240,6 +247,9 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
 
+  Point2D::SetVDrift (_vDrift );
+  Point2D::SetTOffset(_tOffset);
+  
   TrkSegment::fgDebugMode = _debugBit[3];
   SegmentFit::fgDebugMode = _debugBit[4];
 }
@@ -305,8 +315,11 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 //-----------------------------------------------------------------------------
 // for each panel, build a transformation matrix, do it once
 //-----------------------------------------------------------------------------
-  mu2e::GeomHandle<mu2e::Tracker> handle;
-  _tracker = handle.get();
+  // mu2e::GeomHandle<mu2e::Tracker> handle;
+  // _tracker = handle.get();
+  art::EventID eid(ArtRun.run(),1,1);
+  _alignedTracker_h = mu2e::ProditionsHandle<mu2e::Tracker>();
+  _tracker = _alignedTracker_h.getPtr(eid).get();
   
   for (int ipln=0; ipln<36; ipln++) {
     for (int ipnl=0; ipnl<6; ipnl++) {

@@ -13,8 +13,6 @@ libmu2e_CaloFilters_FilterEcalNNTrigger_module.so
 libmu2e_CaloMC*.*
 libmu2e_CaloVisualizer.so
 #
-libmu2e_CalPatRec_DeltaFinder2*.so
-#
 libmu2e_CommonMC_CosmicTimeOffset_module.so
 # libmu2e_CommonMC_EventWindowMarkerProducer_module.so
 libmu2e_CommonMC_FindMCPrimary_module.so
@@ -85,11 +83,14 @@ libmu2e_ParticleID.so
 #
 libmu2e_Print_*_module.so
 libmu2e_Print.so
+#
 libmu2e_Sandbox_*.*
 libmu2e_Sandbox.so
 libmu2e_SeedService_SeedTest01_module.so
+#
 libmu2e_Sources_*.*
 libmu2e_Sources.so
+#
 libmu2e_STMMC_*
 libmu2e_STMReco_*
 libmu2e_TestTools.so
@@ -106,12 +107,9 @@ libmu2e_TrkExt.so
 libmu2e_TrkHitReco_ReadStrawDigi_module.so
 libmu2e_TrkPatRec_*_tool.so
 #
-libmu2e_UtilityModules_ModifyTrackSPM_module.so
-libmu2e_UtilityModules_ReadTrackSPM_module.so
-libmu2e_UtilityModules_RecoNullProducer_module.so
+libmu2e_UtilityModules_*
 #
-libmu2e_Validation_*.*
-libmu2e_Validation.so
+libmu2e_Validation*
 #
 #
 libmu2e_Stntuple_MuHitDisplay_module.so

@@ -189,6 +189,8 @@ daqana : {
             nSamplesBL     : 6
             minPulseHeight : 5.
             minNSegments   : 0
+            vDrift         : 61.3e-3  ## mm/ns
+            tOffset        : 0.       ## by default, no drift offsets
         }
 
         StationAna: { module_type: StationAna

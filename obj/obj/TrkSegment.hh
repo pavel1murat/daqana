@@ -41,8 +41,8 @@ struct Point2D {
 
   double fR;                            // updated 
 
-  static double const fgVDrift;
-  static double const fgTOffset;
+  static double fgVDrift;
+  static double fgTOffset;
 
   Point2D(int Sid, int Mask, double X, double Y, double Time, double TProp, double TCorr, int Sign = 0) {
     sid        = Sid;
@@ -69,6 +69,9 @@ struct Point2D {
                           x,y,time,tprop,tcorr,drs,sign_fixed)
            << std::endl;
   }
+
+  static void SetTOffset(double T) { fgTOffset = T; }
+  static void SetVDrift (double V) { fgVDrift  = V; }
 };
 
 class TrkSegment {

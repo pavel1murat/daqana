@@ -75,5 +75,28 @@ class Project(ProjectBase):
         job.fOutputFnPattern         = ['nts.murat.'+odsid ]
         job.fOutputFormat            = ['root'             ]
 #------------------------------------------------------------------------------
+# s1:make_dgn02 : ntupling job has only one output stream
+#------------------------------------------------------------------------------        
+        if (input_dsid == None): input_dsid = 'vst05s0s10r0000'
+        job                          = s.new_job('make_dgn02',input_dsid);
+
+        job.fNInputFiles             = -1                     # number of segments defined by the input dataset
+             
+        job.fMaxInputFilesPerSegment =  10
+        # job.fNEventsPerSegment       =  100000
+        job.fResample                = 'no'   # yes/no        # for resampling, need to define the run number again
+        job.fRequestedTime           = '3h'   
+        job.fIfdh                    = 'ifdh' ## 'xrootd'               # ifdh/xrootd
+        job.fMaxMemory               = '3000MB'
+
+        output_stream                = job.fInputDataset.output_stream()
+
+        odsid                        = self.fFamilyID+s.name()+output_stream+'r0002';
+
+        job.fOutputStream            = ['InitStntuple'     ]
+        job.fOutputDsID              = [odsid              ]
+        job.fOutputFnPattern         = ['nts.murat.'+odsid ]
+        job.fOutputFormat            = ['root'             ]
+#------------------------------------------------------------------------------
 # end
 #------------------------------------------------------------------------------
