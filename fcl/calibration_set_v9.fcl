@@ -8,7 +8,7 @@ services.DbService : {
     
     textFile : [ "trkvst/stationfcl/TrackerStatus.txt",
                  "trkvst/stationfcl/TrackerAlign.txt" ,
-                 "trkvst/stationfcl/TrkDelayPanel.txt" ,
+                 "trkvst/stationfcl/TrkDelayPanel.txt",
                  "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use DB
                  "trkvst/stationfcl/calib107894.txt"   
                 ]
@@ -16,7 +16,7 @@ services.DbService : {
     verbose  : 100
 }
 
-services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.alignedTrackerSim.useDb      : true
 services.ProditionsService.fullReadoutStraw.useDb       : false
 services.ProditionsService.strawDrift.useDb             : false
 services.ProditionsService.strawPhysics.useDb           : false
@@ -24,8 +24,7 @@ services.ProditionsService.strawResponse.useDb          : false
 
 services.ProditionsService.strawElectronics.useDb       : true        ## default false
 services.ProditionsService.strawElectronics.verbose     : 10
-services.ProditionsService.alignedTracker.useDb         : true
-services.ProditionsService.trackerStatus.Settings.useDb : true ## false
+services.ProditionsService.trackerStatus.Settings.useDb : true  ## false
 services.ProditionsService.trackerPanelMap.useDb        : false ## false
 
 services.ProditionsService.strawResponse.eBins : 2

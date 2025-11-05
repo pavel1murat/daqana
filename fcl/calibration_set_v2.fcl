@@ -8,9 +8,10 @@ services.DbService : {
     
     textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-#                 "trkvst/stationfcl/TrackerAlign.txt"   ,
-                 "daqana/calibrations/TrkAlign_Station_0_10_22.txt"   ,
-                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
+                 #                 "trkvst/stationfcl/TrackerAlign.txt"              ,
+                 #                 "daqana/calibrations/TrkAlignStraw_0_10_22.txt",
+                 # "daqana/calibrations/TrkStrawAlign_0_10_22.txt"   ,
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt"   , ## use FCL
                  "daqana/calibrations/TrkDelayPanel_v3.txt" ]
                 
     verbose  : 100

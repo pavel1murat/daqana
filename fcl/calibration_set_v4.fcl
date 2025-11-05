@@ -11,6 +11,7 @@ services.DbService : {
     textFile : [ "daqana/calibrations/TrkPreampStraw_v3.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  "daqana/calibrations/TrkAlign_Station_0_10_22.txt",
+                 "daqana/calibrations/TrkAlignStraw_0_10_22.txt",
                  "Offline/TrackerConditions/data/TrkPanelMap.txt"  , ## use DB
                  "daqana/calibrations/TrkDelayPanel_v3.txt" ]
                 

@@ -1,15 +1,20 @@
 # -*- mode:tcl -*-
-# V3 uses the DB alignment
+# V3 : uses the DB alignment
+# V4 : first  pass on C2C time offsets: TrkPreampStraw_v3
+# V5 : second pass on C2C time offsets: TrkPreampStraw_v4
+# V6 : straw layers in panels 0 and 1 are shifted by 100 um 
+#------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
     purpose  : EMPTY
     version  : v0                          ## ignored
     dbName   : "mu2e_conditions_prd"       ## ignored
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v4.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  "daqana/calibrations/TrkAlign_Station_0_10_22.txt",
-                 "daqana/calibrations/TrkAlignStraw_0_10_22.txt",
+                 # "daqana/calibrations/TrkAlignStraw_0_10_22.txt",
+                 "daqana/calibrations/TrkAlignStraw_0_10_22_v02.txt",
                  "Offline/TrackerConditions/data/TrkPanelMap.txt"  , ## use DB
                  "daqana/calibrations/TrkDelayPanel_v3.txt" ]
                 
