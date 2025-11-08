@@ -33,10 +33,9 @@ int SegmentFit::Init() {
 // find line tangent to two circles defined by the two hits with known drift signs
 //-----------------------------------------------------------------------------
 double SegmentFit::F(double A) {
-  // double smn = fSts.yMean();
-  double vd  = Point2D::fgVDrift;
+  double vd  = SegmentHit::fgVDrift;
 
-  int npt = fSegment->points.size();
+  int npt = fSegment->nHits();
 
   double sum = 0;
 
@@ -44,7 +43,7 @@ double SegmentFit::F(double A) {
   double tau = Tau(A);
 
   for (int i=0; i<npt; i++) {
-    Point2D* pt = &fSegment->points[i];
+    SegmentHit* pt = fSegment->Hit(i);
     if (pt->IsGood() != 1) continue;
 
     //    double ds = ((pt->y-A*pt->x-b)/sqrt(1+A*A)-(pt->t-tau)*pt->drs*vd)*(pt->x+A*pt->y);
@@ -57,8 +56,7 @@ double SegmentFit::F(double A) {
 
 //-----------------------------------------------------------------------------
 double SegmentFit::DfDa(double A) {
-  // double smn = fSts.yMean();
-  double vd  = Point2D::fgVDrift;
+  double vd  = SegmentHit::fgVDrift;
 
   double sum = 0;
 
@@ -67,9 +65,9 @@ double SegmentFit::DfDa(double A) {
   double tau     = Tau(A);
   double dtau_da = DbDa(A);
 
-  int npt = fSegment->points.size();
+  int npt = fSegment->nHits();
   for (int i=0; i<npt; i++) {
-    Point2D* pt = &fSegment->points[i];
+    SegmentHit* pt = fSegment->Hit(i);
     if (pt->IsGood() != 1) continue;
     int    si = pt->drs;
     //    double x1 = ((A*b-db_da*(A*A+1)-pt->x-A*pt->y)/pow(1+A*A,3/2.)+si*vd*dtau_da)*(pt->x+A*pt->y);
@@ -93,10 +91,9 @@ int SegmentFit::CalculateLsqSums() {
   fSys.clear();
   fSts.clear();
 
-  int nhits = fSegment->points.size();
+  int nhits = fSegment->nHits();
   for (int i=0; i<nhits; i++) {
-    Point2D* pt = &fSegment->points[i];
-    // pt->print();
+    SegmentHit* pt = fSegment->Hit(i);
     if (pt->IsGood() != 1)                      continue;
     if (pt->drs != 0) {
       fSxs.addPoint(pt->x,pt->drs);
@@ -120,9 +117,9 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
     std::cout << std::format("-- SegmentFit::{}:{} START\n",__func__,__LINE__);
   }
 
-  int nhits = fSegment->points.size();
+  int nhits = fSegment->nHits();
   for (int i=0; i<nhits; ++i) {
-    Point2D* pt  = &fSegment->points[i];
+    SegmentHit* pt  = fSegment->Hit(i);
     if (pt->IsGood() == 0) continue;
                                         // first good point
     ifirst = i;
@@ -130,16 +127,16 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
   }
 
   for (int i=nhits-1; i>=0; --i) {
-    Point2D* pt  = &fSegment->points[i];
+    SegmentHit* pt  = fSegment->Hit(i);
     if (pt->IsGood() == 0) continue;
                                         // last good point
     ilast = i;
     break;
   }
 
-  Point2D* pt[2];
-  pt[0] = &fSegment->points[ifirst];
-  pt[1] = &fSegment->points[ilast ];
+  SegmentHit* pt[2];
+  pt[0] = fSegment->Hit(ifirst);
+  pt[1] = fSegment->Hit(ilast );
 
   int    ibest(-1);
   double chi2_best(1.e12);
@@ -189,7 +186,7 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
 // define drift directions of the rest hits wrt the best parameters
 //-----------------------------------------------------------------------------
   for (int i=0; i<nhits; ++i) {
-    Point2D* p  = &fSegment->points[i];
+    SegmentHit* p  = fSegment->Hit(i);
     if (p->IsGood() == 0) continue;
                                         // skip four points with [supposedly] defined drift directions
     if (p->drs != 0) continue;
@@ -227,8 +224,8 @@ int SegmentFit::DisplaySegment() {
       
   int nhits = fSegment->nHits();
 
-  double xm = (fSegment->points[nhits-1].x+fSegment->points[0].x)/2;
-  double dx = (fSegment->points[nhits-1].x-fSegment->points[0].x);
+  double xm = (fSegment->Hit(nhits-1)->x+fSegment->Hit(0)->x)/2;
+  double dx = (fSegment->Hit(nhits-1)->x-fSegment->Hit(0)->x);
   if (dx < 10) dx = 10;
 
   // draw the line
@@ -244,7 +241,7 @@ int SegmentFit::DisplaySegment() {
 
   double t0 = fSegment->T0();
   for (int i=0; i<nhits; i++) {
-    Point2D* pt = &fSegment->points[i];
+    SegmentHit* pt = fSegment->Hit(i);
     if (fgDebugMode and fgDebugBits[0]) pt->print();
     // straw
     TEllipse* e = new TEllipse(pt->x,pt->y,2.5,0,0,360);
@@ -406,9 +403,11 @@ double SegmentFit::DChi2Db  (double A, double B, double Tau) {
   double sum = 0;
   int nhits = fSegment->nHits();
   for (int i=0; i<nhits; ++i) {
-    Point2D* p  = &fSegment->points[i];
+    SegmentHit* p  = fSegment->Hit(i);
+    if (not p->IsGood())                                    continue;
+                                        // do we need to skip bad hits ? - I think, we do! 
     double tdrift = p->t+fSegment->fTMean-Tau;
-    double dist   = (A*p->x + B - p->y)/sqrt(1+A*A) - p->drs*tdrift*Point2D::fgVDrift;
+    double dist   = (A*p->x + B - p->y)/sqrt(1+A*A) - p->drs*tdrift*SegmentHit::fgVDrift;
     sum += dist;
   }
 
@@ -420,10 +419,11 @@ double SegmentFit::DChi2Dtau  (double A, double B, double Tau) {
   double sum = 0;
   int nhits = fSegment->nHits();
   for (int i=0; i<nhits; ++i) {
-    Point2D* p  = &fSegment->points[i];
+    SegmentHit* p = fSegment->Hit(i);
+    if (not p->IsGood())                                    continue; 
     double tdrift = p->t+fSegment->fTMean-Tau;
-    double dist = (A*p->x + B - p->y)/sqrt(1+A*A) - p->drs*tdrift*Point2D::fgVDrift;
-    sum += dist*p->drs;
+    double dist   = (A*p->x + B - p->y)/sqrt(1+A*A) - p->drs*tdrift*SegmentHit::fgVDrift;
+    sum          += dist*p->drs;
   }
 
   return sum;
@@ -434,14 +434,15 @@ double SegmentFit::DChi2Da  (double A, double B, double Tau) {
   double sum = 0;
   int nhits = fSegment->nHits();
   for (int i=0; i<nhits; ++i) {
-    Point2D* p  = &fSegment->points[i];
+    SegmentHit* p = fSegment->Hit(i);
+    if (not p->IsGood())                                    continue; 
     double tdrift = p->t+fSegment->fTMean-Tau;
-    double rdrift = tdrift*Point2D::fgVDrift;
+    double rdrift = tdrift*SegmentHit::fgVDrift;
     double d1     = (p->y-A*p->x-B)/sqrt(1+A*A);
     double dist   = d1+rdrift*p->drs;
     printf("i:%2i  d1:%12.5f dist:%12.5f  rdrift:%12.5f\n",i,d1,dist,rdrift);
     double d2     = p->x*(1+A*A)+A*(p->y-A*p->x-B);
-    sum        += dist*d2;
+    sum          += dist*d2;
   }
 
   return sum;

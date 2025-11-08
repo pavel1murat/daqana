@@ -4,7 +4,7 @@
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/TrackerGeom/inc/Panel.hh"
 
-#include "daqana/obj/ComboHitData_t.hh"
+// #include "daqana/obj/ComboHitData_t.hh"
 
 struct Par_t {
   double a;
@@ -25,34 +25,30 @@ struct Par_t {
 };
 
 //-----------------------------------------------------------------------------
-// 'per-panel' track segments
+// representation of a 2D hit used in the segment fit
 //-----------------------------------------------------------------------------
-struct Point2D {
-  int    sid;                           // integer part of straw ID
-  int    fMask;                         // 0: ok , 0x1: bad
-  double x;
-  double y;
-  double time;                          // measured time
-  double tprop;                         // propagation time
-  double tcorr;
-  double t;                             // time-tprop (-fTMean)
-  int    drs;
-  int    sign_fixed;                    // if 1, the drift sign is not updated any more
+struct SegmentHit {
+  const mu2e::ComboHit* fComboHit;
+  int                   fMask;                         // 0: ok , 0x1: bad
+  double                x;
+  double                y;
+  double                t;                             // time-tprop (-fTMean)
+  int                   drs;
+  int                   sign_fixed;                    // if 1, the drift sign is not updated any more
+                        
+  double                fR;                            // updated
+  double                fChi2;                         // hit contribution to the segment chi^2
 
-  double fR;                            // updated 
+  static double         fgVDrift;
+  static double         fgTOffset;
 
-  static double fgVDrift;
-  static double fgTOffset;
-
-  Point2D(int Sid, int Mask, double X, double Y, double Time, double TProp, double TCorr, int Sign = 0) {
-    sid        = Sid;
-    fMask      = Mask;
-    x          = X;
-    y          = Y;
-    time       = Time;
-    tprop      = TProp;
-    tcorr      = TCorr;
-    drs        = Sign;                // 0:undefined
+  SegmentHit(const mu2e::ComboHit* CmbHit) {
+    fComboHit  = CmbHit;
+    fMask      = 0;
+    x          = 0;
+    y          = 0;
+    t          = 0;
+    drs        = -999;
     sign_fixed = 0;
   }
 
@@ -60,13 +56,14 @@ struct Point2D {
 
   int IsGood() { return (fMask == 0); }
 
-  mu2e::StrawId strawId() const { return mu2e::StrawId(sid); }
+  mu2e::StrawId         strawId () const { return fComboHit->strawId(); }
+  const mu2e::ComboHit* ComboHit() const { return fComboHit; }
 
   void print(std::ostream& Stream = std::cout) {
     // double rdrift = this->r();
-    Stream << std::format("Point2D: sid:0x{:04x} mask:0x{:04x}",sid,fMask) 
+    Stream << std::format("Point2D: sid:0x{:04x} mask:0x{:04x}",fComboHit->strawId().asUint16(),fMask) 
            << std::format(" x,y,time,tprop,tcorr, drs,fixed: {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:2d} {}",
-                          x,y,time,tprop,tcorr,drs,sign_fixed)
+                          x,y,fComboHit->time(),fComboHit->propTime(),fComboHit->correctedTime(),drs,sign_fixed)
            << std::endl;
   }
 
@@ -74,6 +71,8 @@ struct Point2D {
   static void SetVDrift (double V) { fgVDrift  = V; }
 };
 
+
+//-----------------------------------------------------------------------------
 class TrkSegment {
 public:
 
@@ -81,6 +80,7 @@ public:
     kNTransitionsBit   = 0x0001,
     kNHitsBit          = 0x0002,
     kLargeDrhoBit      = 0x0004,
+    kSubsegmentBit     = 0x0008,
   };
 
   static double const  fgRStraw;
@@ -93,13 +93,14 @@ public:
   int                  fNGoodHits;                  // total number of good hits
   int                  fNghl[2];                    // # good hits in each layer
   int                  fNmhl[2];                    // # of straws w/o hits in each layer
-  std::vector<const mu2e::ComboHit*> hits;          // initialization (from a time cluster) in the ntuple making code
+                                                    // SegmentHit replaces Point2D
+  std::vector<SegmentHit> fListOfHits;              // initialization (from a time cluster) in the ntuple making code
   double               fXMean;
   double               fYMean;
   double               fTMean;                      // <t-tprop>
-  std::vector<Point2D> points;               // local points
-  int                  fIhit[2];             // indices of the two hits corresponding to the layer transition
-                                                // fits
+  // std::vector<Point2D> points;                      // local points, superceded by SegmentHit's
+  int                  fIhit[2];                    // indices of the two hits corresponding to the layer transition
+                                                    // fits
   Par_t                fTangentLine;
   Par_t                fPar4;                   // best parameters after a 4-point fit
   Par_t                fPar;                    // best fit parameters
@@ -111,32 +112,21 @@ public:
 
   void Clear();
 
-  Point2D* Point(int I) { return &points[I] ; }
-
-  void AddPoint(int Sid, int Mask, double XLoc, double YLoc, double Time, double TProp, double TCorr, int Sign) {
-    Point2D pt(Sid, Mask, XLoc,YLoc, Time, TProp, TCorr, Sign);
-    points.push_back(pt);
-  }
+  SegmentHit*  Hit(int I) { return &fListOfHits[I]; }
 
   int InitHits(std::vector<const mu2e::ComboHit*>* Hits = nullptr, int UniquePlane = -1, int Panel = -1);
 
-  // int InitHits(); // does the same starting from TrkStrawHitSeeds
-
-  // void setSign(int I, int Sign) {
-  //   points.at(I).drs = Sign;
-  // }
                                         // any set bit marks the hit as bad, so far use 'dead'
+
   int      GoodHit(const mu2e::ComboHit* Ch) {
     int x  = std::stoi(Ch->_flag.hex(),nullptr,0);
     int good = (x == 0);
     return good;
   }
 
-  int      nHits() { return (int) hits.size(); }
+  int      nHits() { return (int) fListOfHits.size(); }
   int      Plane() { return fPlane; }
   int      Panel() { return fPanel; }
-
-  //  int      DefineTangentLine();
 //-----------------------------------------------------------------------------
 // the segment parameters need always to be redefined consistently
 //-----------------------------------------------------------------------------
@@ -151,20 +141,21 @@ public:
   double   Nuy    () const { return  fPar.nx;  }
   double   Chi2Dof() const { return  fPar.chi2dof;}
 
+  //  const mu2e::ComboHit* ComboHit(int I) { return fListOfHitshits[I]; }
 //-----------------------------------------------------------------------------
 // by default, use the segment T0
 //-----------------------------------------------------------------------------
-  double  DriftTime (const Point2D* Pt, double HitT0=1.e12)  const {
+  double  DriftTime (const SegmentHit* Pt, double HitT0=1.e12)  const {
     double t0 = HitT0;
     if (t0 > 1.e10) t0 = T0();
 
-    double t    = Pt->t-t0 + Point2D::fgTOffset;
+    double t    = Pt->t-t0 + SegmentHit::fgTOffset;
     return t;
   }
 
-  double  R(const Point2D* Pt, double T0=1.e12)  const {
+  double  R(const SegmentHit* Pt, double T0=1.e12)  const {
     static int nerr(0), last_printed(0), nprinted(0), step(1);
-    double r    = DriftTime(Pt,T0)*Point2D::fgVDrift;
+    double r    = DriftTime(Pt,T0)*SegmentHit::fgVDrift;
     if (r < 0) {
       nerr++;
       if (nerr-last_printed >= step) {
@@ -185,7 +176,7 @@ public:
 // use segment T0
 // parameters of the line have to be defined
 //-----------------------------------------------------------------------------
-  double Rho(const Point2D* Pt, const Par_t* Par = nullptr) const {
+  double Rho(const SegmentHit* Pt, const Par_t* Par = nullptr) const {
     const Par_t* par(Par);
     if (par == nullptr) par = &fPar;
 
@@ -197,7 +188,7 @@ public:
 //-----------------------------------------------------------------------------
 // segment_to_wire_distance.vdot.normal_to_the_segment
 //-----------------------------------------------------------------------------
-  double SwDist(const Point2D* Pt, const Par_t* Par = nullptr) const {
+  double SwDist(const SegmentHit* Pt, const Par_t* Par = nullptr) const {
     const Par_t* par(Par);
     if (par == nullptr) par = &fPar;
 

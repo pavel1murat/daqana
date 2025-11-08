@@ -7,6 +7,8 @@
 //                  2: (fillTC) parameters of the time cluster
 //                  3: TrkSegment::fgDebugMode
 //                  4: SegmentFit::fgDebugMode
+//                  5: print HepTransform's for all panels
+//                  6: print reconstructed segments in the end
 // ======================================================================
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -247,8 +249,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
 
-  Point2D::SetVDrift (_vDrift );
-  Point2D::SetTOffset(_tOffset);
+  SegmentHit::SetVDrift (_vDrift );
+  SegmentHit::SetTOffset(_tOffset);
   
   TrkSegment::fgDebugMode = _debugBit[3];
   SegmentFit::fgDebugMode = _debugBit[4];
@@ -333,7 +335,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
       const mu2e::Panel* pnl = &pln->getPanel(ipnl);
       ts->fTrkPanel = (mu2e::Panel*) pnl;
 
-      if (_debugMode != 0) {
+      if ((_debugMode != 0) and (_debugBit[5])) {
         print_(std::format("-- HepTransform for plane:{:2}:{}\n",ipln,ipnl));
         std::cout << ts->fTrkPanel->dsToPanel() << std::endl;
       }
@@ -842,16 +844,108 @@ int mu2e::MakeDigiNtuple::makeSegments() {
         print_(std::format(" {}: hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",
                            __func__,ih,plane,panel,sid.straw()));
       }
-                                        // cosmic track: assume one segment per panel,
-                                        // in principle, there could be more than one
-
+//-----------------------------------------------------------------------------
+// cosmic track: assume one segment per panel, in principle, there could be more than one
+//-----------------------------------------------------------------------------
       TrkSegment* ts = &_tseg[plane][panel];
-      if (ts->hits.size() == 0) {
+      if (ts->nHits() == 0) {
         _ptseg.push_back(ts);
         _nseg    += 1;
       }
                                         // and add the hit to the list
-      ts->hits.push_back(ch);
+      SegmentHit sgh(ch);
+      ts->fListOfHits.emplace_back(sgh);
+    }
+  }
+//-----------------------------------------------------------------------------
+// cleanup: loop over segments one more time and try to identify 'extra' hits
+//-----------------------------------------------------------------------------
+  struct SubSegment {
+    int first_hit;                      // indes in the segment hit list
+    int last_hit;
+    int nhits() { return last_hit-first_hit+1; }
+  };
+
+  for (int i=0; i<_nseg; i++) {
+    TrkSegment* ts = _ptseg[i];
+//-----------------------------------------------------------------------------
+// sort segment hits in the ascending wire order
+// make sure that the standalone ROOT code also does that
+//-----------------------------------------------------------------------------
+    std::sort(ts->fListOfHits.begin(),ts->fListOfHits.end(),
+              [] (const SegmentHit& a, const SegmentHit& b) {
+                return a.ComboHit()->strawId().straw() < b.ComboHit()->strawId().straw();
+              });
+
+    int nhits = ts->nHits();
+    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,nhits));
+    if (nhits < 4) {
+      ts->fMask |= 0x1 ; // not enough hits
+                                                                  continue;
+    }
+
+    std::vector<SubSegment> list_of_subsegments;
+
+    int last_layer  = -1;
+    int last_straw  = -1;
+    int first_hit   = -1;
+    int last_hit    = -1;
+    int best        = -1;
+    int nmax        = -1;
+    for (int i=0; i<nhits; ++i) {
+      const mu2e::ComboHit* ch = ts->Hit(i)->ComboHit();
+      int   layer = ch->strawId().getLayer();
+      int   straw = ch->strawId().getStraw();
+      //      float segment_length = (straw-first_straw)/2.;
+      if (last_layer == -1) {
+        last_layer = layer;
+        last_straw = straw;
+        first_hit  = i;
+      }
+
+//-----------------------------------------------------------------------------
+// check the gap size may need different constants
+//-----------------------------------------------------------------------------
+      int gap = (straw-last_straw-2)/2;
+      if (gap > 4) {
+                                        // too large of a gap, make a sub-segment
+        SubSegment sbs(first_hit,last_hit);
+        list_of_subsegments.push_back(sbs);
+        if (sbs.nhits() > nmax) {
+          nmax = sbs.nhits();
+          best = list_of_subsegments.size()-1;
+        }
+        first_hit = i;
+      }
+      if (layer != last_layer) {
+        last_layer = layer;
+      }
+      last_hit   = i;
+      last_straw = straw;
+    }
+//-----------------------------------------------------------------------------
+// last subsegment
+//-----------------------------------------------------------------------------
+    if (first_hit != -1) {
+      SubSegment sbs(first_hit,last_hit);
+      list_of_subsegments.emplace_back(sbs);
+      if (sbs.nhits() > nmax) {
+        nmax = sbs.nhits();
+        best = list_of_subsegments.size()-1;
+      }
+    }
+//-----------------------------------------------------------------------------
+// out of subsegments leave only the one with the largest number of hits
+//-----------------------------------------------------------------------------
+    int nsbs = list_of_subsegments.size();
+    for (int isbs=0; isbs<nsbs; ++isbs) {
+      if (isbs != best) {
+                                        // wrong subsegment, mask its hits off
+        SubSegment& sbs = list_of_subsegments[isbs];
+        for (int ih=sbs.first_hit; ih<sbs.last_hit+1; ++ih) {
+          ts->Hit(ih)->fMask |= TrkSegment::kSubsegmentBit;
+        }
+      }
     }
   }
 //-----------------------------------------------------------------------------
@@ -872,8 +966,11 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       ts->fMask |= 0x1 ; // not enough hits
       continue;
     }
-                                        // list of hits already defined
-    ts->InitHits(nullptr);              // this looks ugly, OK for the purpose
+//-----------------------------------------------------------------------------
+// list of hits already created, but SegmentHits need to be initialized from ComboHits
+// this looks ugly, but OK for the purpose
+//----------------------------------------------------------------------------- 
+    ts->InitHits(nullptr);
 
     SegmentFit sfitter(ts);
 //-----------------------------------------------------------------------------
@@ -894,7 +991,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 // at this point, all track hits should be assigned to segments
 // debug printout
 //-----------------------------------------------------------------------------
-  if (_debugMode and (_debugBit[3] != 0)) {
+  if (_debugMode and (_debugBit[6] != 0)) {
     std::cout << "nseg:" << _nseg << std::endl;
 
     for (int i=0; i<_nseg; i++) {
@@ -926,10 +1023,10 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     nseg4 += 1;
    
     DaqSegment* nt_ts = new ((*_event->seg)[iseg]) DaqSegment();
-    mu2e::StrawId sid = ts->hits[0]->strawId();
+    mu2e::StrawId sid = ts->Hit(0)->ComboHit()->strawId();
 
     nt_ts->sid     = sid.asUint16() & 0xff80;            // straw ID of the straw=0 of the panel
-    nt_ts->nh      = ts->points.size();
+    nt_ts->nh      = ts->nHits();
     nt_ts->ntrans  = ts->fNTransitions;
     nt_ts->ngh     = ts->fNGoodHits;
     nt_ts->nghl[0] = ts->fNghl[0];
@@ -949,7 +1046,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       
       const mu2e::KalSeed*   ks = &_ksc->at(0);
 
-      KinKal::KinematicLine   kline = ks->nearestSegment(ts->hits[0]->pos())->kinematicLine();
+      KinKal::KinematicLine   kline = ks->nearestSegment(ts->Hit(0)->ComboHit()->pos())->kinematicLine();
       ROOT::Math::XYZVector   pos   = kline.pos0();
       ROOT::Math::XYZVector   dir   = kline.direction();
      
@@ -978,8 +1075,8 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     DaqTrkStrawHit* nt_tsh(nullptr);
     for (int ih=0; ih<nt_ts->nh; ih++) {
       const mu2e::StrawHit* sh = &_shc->at(ih);
-      const mu2e::ComboHit* ch = ts->hits[ih];
-      Point2D* pt              = ts->Point(ih);
+      SegmentHit* pt           = ts->Hit(ih);
+      const mu2e::ComboHit* ch = pt->ComboHit();
 
       int ihh            = nsegsh+ih;
       nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();

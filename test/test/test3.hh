@@ -18,20 +18,20 @@
 //-----------------------------------------------------------------------------
 class test3 {
 public:
-  TCanvas*    mCanvas;
-  TH2F*       mH2;
-  TrkSegment* mTs;
+  TCanvas*    fCanvas;
+  TH2F*       fH2;
+  TrkSegment* fSegment;
   SegmentFit* fSfitter;
 
   test3() {
-    mTs     = nullptr;
+    fSegment = nullptr;
     fSfitter = nullptr;
-    mCanvas = nullptr;
-    mH2     = nullptr;
+    fCanvas  = nullptr;
+    fH2      = nullptr;
   }
 
   int init_segment_geometry(TrkSegment* Seg);
-  int test_fit_line(const char* Fn, int Plane, int Panel, int NIter=0);
+  int test_fit_line        (const char* Fn, int Plane, int Panel, int NIter=0);
 };
 
 #endif

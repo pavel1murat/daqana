@@ -31,7 +31,7 @@ int test3::init_segment_geometry(TrkSegment* Seg) {
   CLHEP::Hep3Vector trn(dt->trn[0],dt->trn[1],dt->trn[2]);
   std::cout << "read translation:" << trn << std::endl;
   
-  CLHEP::HepRotation r(dt->rot);
+  CLHEP::HepRotation r (dt->rot);
   mu2e::HepTransform ht(trn,r);
   std::cout << "read rotation:" << trn << std::endl;
   
@@ -45,7 +45,7 @@ int test3::init_segment_geometry(TrkSegment* Seg) {
 //-----------------------------------------------------------------------------
 int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
   int          rc(0);
-  double const epsilon(1.e-5);
+  // double const epsilon(1.e-5);
 
   std::cout << std::format("---------------------------------- {}:{}: START\n",__func__,__LINE__);
 
@@ -54,14 +54,21 @@ int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
 //-----------------------------------------------------------------------------
 // read combohits from a text file
 //-----------------------------------------------------------------------------
-  std::vector<std::string>     vnames;
+  std::vector<std::string>           vnames;
   std::vector<const mu2e::ComboHit*> chhits;
 
   std::cout << "-- before readDataFile" << std::endl;
   readDataFile(Fn,vnames,chhits,Plane,Panel);
   printData(vnames,chhits);
-  
-  // std::cout << "-- after readDataFile" << std::endl;
+//-----------------------------------------------------------------------------
+// sort combohits in the ascending wire order - no more ordering in InitHits
+//-----------------------------------------------------------------------------
+  std::sort(chhits.begin(),chhits.end(),
+            [] (const mu2e::ComboHit* a, const mu2e::ComboHit* b) {
+              return a->strawId().straw() < b->strawId().straw();
+            });
+
+// std::cout << "-- after readDataFile" << std::endl;
   //                                       // sort by straw
   // std::sort(chhits.begin(),chhits.end(), [](const mu2e::ComboHit* a, const mu2e::ComboHit* b) {
   //   mu2e::StrawId sa(a->strawId()), sb(b->strawId());
@@ -74,48 +81,48 @@ int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
 //-----------------------------------------------------------------------------
 // step 1: initialize the segment and the hit drift signs
 //-----------------------------------------------------------------------------
-  if (mTs) delete mTs;
-  mTs = new TrkSegment(Plane,Panel);
-  init_segment_geometry(mTs);
+  if (fSegment) delete fSegment;
+  fSegment = new TrkSegment(Plane,Panel);
+  init_segment_geometry(fSegment);
 //-----------------------------------------------------------------------------
 // InitHits also defines two seed hits - can draw a tangent line at this point
 //-----------------------------------------------------------------------------
-  mTs->InitHits(&chhits);
+  fSegment->InitHits(&chhits);
 //-----------------------------------------------------------------------------
   if (fSfitter != nullptr) delete fSfitter;
-  fSfitter = new SegmentFit(mTs);
+  fSfitter = new SegmentFit(fSegment);
 
-  mTs->print("-- segment after creating fSfitter");
+  fSegment->print("-- segment after creating fSfitter");
 
                                         // this needs to be done just once
   fSfitter->DefineDriftDirections();
 
-  mTs->print("-- segment after SegmentFit::DefineDriftDirections");
+  fSegment->print("-- segment after SegmentFit::DefineDriftDirections");
 //-----------------------------------------------------------------------------  
 // ready to iterate, before that print segment and pop up a canvas
 //-----------------------------------------------------------------------------
-  mCanvas = new TCanvas("c","c",1000,1000);
+  fCanvas = new TCanvas("c","c",1000,1000);
 
   // set range of the 2D plot
 
-  double xm = (mTs->points[nhits-1].x+mTs->points[0].x)/2;
-  double dx = (mTs->points[nhits-1].x-mTs->points[0].x);
+  double xm = (fSegment->Hit(nhits-1)->x+fSegment->Hit(0)->x)/2;
+  double dx = (fSegment->Hit(nhits-1)->x-fSegment->Hit(0)->x);
   if (dx < 10) dx = 10;
 
-  mH2 = new TH2F(Form("plane_%02d_panel_%d",Plane,Panel),"",
+  fH2 = new TH2F(Form("plane_%02d_panel_%d",Plane,Panel),"",
                        1000,xm-dx/2-5,xm+dx/2+5,1000,-dx/2-5,dx/2+5);
-  mH2->SetStats(0);
-  mH2->SetTitle(Form("data:%s plane:%i panel:%i",Fn,Plane,Panel));
-  mH2->Draw();
+  fH2->SetStats(0);
+  fH2->SetTitle(Form("data:%s plane:%i panel:%i",Fn,Plane,Panel));
+  fH2->Draw();
 //-----------------------------------------------------------------------------
 // iterations, at this point all drift signs are defined...
 // pin=nullptr: use fSegment->fPar to start
 //-----------------------------------------------------------------------------
   Par_t par;
   int converged = fSfitter->Fit(NIter,0, nullptr, &par);
-  mTs->print(Form("-- after SegmentFit::Fit converged:%i",converged));
+  fSegment->print(Form("-- after SegmentFit::Fit converged:%i",converged));
 
-  mH2->Draw();
+  fH2->Draw();
   fSfitter->DisplaySegment();
 
   return rc;

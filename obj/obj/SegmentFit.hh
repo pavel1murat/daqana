@@ -30,7 +30,7 @@ public:
 
   double B(double A) {
     double smn     = fSts.yMean();
-    double vd      = Point2D::fgVDrift;
+    double vd      = SegmentHit::fgVDrift;
 
     double sig_yss = fSys.xMean()-fSys.yMean()*fSys.sigXY();
     double sig_xss = fSxs.xMean()-fSxs.yMean()*fSxs.sigXY();
@@ -41,7 +41,7 @@ public:
 
   double DbDa(double A) {
     double smn = fSts.yMean();
-    double vd  = Point2D::fgVDrift;
+    double vd  = SegmentHit::fgVDrift;
 
     double sig_xss = fSxs.xMean()-fSxs.yMean()*fSxs.sigXY();
 
@@ -52,7 +52,7 @@ public:
 
   double Tau(double A) {
     double smn = fSts.yMean();
-    double vd  = Point2D::fgVDrift;
+    double vd  = SegmentHit::fgVDrift;
     //    double tau = fSts.xMean()+1./(1-smn*smn)*((A*fSxs.sigXY()-fSys.sigXY())/(vd*sqrt(1+A*A))-smn*fSts.sigXY());
     double tau = fSts.xMean() - 1./(1-smn*smn)*((A*fSxs.sigXY() - fSys.sigXY())/(vd*sqrt(1+A*A)) + smn*fSts.sigXY());
     return tau;
@@ -60,7 +60,7 @@ public:
 
   double DtauDa(double A) {
     double smn = fSts.yMean();
-    double vd  = Point2D::fgVDrift;
+    double vd  = SegmentHit::fgVDrift;
     //    double x   = (fSxs.sigXY()+A*fSys.sigXY())/(vd*(1-smn*smn)*pow(1+A*A,3/2.));
     double x   = -(fSxs.sigXY() + A*fSys.sigXY())/(vd*(1-smn*smn)*pow(1+A*A,3/2.));
     return x;
@@ -74,14 +74,14 @@ public:
   int    Fit(int NIterations, int DoCleanup, const Par_t* Pin, Par_t* Par);
   int    Init();
                                         // find the segment line parameters using two seed hits and two edge hits
-  int    DefineDriftDirections(const Par_t* Pin = nullptr);
-  int    CalculateLsqSums();
-  int    DisplaySegment();
+  int         DefineDriftDirections(const Par_t* Pin = nullptr);
+  int         CalculateLsqSums();
+  int         DisplaySegment();
                                         // if nullptr, use fTangentLine
-  int    DefineTangentLine(Par_t* Par = nullptr);
+  int         DefineTangentLine(Par_t* Par = nullptr);
 
-  static int DebugMode()      { return fgDebugMode;    }
-  static int DebugBit (int I) { return fgDebugBits[I]; }
+  static int  DebugMode()      { return fgDebugMode;    }
+  static int  DebugBit (int I) { return fgDebugBits[I]; }
 
   static void SetDebugMode(int Mode) { fgDebugMode = Mode; }
   static void DebugBit(int I, int Val) { fgDebugBits[I] = Val; }
