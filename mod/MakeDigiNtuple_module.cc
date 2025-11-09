@@ -970,21 +970,24 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 // list of hits already created, but SegmentHits need to be initialized from ComboHits
 // this looks ugly, but OK for the purpose
 //----------------------------------------------------------------------------- 
-    ts->InitHits(nullptr);
+    int rc = ts->InitHits(nullptr);
 
-    SegmentFit sfitter(ts);
+    int converged(0);
+    if (rc == 0) {
+      SegmentFit sfitter(ts);
 //-----------------------------------------------------------------------------
 // use tangent line and the first and the last hits
 // perform 4 fits, find the best
 //-----------------------------------------------------------------------------
-    sfitter.DefineDriftDirections();
+      sfitter.DefineDriftDirections();
 //-----------------------------------------------------------------------------
 // perform fit using all points and starting from ts.fPar4
 //-----------------------------------------------------------------------------
-    int converged = sfitter.Fit(niter,0,nullptr,&par);
+      converged = sfitter.Fit(niter,0,nullptr,&par);
+    }
 
     if (_debugMode) {
-      std::cout << "converged:" << converged;
+      std::cout << "rc:" << rc << " converged:" << converged;
     }
   }
 //-----------------------------------------------------------------------------

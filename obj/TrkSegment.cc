@@ -144,13 +144,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   if (fgDebugMode != 0) {
     std::cout << std::format("fIhit[0]:{:2d} fIhit[1]:{:2d} ngh: {} {} miss: {} {}\n",
                              fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1]);
-    //    fCombiTrans->Print();
   }
-//-----------------------------------------------------------------------------
-// add Point2D's :
-//-----------------------------------------------------------------------------
-  //  int    imax      (-1);
-  //  double max_drtime(-1);
 
   fXMean = 0;
   fYMean = 0;
@@ -170,11 +164,11 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 // points have coordinates in the local coordinate system of the panel
 // add all hits, including flagged ones - those will not be used in the fit
 //-----------------------------------------------------------------------------
-//    sgh->fMask     |= flag[i];
     sgh->x          = posl.y();
     sgh->y          = posl.z();
     sgh->drs        = drs[i];
     sgh->sign_fixed = 0;
+    sgh->fChi2      = -1.;
 //-----------------------------------------------------------------------------
 // to avoid mistakes, perform the subtraction just once
 // hits flagged at this stage will never be unflagged
@@ -208,8 +202,8 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
   if (fgDebugMode != 0) {
     std::cout << " --- after subtracting mean values\n";
-    std::cout << std::format(" i      Xloc      Yloc    T\n");
-    std::cout << std::format("----------------------------\n");
+    std::cout << std::format("  i       Xloc       Yloc        T\n");
+    std::cout << std::format("------------------------------------\n");
   }
 
   for (int i=0; i<nhits; i++) {
@@ -226,7 +220,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
 // finally, define tangent line. The hits are already sorted
 //-----------------------------------------------------------------------------
-  DefineTangentLine();
+  rc = DefineTangentLine();
 
   if (fgDebugMode != 0) {
     print("InitHits after DefineTangentLine");
@@ -301,8 +295,17 @@ int TrkSegment::DefineTangentLine() {
   int i1       = fIhit[0];
   int i2       = fIhit[1];
 
-  // Point2D* p1  = &points[i1];
-  // Point2D* p2  = &points[i2];
+  if ((i1 < 0) or (i2 < 0)) {
+                                        // don't do anything for 1-layer segments
+    fTangentLine.a       = -999.;
+    fTangentLine.b       = -999.;
+    fTangentLine.nx      = -999;
+    fTangentLine.ny      = -999;
+    fTangentLine.tau     = -999;
+    fTangentLine.chi2dof = -1;
+    fPar = fTangentLine;
+    return -1;
+  }
 
   SegmentHit* p1 = Hit(i1);
   SegmentHit* p2 = Hit(i2);
@@ -314,7 +317,6 @@ int TrkSegment::DefineTangentLine() {
 
   int nhits = nHits();
   for (int i=0; i<nhits; i++) {
-    //    Point2D* pt = &points[i];
     SegmentHit* pt = Hit(i);
     if (pt->IsGood() != 1)              continue;
     t0          += pt->fComboHit->correctedTime();
@@ -326,7 +328,6 @@ int TrkSegment::DefineTangentLine() {
 // make sure t0 is not larger than the smallest measured time
 //-----------------------------------------------------------------------------
   for (int i=0; i<nhits; i++) {
-    // Point2D* pt = &points[i];
     SegmentHit* pt = Hit(i);
     if (pt->IsGood() != 1)              continue;
     if (t0 > pt->t) t0 = pt->t;
