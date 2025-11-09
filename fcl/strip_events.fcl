@@ -1,0 +1,69 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# read output of reconstruction. run event display
+# make sure the combohit collection name passed to the event display
+# is the same as used by the reconstruction
+#------------------------------------------------------------------------------
+BEGIN_PROLOG
+  TRIGGER_PATHS                     : [ p1 ]
+  COMBO_HIT_COLL_TAG @protect_ignore: "makeSH"
+END_PROLOG
+
+#include "Stntuple/fcl/stntuple.fcl"
+#include "daqana/fcl/calibration_set_v3.fcl"
+
+process_name : StripEvents
+
+source       : { module_type : RootInput   }
+
+physics : {
+    filters    : {
+        EventIDFilter: { module_type: EventIDFilter }
+    }
+
+    p2 : [ EventIDFilter ]
+    e1 : [ defaultOutput ]
+
+    trigger_paths : [ p2 ]  ## p1 ]
+    out           : [    ]  ## [detectorOutput] # defined in Stntuple/fcl/stntuple.fcl]
+    end_paths     : [ e1 ]  ## , out ]
+}
+#------------------------------------------------------------------------------
+# uncomment the next 2 lines if you want the DST file to be written out
+#-----------------------------------------------------------------------------
+outputs.defaultOutput.SelectEvents       : [ p2 ]
+outputs.defaultOutput.fileName           : "raw.mu2e.trk.vst00s0s01r0000.%06r_%06s.art"
+physics.filters.EventIDFilter.idsToMatch :
+[
+"107995:6:5813505",
+"107995:6:5821493",
+"107995:7:6097434",
+"107995:7:6738051",
+"107995:8:7422137",
+"107995:10:9718075",
+"107995:10:9896746",
+"107995:12:11032200",
+"107995:12:11699582",
+"107995:14:13011296",
+"107995:15:14311858",
+"107995:16:15781798",
+"107995:17:16642357",
+"107995:19:18994727",
+"107995:20:19731357",
+"107995:23:22326657",
+"107995:24:23715349",
+"107995:26:25482043",
+"107995:26:25500957",
+"107995:27:26122289",
+"107995:27:26152280",
+"107995:28:27076254",
+"107995:28:27916434",
+"107995:28:27933861",
+"107995:29:28902082"
+]
+
+source.fileNames:
+[
+ "rec.mu2e.trk.vst00s000r010n000.107995_000001.art"
+
+]
