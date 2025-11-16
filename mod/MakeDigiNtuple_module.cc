@@ -957,7 +957,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 // - number of 'holes' on each side - tomorrow? 
 //-----------------------------------------------------------------------------
 
-  Par_t par;
+  TrkSegment::Par_t par;
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];

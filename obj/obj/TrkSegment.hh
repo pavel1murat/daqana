@@ -6,24 +6,6 @@
 
 // #include "daqana/obj/ComboHitData_t.hh"
 
-struct Par_t {
-  double a;
-  double b;
-  double tau;
-  double nx;
-  double ny;
-  double chi2dof;
-
-  double DyDx() const { return  a ; }
-  double Y0  () const { return  b ; }
-  double X0  () const { return  0 ; }
-  double Nx  () const { return  nx; }
-  double Ny  () const { return  ny; }
-  double Nux () const { return -ny; }
-  double Nuy () const { return  nx; }
-  double T0  () const { return tau; }
-};
-
 //-----------------------------------------------------------------------------
 // representation of a 2D hit used in the segment fit
 //-----------------------------------------------------------------------------
@@ -75,6 +57,24 @@ struct SegmentHit {
 //-----------------------------------------------------------------------------
 class TrkSegment {
 public:
+
+  struct Par_t {
+    double a;
+    double b;
+    double tau;
+    double nx;
+    double ny;
+    double chi2dof;
+
+    double DyDx() const { return  a ; }
+    double Y0  () const { return  b ; }
+    double X0  () const { return  0 ; }
+    double Nx  () const { return  nx; }
+    double Ny  () const { return  ny; }
+    double Nux () const { return -ny; }
+    double Nuy () const { return  nx; }
+    double T0  () const { return tau; }
+  };
 
   enum {
     kNTransitionsBit   = 0x0001,

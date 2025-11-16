@@ -8,10 +8,12 @@
 #include "TH1.h"
 #include "TH2.h"
 
+TH1F* h_drho[12];
+
 //-----------------------------------------------------------------------------
 // example DsID: vst04s0s10r000
 //-----------------------------------------------------------------------------
-int fit_drho_vs_rdrift(const char* DsID, int RunNumber,int Panel) {
+int fit_drho_vs_rdrift(const char* DsID, int RunNumber,int Panel, const char* Opt="") {
 
   char fn[200];
 
@@ -90,7 +92,9 @@ int fit_drho_vs_rdrift(const char* DsID, int RunNumber,int Panel) {
   printf("panel ibin      rdrift       mean        emean          sig           esig       chi2dof\n");
   printf("#-----------------------------------------------------------------------------\n");
   double vdrift(61.);
-  
+
+  h_drho[Panel] = new TH1F(Form("h_drho_%02i",Panel),Form("h_drho_%02i",Panel),100,0,5.);
+
   for (int i=0; i<nx; i++) {
     printf(" %4i  %4i %10.3f" ,Panel,i,h0->GetXaxis()->GetBinCenter(i+1));
     double dt   = fr[i].p[1]/vdrift*1e3;
@@ -101,8 +105,11 @@ int fit_drho_vs_rdrift(const char* DsID, int RunNumber,int Panel) {
     printf(" %12.5f %12.5f  %12.5f %12.5f  %12.5f\n",
            //           fr[i].p[1],fr[i].e[1], fr[i].p[2],fr[i].e[2], fr[i].chi2dof);
            dt,edt,sig,esig, fr[i].chi2dof);
+
+    h_drho[Panel]->SetBinContent(i+1, fr[i].p[1]);
+    h_drho[Panel]->SetBinError  (i+1, fr[i].e[1]);
   }
 
-
+  h_drho[Panel]->Draw(Opt);
   return 0;
 }

@@ -106,7 +106,7 @@ int SegmentFit::CalculateLsqSums() {
 }
 
 //-----------------------------------------------------------------------------
-int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
+int SegmentFit::DefineDriftDirections(const TrkSegment::Par_t* Pin) {
 //-----------------------------------------------------------------------------
 // use two hits with known drift directions and also the first ant the last hits
 //-----------------------------------------------------------------------------
@@ -141,11 +141,11 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
   int    ibest(-1);
   double chi2_best(1.e12);
                                         // initial parameters
-  const Par_t* pin = Pin;
+  const TrkSegment::Par_t* pin = Pin;
   if (pin == nullptr) pin = &fSegment->fTangentLine;
   
                                         // parameters: a,b,T0
-  Par_t   fit_res[4];
+  TrkSegment::Par_t   fit_res[4];
 //-----------------------------------------------------------------------------
 // at this moment, only four points have their drift signs defined
 //-----------------------------------------------------------------------------
@@ -171,7 +171,7 @@ int SegmentFit::DefineDriftDirections(const Par_t* Pin) {
     std::cout << std::format("-- SegmentFit::{}:{} ibest:{} signs: {}:{} chi2_best:{:8.2f}\n",__func__,__LINE__,ibest,pt[0]->drs,pt[1]->drs,chi2_best);
   }
 
-  Par_t* pbest = &fit_res[ibest];
+  TrkSegment::Par_t* pbest = &fit_res[ibest];
 //-----------------------------------------------------------------------------
 // update segment line parameters
 //-----------------------------------------------------------------------------
@@ -269,13 +269,13 @@ int SegmentFit::DisplaySegment() {
 // rc = 1: fit converged ???
 // assume that the initial tangent line is defined
 //-----------------------------------------------------------------------------
-int SegmentFit::Fit(int NItMax, int DoCleanup, const Par_t* Pin, Par_t* Par) {
+int SegmentFit::Fit(int NItMax, int DoCleanup, const TrkSegment::Par_t* Pin, TrkSegment::Par_t* Par) {
   int  converged(0);
 
   if (fgDebugMode) std::cout << std::format("-- SegmentFit::{}:{} START\n",__func__,__LINE__);
 
                                         // pin: initial parameter values
-  const Par_t* pin = Pin;
+  const TrkSegment::Par_t* pin = Pin;
   if (pin == nullptr) pin = &fSegment->fPar4;
 
   double a0   = pin->a;

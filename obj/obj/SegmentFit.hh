@@ -71,14 +71,14 @@ public:
   double DChi2Db  (double A, double B, double Tau);
   double DChi2Dtau(double A, double B, double Tau);
 
-  int    Fit(int NIterations, int DoCleanup, const Par_t* Pin, Par_t* Par);
+  int    Fit(int NIterations, int DoCleanup, const TrkSegment::Par_t* Pin, TrkSegment::Par_t* Par);
   int    Init();
                                         // find the segment line parameters using two seed hits and two edge hits
-  int         DefineDriftDirections(const Par_t* Pin = nullptr);
+  int         DefineDriftDirections(const TrkSegment::Par_t* Pin = nullptr);
   int         CalculateLsqSums();
   int         DisplaySegment();
                                         // if nullptr, use fTangentLine
-  int         DefineTangentLine(Par_t* Par = nullptr);
+  int         DefineTangentLine(TrkSegment::Par_t* Par = nullptr);
 
   static int  DebugMode()      { return fgDebugMode;    }
   static int  DebugBit (int I) { return fgDebugBits[I]; }

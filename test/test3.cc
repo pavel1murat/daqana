@@ -118,7 +118,7 @@ int test3::test_fit_line(const char* Fn, int Plane, int Panel, int NIter) {
 // iterations, at this point all drift signs are defined...
 // pin=nullptr: use fSegment->fPar to start
 //-----------------------------------------------------------------------------
-  Par_t par;
+  TrkSegment::Par_t par;
   int converged = fSfitter->Fit(NIter,0, nullptr, &par);
   fSegment->print(Form("-- after SegmentFit::Fit converged:%i",converged));
 

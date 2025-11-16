@@ -17,6 +17,7 @@
 #pragma link C++  class  DaqTrkStrawHit;
 
 #pragma link C++  class  digis;
+#pragma link C++  class  simres;
 
 #pragma link C++  class  TrkSegment;
 #endif
