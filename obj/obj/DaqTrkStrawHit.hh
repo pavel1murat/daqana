@@ -20,6 +20,7 @@ public:
   float   edep;
   int     iseg;
   int     itrk;
+  int     ihit;                         // hit number within the segment
   float   rdrift;                       // drift distance
   float   doca;                         // vdot((track-to-hit dist),(track-to-wire distance).unit)
   float   drho;                         // unsigned: |track-to-wire dist| - rdrift

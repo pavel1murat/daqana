@@ -260,10 +260,11 @@ public :
    Float_t         segsh_tot1[kMaxsh];   //[sh_]
    Float_t         segsh_edep[kMaxsh];   //[sh_]
    Float_t         segsh_rdrift[kMaxsegsh];   //[segsh_]
-   Float_t         segsh_doca[kMaxsegsh];   //[segsh_]
-   Float_t         segsh_drho[kMaxsegsh];   //[segsh_]
-   Int_t           segsh_iseg[kMaxsegsh];   //[segsh_]
-   Int_t           segsh_itrk[kMaxsegsh];   //[segsh_]
+   Float_t         segsh_doca  [kMaxsegsh];   //[segsh_]
+   Float_t         segsh_drho  [kMaxsegsh];   //[segsh_]
+   Int_t           segsh_iseg  [kMaxsegsh];   //[segsh_]
+   Int_t           segsh_itrk  [kMaxsegsh];   //[segsh_]
+   Int_t           segsh_ihit  [kMaxsegsh];   //[segsh_]
 
    // List of branches
    TBranch        *b_evt_run;   //!
@@ -394,6 +395,7 @@ public :
    TBranch        *b_segsh_drho;   //!
    TBranch        *b_segsh_iseg;   //!
    TBranch        *b_segsh_itrk;   //!
+   TBranch        *b_segsh_ihit;   //!
 //-----------------------------------------------------------------------------
 // DsID    = -1     : single file
 // Fileset = nullptr: full dataset

@@ -1103,13 +1103,13 @@ int mu2e::MakeDigiNtuple::fillSeg() {
 
       nt_tsh->iseg    = iseg;
       nt_tsh->itrk    = -1;
+      nt_tsh->ihit    = ih;
     }
     nsegsh += nt_ts->nh;
   }
 
   _event->nseg   = _nseg;
   _event->nsegsh = nsegsh;
-
 
   return 0;
 }
