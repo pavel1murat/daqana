@@ -1,5 +1,12 @@
 #!/usr/bin/env python
-# v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005
+# will run a mu2e job with daqana/fcl/make_station_hist.fcl for a given run
+# calling example: 
+#               v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005 --slot=12 --nfiles=1
+# parameters:
+# --rn         : run number to process
+# --diag_level : 
+# --min_edep   : 
+# --nfiles     : N files to process; default=all
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime
 import sys, string, getopt, glob, os, time, re, array
@@ -13,6 +20,7 @@ class SubmitJob:
         self.nfiles     = None;
         self.min_edep   = None;
         self.run_number = None
+        self.slot       = None
         self.diag_level = 0;
         
 # ---------------------------------------------------------------------
@@ -31,7 +39,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['idsid=', 'min_edep=', 'rn=', 'nsbl=' ] )
+                     ['diag_level=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slot=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -48,14 +56,19 @@ class SubmitJob:
                 self.run_number = int(val)
             elif (key == '--idsid'):
                 self.idsid = val
-            elif (key == '--nfiles'):
-                self.nfiles = int(val)
             elif (key == '--min_edep'):
                 self.min_edep = float(val)
+            elif (key == '--nfiles'):
+                self.nfiles = int(val)
+            elif (key == '--slot'):
+                self.slot = int(val)
 
         self.Print(name,1,'verbose   = %s' % self.diag_level)
-        self.Print(name,0,'rn        = %s' % self.run_number)
+        self.Print(name,0,'idsid     = %s' % self.idsid     )
         self.Print(name,0,'min_edep  = %s' % self.min_edep  )
+        self.Print(name,0,'nfiles    = %s' % self.nfiles    )
+        self.Print(name,0,'rn        = %s' % self.run_number)
+        self.Print(name,0,'slot      = %s' % self.slot      )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -70,7 +83,7 @@ class SubmitJob:
     def run(self):
         name      = 'run';
 #------------------------------------------------------------------------------
-# form the input fcl
+# form the input fcl, redefine requested parameters
 #------------------------------------------------------------------------------
         input_fcl    = f'/tmp/make_station_hist_{os.getpid()}.fcl';
         template_fcl = os.environ.get('SPACK_ENV')+'/daqana/fcl/make_station_hist.fcl';
@@ -78,6 +91,8 @@ class SubmitJob:
         cmd = f'cat {template_fcl} >| {input_fcl}';
         if (self.min_edep):
             cmd += f'; echo "physics.analyzers.StationAna.minEDep : {self.min_edep}" >> {input_fcl}';
+        if (self.slot):
+            cmd += f'; echo "physics.analyzers.StationAna.slot    : {self.slot}"     >> {input_fcl}';
 
         print('000:cmd:',cmd);
         
@@ -92,7 +107,7 @@ class SubmitJob:
 # form the input file list
 #------------------------------------------------------------------------------
         input_file_list=f'/tmp/make_station_hist_input.{self.run_number}.txt.{os.getpid()}'
-        cmd  = "ls -al /data/tracker/vst/mu2etrk_daquser_001/data/* | awk '{print $9}'"
+        cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
         cmd += f' | grep {self.run_number} | sort';
         if (self.nfiles):
             cmd += f' | head -n {self.nfiles}'

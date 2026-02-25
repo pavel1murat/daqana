@@ -32,7 +32,8 @@ namespace mu2e {
     _debugMode             (PSet.get<int>             ("debugMode"             )),
     _shCollTag             (PSet.get<art::InputTag>   ("shCollTag"             )),
     _maxDt                 (PSet.get<float>           ("maxDt"                 )),
-    _minEDep               (PSet.get<float>           ("minEDep"               ))
+    _minEDep               (PSet.get<float>           ("minEDep"               )),
+    _slot                  (PSet.get<int>             ("slot"                  ))
   {
     _initialized = 0;
     _last_run    = -1;
@@ -123,7 +124,6 @@ namespace mu2e {
         art::TFileDirectory set_dir = tfs->mkdir(folder_name);
 
         for (int ip=0; ip<12; ++ip) {
-          //_hist.panel_set[iset].panel[ip] = new PanelHist_t;
           int mnid = _edata.panel[ip].mnid;
           art::TFileDirectory panel_dir = set_dir.mkdir(Form("MN%i",mnid));
           book_panel_histograms(&panel_dir,RunNumber,&_hist.panel_set[iset].panel[ip],mnid);
@@ -140,18 +140,12 @@ namespace mu2e {
 // book histograms only once
 //-----------------------------------------------------------------------------
   void StationAna::beginRun(const art::Run& ArtRun) {
-    int rn  = ArtRun.run();
-    
-    if (_initialized != 0) return;
-    _initialized = 1;
-//-----------------------------------------------------------------------------
-// as a last step, book histograms - need to know the number of active links
-//-----------------------------------------------------------------------------
-    book_histograms(rn);
+    return;
   }
   
 //--------------------------------------------------------------------------------
   void StationAna::beginJob() {
+    return;
   }
 
 //-----------------------------------------------------------------------------
@@ -336,6 +330,21 @@ int StationAna::init_event(const art::Event& ArtEvent) {
     ProditionsHandle<TrackerPanelMap> tpm_h;
     _trkPanelMap = &tpm_h.get(ArtEvent.id());
     _last_run    = ArtEvent.run();
+
+    for (int pln=2*_slot; pln<2*_slot+2; pln++) {
+      int ipln2 = pln % 2;
+      for (int ip=0; ip<6; ip++) {
+        int pnl = 6*ipln2+ip;
+        PanelData_t* pd = &_edata.panel[pnl];
+        int mnid = _trkPanelMap->panel_map_by_offline_ind(pln,ip)->mnid();
+        pd->mnid = mnid;
+      }
+    }
+//-----------------------------------------------------------------------------
+// as a last step, book histograms - need to know the number of active links
+// also need to know Minnesota IDs of the panels
+//-----------------------------------------------------------------------------
+    book_histograms(_last_run);
   }
 
   _edata.nsht       = 0;

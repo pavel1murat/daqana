@@ -1,4 +1,4 @@
-TABLE TrkAlignTracker  107000-110000
+TABLE TrkAlignTracker  107000-200000
 0, 0_0_0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 #
 #

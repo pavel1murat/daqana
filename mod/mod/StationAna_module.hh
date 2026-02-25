@@ -147,6 +147,7 @@ namespace mu2e {
     Hist_t                          _hist;
     int                             _initialized;
     int                             _last_run;
+    int                             _slot;
 
     const TrackerPanelMap*          _trkPanelMap;
 //-----------------------------------------------------------------------------

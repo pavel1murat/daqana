@@ -13,7 +13,7 @@ class SubmitJob:
         self.calib      = None;
         self.idsid      = None;
         self.nfiles     = 1;
-        self.ntid       = None;
+        self.ntid       = 'n001';
         self.nsbl       = None;
         self.run_number = None
         self.diag_level = 0;
@@ -34,7 +34,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nsbl=' ] )
+                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -60,12 +60,14 @@ class SubmitJob:
             elif (key == '--nsbl'):
                 self.nsbl = int(val)
 
-        self.Print(name,1,'self.verbose   = %s' % self.diag_level)
-        self.Print(name,0,'self.calib     = %s' % self.calib     )
-        self.Print(name,0,'self.rn        = %s' % self.run_number)
-        self.Print(name,0,'self.ntid      = %s' % self.ntid      )
-        self.Print(name,0,'self.nsbl      = %s' % self.nsbl      )
+        self.Print(name,1,f'self.diag_level: {self.diag_level}')
+        self.Print(name,0,f'self.idsid     : {self.idsid}'     )
+        self.Print(name,0,f'self.calib     : {self.calib}'     )
+        self.Print(name,0,f'self.rn        : {self.run_number}')
+        self.Print(name,0,f'self.ntid      : {self.ntid}'      )
+        self.Print(name,0,f'self.nsbl      : {self.nsbl}'      )
 
+        print(f'idsid:{self.idsid}')
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
 #            sys.exit(1)

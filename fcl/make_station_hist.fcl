@@ -25,6 +25,11 @@
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
 
+services.message.destinations.log.categories.MAKE_SD: {
+    # reportEvery : 1
+    limit       : 100 ## -1
+}
+
 process_name : MakeStationHist
 
 source : {
@@ -60,11 +65,10 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            diagLevel       :  0 ## 10
-            debugBits       : [ "bit0:0" ]        ## 3
-            saveWaveforms   :  true
-            geography       : [ @sequence::station_00_geography ]
-            dtcHeaderPresent: true
+            diagLevel        :  0 ## 10
+            debugBits        : [ "bit0:0" ]        ## 3
+            saveWaveforms    :  true
+            missingDTCHeaders: false
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -80,6 +84,7 @@ physics : {
         }
         StationAna : { @table::daqana.analyzers.StationAna
             shCollTag : "makeSH"
+            slot      : 12             ## station 4
             minEDep   : 0.001          ## default : 0.0006
         }
     }
