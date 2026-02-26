@@ -10,7 +10,6 @@
 #include "Offline/fcl/standardServices.fcl"
 
 #include "Offline/DAQ/fcl/prolog.fcl"
-#include "Offline/DAQ/fcl/panel_map.fcl"
 
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
@@ -58,7 +57,6 @@ physics : {
         makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
             saveWaveforms :  true
-            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -93,7 +91,6 @@ physics : {
             useCCs                     : 1
             recoverCCs                 : 1
             chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
-            chCollLabel2               : "makeSH"
             tcCollLabel                : "TimeClusterFinderDe"
             ccCollLabel                : "CaloClusterMaker"
             hitBkgBits                 : ["Noisy","Dead","Background"]

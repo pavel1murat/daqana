@@ -626,6 +626,7 @@ int mu2e::MakeDigiNtuple::fillSH() {
     nt_sh->tot0        = sh->TOT(mu2e::StrawEnd::cal);
     nt_sh->tot1        = sh->TOT(mu2e::StrawEnd::hv );
     nt_sh->edep        = sh->energyDep();
+    if (sh->energyDep() > _event->maxEdep) _event->maxEdep = sh->energyDep();
 
     if (_debugMode  > 0) {
       if (_debugBit[1] != 0) {
@@ -712,12 +713,13 @@ int mu2e::MakeDigiNtuple::fillTC() {
       szy.addPoint(z,y,w);
       
       int plane = hit->strawId().plane();
+      int pln2  = plane % 2;
       int panel = hit->strawId().panel();
       //      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
       const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(plane,panel);
       int zface = tpm->zface();
 
-      int loc = 6*plane+panel;
+      int loc = 6*pln2+panel;
       
       if (nt_tc->_nh_panel[loc] == 0) nt_tc->npanels++;
       nt_tc->_nh_panel[loc]++;
@@ -726,9 +728,9 @@ int mu2e::MakeDigiNtuple::fillTC() {
 
       if (hit->energyDep() > nt_tc->edep_max) nt_tc->edep_max = hit->energyDep();
 
-      if (nt_tc->_nhp[plane] == 0) nt_tc->nplanes++;
-      nt_tc->_nhp[plane]++;
-      nt_tc->_timep [plane] += hit->correctedTime();
+      if (nt_tc->_nhp[pln2] == 0) nt_tc->nplanes++;
+      nt_tc->_nhp[pln2]++;
+      nt_tc->_timep [pln2] += hit->correctedTime();
 
       if (nt_tc->_nhf[zface] == 0) {
         nt_tc->nfaces++;
@@ -847,7 +849,8 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 //-----------------------------------------------------------------------------
 // cosmic track: assume one segment per panel, in principle, there could be more than one
 //-----------------------------------------------------------------------------
-      TrkSegment* ts = &_tseg[plane][panel];
+      int pln2 = plane % 2;
+      TrkSegment* ts = &_tseg[pln2][panel];
       if (ts->nHits() == 0) {
         _ptseg.push_back(ts);
         _nseg    += 1;
@@ -1158,6 +1161,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->nch     = _ncombohits;
   _event->ntc     = _ntimeclusters;
   _event->ntrk    = _ntracks;
+  _event->maxEdep = 0;
 
   if (_debugMode > 0) {
     print_(std::format("_nstrawdigis:{}\n",_nstrawdigis));

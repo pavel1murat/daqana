@@ -23,6 +23,7 @@ public:
   int            nshtot;                // total number of straw digis in event
   int            nsh[2][6];             // by [dtc][link]
   TClonesArray*  sh;
+  float          maxEdep;               // max hit Edep in the event
   int            nch;
   TClonesArray*  ch;
   int            ntc;                   // N(time clusters)

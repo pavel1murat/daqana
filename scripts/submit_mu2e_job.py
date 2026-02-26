@@ -14,7 +14,7 @@ class SubmitJob:
         self.idsid       = None;
         self.nev         = None;
         self.first_event = None;
-        self.nfiles      = 1;
+        self.nfiles      = None;
         self.fcl         = None;
         self.run_number  = None
         self.diag_level  = 0;
@@ -77,7 +77,7 @@ class SubmitJob:
 
         self.Print(name,1,'------------------------------------- Done')
         return 0
-
+   
 #------------------------------------------------------------------------------
 # print statistics reported by a given artdaq process
 #------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ class SubmitJob:
                                encoding="utf-8")
         p.communicate();
 #------------------------------------------------------------------------------
-# form the input fcl
+# form input fcl
 #------------------------------------------------------------------------------
         template_fcl = os.getcwd()+'/'+self.fcl;
         pid          = os.getpid();
@@ -119,7 +119,7 @@ class SubmitJob:
             overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{self.calib}/'
 
 #------------------------------------------------------------------------------
-# redefinitions --> appends
+# redefinitions --> appends 
 #------------------------------------------------------------------------------
         os.system(f'cat {template_fcl} {overrides_cmd}                                             >  {output_dir}/{job_fcl}')
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
@@ -175,6 +175,7 @@ class SubmitJob:
             cmd += f' cd {output_dir}; mu2e -c {job_fcl}' # fcl file is in the output_dif
         
             if (self.source     ): cmd += f' -s {self.source}'
+            cmd                        += f' -S {input_file_list}'
             if (self.first_event): cmd += f' -e {self.first_event}'
             if (self.nev        ): cmd += f' -n {self.nev}'
 
@@ -188,6 +189,9 @@ class SubmitJob:
             os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
             os.system(f'cat {output_dir}/{job_fcl}                     >> {output_dir}/{logfile}')
             os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
+            os.system(f'echo "input file list:"                        >> {output_dir}/{logfile}')
+            os.system(f'cat  {input_file_list}                         >> {output_dir}/{logfile}')
+            os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
                
             p   = subprocess.Popen(cmd,
                                    executable="/bin/bash",
@@ -199,7 +203,7 @@ class SubmitJob:
             self.Print(name,1,f'out_2:{out}')
             self.Print(name,0,f'err_2:{err}')
         else:
-            self.Print(name,0,f'ERROR: {os.getenv("WORK_DIR")}/.source_me doesn\'t exist, BAIL OUT')
+            self.Print(name,0,f'WARNING: {os.getenv("WORK_DIR")}/.source_me doesn\'t exist, BAIL OUT')
             
         return;
 #------------------------------------------------------------------------------

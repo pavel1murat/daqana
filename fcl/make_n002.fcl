@@ -9,9 +9,6 @@
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
 
-#include "Offline/DAQ/fcl/prolog.fcl"
-#include "Offline/DAQ/fcl/panel_map.fcl"
-
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
 #include "Stntuple/fcl/stntuple_templates.fcl"
@@ -19,6 +16,13 @@
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
+
+services.TimeTracker : {}
+
+services.message.destinations.log.categories.MAKE_SD: {
+    # reportEvery :  1
+    limit       : 1000   # -1
+}
 
 process_name : MakeDaqNtuple
 
@@ -57,7 +61,6 @@ physics : {
         makeSD: { @table::DAQ.producers.makeSD
             diagLevel     :  0 ## 10
             saveWaveforms :  true
-            geography     : [ @sequence::station_00_geography ]
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
@@ -92,7 +95,7 @@ physics : {
             useCCs                     : 1
             recoverCCs                 : 1
             chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
-            chCollLabel2               : "makeSH"
+            # chCollLabel2               : "makeSH"
             tcCollLabel                : "TimeClusterFinderDe"
             ccCollLabel                : "CaloClusterMaker"
             hitBkgBits                 : ["Noisy","Dead","Background"]
@@ -110,6 +113,14 @@ physics : {
             caloDtMax                  : 30.0
             doRefine                   : 1        ## 0
         }
+
+        SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+            minNStrawHits : 4
+            minNPanels    : 1
+            TimeWindow    : 400
+            TimeStep      : 30
+        }
+
     }
     
     filters   : {  @table::daqana.filters  }
@@ -120,18 +131,18 @@ physics : {
             makeSH    : 1
             makeTC    : 1
             makeTrk   : 0
-            tcCollTag : "TZClusterFinder"
+            tcCollTag : "TZClusterFinder"  ## "SimpleTimeCluster"   ## 
         }
     }
 
     p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
-    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, FilterTimeClusters ]
+    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
+    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, SimpleTimeCluster, FilterTimeClusters ] ## TZClusterFinder, FilterTimeClusters ]
 
     e0 : []
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
 
-    trigger_paths  : [ p2 ] 
+    trigger_paths  : [ p2 ]   ## p1
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------

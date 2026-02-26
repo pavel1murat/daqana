@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # example :
-#        v001/daqana/scripts/make_digi_ntuple.py --rn=107976 --idsid=vst --ntid=n002 --nsbl=10 --calib=01
+#        v001/daqana/scripts/make_digi_ntuple.py --rn=107976 --idsid=vst --ntid=n002 --nsbl=10 --calib=v1
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime
 import sys, string, getopt, glob, os, time, re, array
@@ -12,7 +12,7 @@ class SubmitJob:
     def __init__(self):
         self.calib      = None;
         self.idsid      = None;
-        self.nfiles     = 1;
+        self.nfiles     = None;
         self.ntid       = 'n001';
         self.nsbl       = None;
         self.run_number = None
@@ -76,6 +76,48 @@ class SubmitJob:
         return 0
 
 #------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
+    def form_input_fcl(self):
+        template_fcl = os.environ.get('SPACK_ENV')+'/daqana/fcl/make_'+self.ntid+'.fcl';
+        print(f'000:template_fcl:{template_fcl}');
+
+        lines = []
+        with open(template_fcl,'r') as f:
+            lines = f.readlines()
+
+        new_text = []
+        for line in lines:
+#-------^----------------------------------------------------------------------
+# overrides, calib: 'v1'
+#-----------v------------------------------------------------------------------
+            if (self.calib):
+                pattern = r'(?:[\w-]+\.)*/calibration_set_v0.fcl'
+                match = re.search(pattern,line)
+                if (match):
+                    key = match.group(0);
+                    new_text.append(f'#include "daqana/fcl/calibration_set_{self.calib}.fcl"\n');
+                    continue
+
+            if (self.nsbl):
+                cmd += f'; echo "physics.analyzers.MakeDigiNtuple.nSamplesBL : {self.nsbl}" >> {input_fcl}';
+                pattern = r'(?:[\w-]+\.)*MakeDigiNtuple.nSamplesBL'
+                match = re.search(pattern,line)
+                if (match):
+                    key = match.group(0);
+                    new_text.append(f'{key}MakeDigiNtuple.nSamplesBL : {self.nsbl}\n');
+                    continue
+#------------------------------------------------------------------------------
+# any other line - just rewrite
+#------------------------------------------------------------------------------
+            new_text.append(line);
+           
+        with open(input_fcl,'w') as f:
+            f.writelines(line for line in new_text)
+
+        return
+
+#-------^----------------------------------------------------------------------
 # print statistics reported by a given artdaq process
 #------------------------------------------------------------------------------
     def run(self):
@@ -84,28 +126,7 @@ class SubmitJob:
 # form the input fcl
 #------------------------------------------------------------------------------
         input_fcl    = f'/tmp/make_digi_ntuple_{os.getpid()}.fcl';
-        template_fcl = os.environ.get('SPACK_ENV')+'/daqana/fcl/make_'+self.ntid+'.fcl';
-        print(f'000:template_fcl:{template_fcl}');
-
-        cmd = f'cat {template_fcl} >| {input_fcl}';
-#------------------------------------------------------------------------------
-# overrides, calib: 'v1'
-#------------------------------------------------------------------------------
-        if (self.calib):
-            cmd += f'; cat {template_fcl} | sed s/calibration_set_v0/calibration_set_v1/ > {input_fcl}';
-
-        if (self.nsbl):
-            cmd += f'; echo "physics.analyzers.MakeDigiNtuple.nSamplesBL : {self.nsbl}" >> {input_fcl}';
-
-        print('001:cmd:',cmd);
-        
-        p   = subprocess.Popen(cmd,
-                               executable="/bin/bash",
-                               shell=True,
-                               stderr=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               encoding="utf-8")
-        p.communicate();
+        self.form_input_fcl()
 #------------------------------------------------------------------------------
 # form the input file list
 #------------------------------------------------------------------------------

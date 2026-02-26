@@ -25,8 +25,8 @@ END_PROLOG
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
 services.message.destinations.log.categories.MAKE_SD: {
-    reportEvery :  1
-    limit       : -1
+    # reportEvery :  1
+    limit       : 1000   # -1
 }
 
 process_name : MakeDaqNtuple
@@ -69,7 +69,6 @@ physics : {
             saveWaveforms    : true
             geography        : [  ]
             # dtcHeaderPresent : false
-            # keyOnMnid        : false ## true    ## default:false
             keyOnMnid        : true ## true    ## default:false
         }
         
