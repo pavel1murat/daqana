@@ -985,6 +985,7 @@ void digis::Init() {
    //   fChain->SetBranchAddress("segsh.DaqStrawHit", segsh_DaqStrawHit, &b_segsh_DaqStrawHit);
    fChain->SetBranchAddress("segsh.rdrift", segsh_rdrift, &b_segsh_rdrift);
    fChain->SetBranchAddress("segsh.doca", segsh_doca, &b_segsh_doca);
+   fChain->SetBranchAddress("segsh.dr"  , segsh_dr,   &b_segsh_dr);
    fChain->SetBranchAddress("segsh.drho", segsh_drho, &b_segsh_drho);
    fChain->SetBranchAddress("segsh.iseg", segsh_iseg, &b_segsh_iseg);
    fChain->SetBranchAddress("segsh.itrk", segsh_itrk, &b_segsh_itrk);

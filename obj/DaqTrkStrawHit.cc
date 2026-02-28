@@ -14,7 +14,8 @@ DaqTrkStrawHit::DaqTrkStrawHit() : TObject() {
   tot1 = -1.;
   edep = -1;
                                         // 
-  rdrift =  1.e6;                       // 
+  rdrift =  1.e6;                       //
+  dr     =  1.e6;
   doca   =  1.e6;                       // vdot(dist.track-wire,dist.track-hit.unit)
   drho   =  1.e6;                       // residual sign: (Rtrk-Rhit)*vdrift (unit vectors)
 
