@@ -1,0 +1,147 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# make digi ntuple with: a) straw hits and b) time clusters  (NO DIGIS)
+#
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+#-----------------------------------------------------------------------------
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Offline/DAQ/fcl/prolog.fcl"
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
+
+process_name : FilterTimeClusters
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+#       inputCommands: [ "keep *",
+#                        "drop *_*_*_*"
+#                      ]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "trk_fragment_ana.art"
+        SelectEvents  : [ p1 ]
+        outputCommands: [
+                         "drop *_*_*_*", 
+                         "keep artdaq::Fragments_*_*_*",
+                         "keep mu2e::TriggerInfo_*_*_*", 
+                         "keep art::TriggerResults_*_*_*", 
+                         "keep artdaq::detail::RawEventHeader_*_*_*", 
+                         "keep mu2e::Mu2eEventHeader_*_*_*", 
+                         # "keep mu2e::IntensityInfo*_*_*_*",
+                         "keep mu2e::CaloHits_CaloHitMakerFast_caphri_*"
+                        ]
+    }
+}
+
+physics : {
+    
+    producers : {
+        EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+            SpillType:          0   ## offspill
+            RecoFromMCTruth: false  ## default
+            RecoFromMCTruthErr: 0   ## default
+            InitialPhaseShift:  0   ## optional, set it to zero just in case
+        }
+
+        makeSD: { @table::DAQ.producers.makeSD
+            diagLevel     :  0 ## 10
+            saveWaveforms :  true
+        }
+        
+        makeSH: { @table::TrkHitReco.producers.makeSH }
+        
+        makePH : { @table::TrkHitReco.producers.makePH
+            ComboHitCollection    : "makeSH"
+            EventWindowMarker     : "EWMProducer"
+            StrawHitSelectionBits : [ ]                 ## "EnergySelection", "TimeSelection", "RadiusSelection"]
+            StrawHitMask          : ["Dead"]
+            MaxDt                 : 45 # ns
+            UseTOT                : false               ## true
+            MaxWireDistDiffPull   : 10.                 ## 5.0
+            MaxDS                 : 10                  ## 3
+            UError                : 20.                 ## 10.0 # mm
+            MinimumTime           : 0                   ## 410.0 # ns
+            MaximumTime           : 300000              ## 1700.0 # ns
+            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
+            MaximumEnergy         : 0.006               ## 0.0045 # MeV
+            MinimumRadius         : 300.                ## 380.0 # mm
+            MaximumRadius         : 1000.               ## 700.0 # mm
+            MinimumNHits          : 1
+            MaximumNHits          : 1                   ## 8
+            CheckWres             : false               ## true
+            Unsorted              : false               ## VST data are readout by panel
+        }
+
+        TZClusterFinder : { @table::CalPatRec.producers.TZClusterFinder
+            diagLevel                  : 0
+            debugLevel                 : 0
+            printFrequency             : 1000
+            runDisplay                 : 0
+            useCCs                     : 1
+            recoverCCs                 : 1
+            chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
+            tcCollLabel                : "TimeClusterFinderDe"
+            ccCollLabel                : "CaloClusterMaker"
+            hitBkgBits                 : ["Noisy","Dead","Background"]
+            radSelect                  : 0        ## 1
+            chunkSep                   : 5
+            chunkWindow                : 300.0    ## 20.0
+            chunkThresh                : 5        ## 3
+            combineWindow              : 300.0    ## 30.0
+            maxCombineSep              : 2500.0
+            chunkFitThresh             : 5
+            recoverWindow              : 30.0
+            clusterThresh              : 5        ## 15
+            minCaloSize                : 2
+            minCaloEnergy              : 50.0
+            caloDtMax                  : 30.0
+            doRefine                   : 1        ## 0
+        }
+    }
+    
+    filters   : {
+        @table::DAQ.filters
+    }
+    
+    analyzers : {
+        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeSD    : 0
+            makeSH    : 1
+            makeTC    : 1
+            tcCollTag : "TZClusterFinder"
+        }
+    }
+
+    p1 : [ EWMProducer, makeSD, makeSH, StrawHitFilter ]
+
+    e0 : [ ]
+    e1 : [ defaultOutput  ]
+
+    trigger_paths  : [ p1 ] 
+    end_paths      : [ e1 ]
+}
+#------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
+services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
+outputs.defaultOutput.fileName   : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.art"
+
+physics.filters.StrawHitFilter.minEDep        : 0.0005
+physics.filters.StrawHitFilter.fillHistograms : true
