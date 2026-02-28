@@ -35,7 +35,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'c=', 'e=', 'idsid=', 'nev=', 'nfiles=', 'rn=', 's=' ])
+                     ['calib=', 'diag_level=', 'fcl=', 'e=', 'idsid=', 'nev=', 'nfiles=', 'rn=', 's=' ])
                      
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -50,7 +50,7 @@ class SubmitJob:
                 self.calib = val
             elif (key == '--diag_level'):
                 self.diag_level = int(val)
-            elif (key == '--c'):
+            elif (key == '--fcl'):
                 self.fcl = val
             elif (key == '--e'):
                 self.first_event = val   # '107995:1:10445'

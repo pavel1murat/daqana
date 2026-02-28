@@ -16,6 +16,7 @@ class SubmitJob:
         self.ntid       = 'n001';
         self.nsbl       = None;
         self.run_number = None
+        self.source     = None;          # input file specified on a command line in art language
         self.diag_level = 0;
         
 # ---------------------------------------------------------------------
@@ -34,7 +35,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=' ] )
+                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=', 'source=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -59,6 +60,8 @@ class SubmitJob:
                 self.ntid = val
             elif (key == '--nsbl'):
                 self.nsbl = int(val)
+            elif (key == '--source'):
+                self.source = val
 
         self.Print(name,1,f'self.diag_level: {self.diag_level}')
         self.Print(name,0,f'self.idsid     : {self.idsid}'     )
@@ -66,6 +69,7 @@ class SubmitJob:
         self.Print(name,0,f'self.rn        : {self.run_number}')
         self.Print(name,0,f'self.ntid      : {self.ntid}'      )
         self.Print(name,0,f'self.nsbl      : {self.nsbl}'      )
+        self.Print(name,0,f'self.source    : {self.source}'    )
 
         print(f'idsid:{self.idsid}')
 #        if (self.fProject == None) :
@@ -76,9 +80,9 @@ class SubmitJob:
         return 0
 
 #------------------------------------------------------------------------------
-#
+# 'input_fcl' is the output FCL file name
 #------------------------------------------------------------------------------
-    def form_input_fcl(self):
+    def form_input_fcl(self,input_fcl):
         template_fcl = os.environ.get('SPACK_ENV')+'/daqana/fcl/make_'+self.ntid+'.fcl';
         print(f'000:template_fcl:{template_fcl}');
 
@@ -126,29 +130,7 @@ class SubmitJob:
 # form the input fcl
 #------------------------------------------------------------------------------
         input_fcl    = f'/tmp/make_digi_ntuple_{os.getpid()}.fcl';
-        self.form_input_fcl()
-#------------------------------------------------------------------------------
-# form the input file list
-#------------------------------------------------------------------------------
-        input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
-        cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
-        cmd += f' | grep {self.run_number} | sort';
-        if (self.nfiles):
-            cmd += f' | head -n {self.nfiles}'
-
-        cmd += f' >| {input_file_list}'
-
-        print('001:cmd:',cmd);
-
-        p = subprocess.Popen(cmd,
-                             executable="/bin/bash",
-                             shell=True,
-                             stderr=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             encoding="utf-8")
-        (out, err) = p.communicate();
-
-        self.Print(name,0,f'input_file_list:{input_file_list}')
+        self.form_input_fcl(input_fcl)
 #------------------------------------------------------------------------------
 # submit the job
 #-------v----------------------------------------------------------------------
@@ -156,8 +138,41 @@ class SubmitJob:
         os.system(f'cat {input_fcl} >| {logfile}');
         os.system(f'echo ---------------------------  >> {logfile}');
 
-        cmd = f'mu2e -c {input_fcl} -S {input_file_list} >> {logfile} 2>&1 &'
-        p   = subprocess.Popen(cmd,
+        main_cmd = f'mu2e -c {input_fcl}';
+        
+        # choose either a single file or a list
+        
+        if (self.source):
+            main_cmd += f' -s {self.source}'
+        else:
+#------------------------------------------------------------------------------
+# form input file list
+#------------------------------------------------------------------------------
+            input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
+            cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
+            cmd += f' | grep {self.run_number} | sort';
+            if (self.nfiles):
+                cmd += f' | head -n {self.nfiles}'
+
+            cmd += f' >| {input_file_list}'
+
+            print('001:cmd:',cmd);
+
+            p = subprocess.Popen(cmd,
+                                 executable="/bin/bash",
+                                 shell=True,
+                                 stderr=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                 encoding="utf-8")
+            (out, err) = p.communicate();
+
+            self.Print(name,0,f'input_file_list:{input_file_list}')
+            
+            main_cmd += f' -S {input_file_list}'
+
+        main_cmd += f'>> {logfile} 2>&1 &'
+        
+        p   = subprocess.Popen(main_cmd,
                              executable="/bin/bash",
                              shell=True,
                              stderr=subprocess.PIPE,

@@ -33,7 +33,7 @@ namespace mu2e {
     _shCollTag             (PSet.get<art::InputTag>   ("shCollTag"             )),
     _maxDt                 (PSet.get<float>           ("maxDt"                 )),
     _minEDep               (PSet.get<float>           ("minEDep"               )),
-    _slot                  (PSet.get<int>             ("slot"                  ))
+    _slot                  (PSet.get<std::vector<int>>("slot"                  ))
   {
     _initialized = 0;
     _last_run    = -1;
@@ -47,31 +47,31 @@ namespace mu2e {
     // int ipanel       = 6*Dtc+Link;
     // const char* name = _panelName[ipanel].data();
     
-    Hist->nsht   = Dir->make<TH1F>(Form("ch_%02i_nhits",I),Form("run %06i: MN%3i ch %02i nhits"  ,RunNumber,Mnid,I), 300,  -0.5, 299.5);
-    Hist->tcal    = Dir->make<TH1F>(Form("ch_%02i_tcal" ,I),Form("run %06i: MN%3i ch %02i edep "  ,RunNumber,Mnid,I),1000,   0 , 100000);
-    Hist->dtch    = Dir->make<TH1F>(Form("ch_%02i_dtch" ,I),Form("run %06i: MN%3i ch %02i dtCH "  ,RunNumber,Mnid,I),1000, -100, 100);
-    Hist->edep    = Dir->make<TH1F>(Form("ch_%02i_edep" ,I),Form("run %06i: MN%3i ch %02i edep "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
+    Hist->nsht   = Dir->make<TH1F>(Form("ch_%02i_nhits",I),Form("run %06i: MN%03i ch %02i nhits"  ,RunNumber,Mnid,I), 300,  -0.5, 299.5);
+    Hist->tcal    = Dir->make<TH1F>(Form("ch_%02i_tcal",I),Form("run %06i: MN%03i ch %02i edep "  ,RunNumber,Mnid,I),1000,   0 , 100000);
+    Hist->dtch    = Dir->make<TH1F>(Form("ch_%02i_dtch",I),Form("run %06i: MN%03i ch %02i dtCH "  ,RunNumber,Mnid,I),1000, -100, 100);
+    Hist->edep    = Dir->make<TH1F>(Form("ch_%02i_edep",I),Form("run %06i: MN%03i ch %02i edep "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
 
-    Hist->nshg    = Dir->make<TH1F>(Form("ch_%02i_nhitsg",I),Form("run %06i: MN%3i ch %02i nhitsG"  ,RunNumber,Mnid,I),  300,  -0.5, 299.5);
-    Hist->tcalg    = Dir->make<TH1F>(Form("ch_%02i_tcalg" ,I),Form("run %06i: MN%3i ch %02i tcalG "  ,RunNumber,Mnid,I),1000,   0 , 100000);
-    Hist->dtchg    = Dir->make<TH1F>(Form("ch_%02i_dtchg" ,I),Form("run %06i: MN%3i ch %02i dtCHG "  ,RunNumber,Mnid,I),1000, -100, 100);
-    Hist->edepg    = Dir->make<TH1F>(Form("ch_%02i_edepg" ,I),Form("run %06i: MN%3i ch %02i edepG "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
+    Hist->nshg    = Dir->make<TH1F>(Form("ch_%02i_nhitsg",I),Form("run %06i: MN%03i ch %02i nhitsG"  ,RunNumber,Mnid,I),  300,  -0.5, 299.5);
+    Hist->tcalg    = Dir->make<TH1F>(Form("ch_%02i_tcalg",I),Form("run %06i: MN%03i ch %02i tcalG "  ,RunNumber,Mnid,I),1000,   0 , 100000);
+    Hist->dtchg    = Dir->make<TH1F>(Form("ch_%02i_dtchg",I),Form("run %06i: MN%03i ch %02i dtCHG "  ,RunNumber,Mnid,I),1000, -100, 100);
+    Hist->edepg    = Dir->make<TH1F>(Form("ch_%02i_edepg",I),Form("run %06i: MN%03i ch %02i edepG "  ,RunNumber,Mnid,I), 500, -0.002, 0.008);
   }
 
 //-----------------------------------------------------------------------------
   void StationAna::book_panel_histograms(art::TFileDirectory* Dir, int RunNumber, PanelHist_t* Hist, int Mnid) {
     
-    Hist->nsht    = Dir->make<TH1F>(Form("nsht" ),Form("run %06i: MN%3i nshT"  ,RunNumber,Mnid), 300,  -0.5, 299.5);
-    Hist->tcal    = Dir->make<TH1F>(Form("tcal" ),Form("run %06i: MN%3i tcal"  ,RunNumber,Mnid), 1000, 0, 100000);
-    Hist->dtch    = Dir->make<TH1F>(Form("dtch" ),Form("run %06i: MN%3i dtch"  ,RunNumber,Mnid), 1000, -100, 100);
-    Hist->edep    = Dir->make<TH1F>(Form("edep" ),Form("run %06i: MN%3i edep"  ,RunNumber,Mnid), 500, -0.002, 0.008);
-    Hist->occup   = Dir->make<TH1F>(Form("occup"),Form("run %06i: MN%3i occup" ,RunNumber,Mnid), 100,  0,   100);
+    Hist->nsht    = Dir->make<TH1F>(Form("nsht" ),Form("run %06i: MN%03i nshT"  ,RunNumber,Mnid), 300,  -0.5, 299.5);
+    Hist->tcal    = Dir->make<TH1F>(Form("tcal" ),Form("run %06i: MN%03i tcal"  ,RunNumber,Mnid), 1000, 0, 100000);
+    Hist->dtch    = Dir->make<TH1F>(Form("dtch" ),Form("run %06i: MN%03i dtch"  ,RunNumber,Mnid), 1000, -100, 100);
+    Hist->edep    = Dir->make<TH1F>(Form("edep" ),Form("run %06i: MN%03i edep"  ,RunNumber,Mnid), 500, -0.002, 0.008);
+    Hist->occup   = Dir->make<TH1F>(Form("occup"),Form("run %06i: MN%03i occup" ,RunNumber,Mnid), 100,  0,   100);
 
-    Hist->nshg    = Dir->make<TH1F>(Form("nshg"  ),Form("run %06i: MN%3i nshG"  ,RunNumber,Mnid), 100,  -0.5,  99.5);
-    Hist->tcalg   = Dir->make<TH1F>(Form("tcalg" ),Form("run %06i: MN%3i tcalG"  ,RunNumber,Mnid), 1000, 0, 100000);
-    Hist->dtchg   = Dir->make<TH1F>(Form("dtchg" ),Form("run %06i: MN%3i dtchG"  ,RunNumber,Mnid), 1000, -100, 100);
-    Hist->edepg   = Dir->make<TH1F>(Form("edepg" ),Form("run %06i: MN%3i edepG"  ,RunNumber,Mnid), 500, -0.002, 0.008);
-    Hist->occupg  = Dir->make<TH1F>(Form("occupg"),Form("run %06i: MN%3i occupG" ,RunNumber,Mnid), 100,  0,   100);
+    Hist->nshg    = Dir->make<TH1F>(Form("nshg"  ),Form("run %06i: MN%03i nshG"  ,RunNumber,Mnid), 100,  -0.5,  99.5);
+    Hist->tcalg   = Dir->make<TH1F>(Form("tcalg" ),Form("run %06i: MN%03i tcalG"  ,RunNumber,Mnid), 1000, 0, 100000);
+    Hist->dtchg   = Dir->make<TH1F>(Form("dtchg" ),Form("run %06i: MN%03i dtchG"  ,RunNumber,Mnid), 1000, -100, 100);
+    Hist->edepg   = Dir->make<TH1F>(Form("edepg" ),Form("run %06i: MN%03i edepG"  ,RunNumber,Mnid), 500, -0.002, 0.008);
+    Hist->occupg  = Dir->make<TH1F>(Form("occupg"),Form("run %06i: MN%03i occupG" ,RunNumber,Mnid), 100,  0,   100);
 
 
     for (int i=0; i<kNStraws; i++) {
@@ -113,24 +113,25 @@ namespace mu2e {
       }
     }
     
-    int book_panel_histset[kNPanelHistSets];
-    for (int iset=0; iset<kNPanelHistSets; iset++) book_panel_histset[iset] = 0;
+    // int book_panel_histset[kNPanelHistSets];
+    // for (int iset=0; iset<kNPanelHistSets; iset++) book_panel_histset[iset] = 0;
 
-    book_panel_histset[ 0] = 1;		// all events
-    
-    for (int iset=0; iset<kNPanelHistSets; ++iset) {
-      if (book_panel_histset[iset] != 0) {
-        sprintf(folder_name,"pnlset_%02i",iset);
-        art::TFileDirectory set_dir = tfs->mkdir(folder_name);
+    // book_panel_histset[ 0] = 1;		// all events
 
-        for (int ip=0; ip<12; ++ip) {
-          int mnid = _edata.panel[ip].mnid;
-          art::TFileDirectory panel_dir = set_dir.mkdir(Form("MN%i",mnid));
-          book_panel_histograms(&panel_dir,RunNumber,&_hist.panel_set[iset].panel[ip],mnid);
-        }
+    int ns = _slot.size();
+                                        // histogram records for ns slots
+    for (int is=0; is<ns; is++) {
+      int isl = _slot[is];
+      _hist.slot.push_back(StationHist_t());
+      art::TFileDirectory station_dir = tfs->mkdir(Form("slot_%i",isl));
+
+      for (int ip=0; ip<12; ++ip) {
+        int mnid = _edata.station[isl].panel[ip].mnid;
+        art::TFileDirectory panel_dir = station_dir.mkdir(Form("MN%03i",mnid));
+        book_panel_histograms(&panel_dir,RunNumber,&_hist.slot[is].panel[ip],mnid);
       }
     }
-        
+    
     printf("[mu2e::StationAna] pointer to the module: 0x%8p\n",(void*) this);
   }
 
@@ -178,8 +179,6 @@ namespace mu2e {
     }
   }
 
-
-
 //-----------------------------------------------------------------------------
 // to handle more than one station, this function will need to evolve
 //-----------------------------------------------------------------------------
@@ -211,8 +210,16 @@ namespace mu2e {
       fill_straw_histograms(&Hist->straw[is],sd);
     }
   }
-  
+
 //-----------------------------------------------------------------------------
+  void StationAna::fill_station_histograms(StationHist_t* Hist, StationData_t* Data) {
+    for (int ip=0; ip<12; ++ip) {
+      fill_panel_histograms(&Hist->panel[ip],&Data->panel[ip]);
+    }
+  }
+
+
+ //-----------------------------------------------------------------------------
   void StationAna::fill_event_histograms(EventHist_t* Hist, EventData_t* Data) {
     Hist->evt->Fill(Data->evt_number);
     Hist->nsht->Fill(Data->nsht);
@@ -232,8 +239,11 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
     fill_event_histograms(_hist.event[0]    ,&_edata);
 
-    for (int ip=0; ip<12; ++ip) {
-      fill_panel_histograms(&_hist.panel_set[0].panel[ip],&_edata.panel[ip]);
+    int ns = _slot.size();
+    for (int i=0; i<ns; i++) {
+      int isl = _slot[i];
+                                        // tehre could be two stations out of 18 processed
+      fill_station_histograms(&_hist.slot[i],&_edata.station[isl]);
     }
 
     return 0;
@@ -326,18 +336,23 @@ int StationAna::init_event(const art::Event& ArtEvent) {
   _edata.run_number = ArtEvent.run();
   _edata.srn_number = ArtEvent.subRun();
                                         // init panel map
+  int ns = _slot.size();
+  
   if (_last_run != (int) ArtEvent.run()) {
     ProditionsHandle<TrackerPanelMap> tpm_h;
     _trkPanelMap = &tpm_h.get(ArtEvent.id());
     _last_run    = ArtEvent.run();
 
-    for (int pln=2*_slot; pln<2*_slot+2; pln++) {
-      int ipln2 = pln % 2;
-      for (int ip=0; ip<6; ip++) {
-        int pnl = 6*ipln2+ip;
-        PanelData_t* pd = &_edata.panel[pnl];
-        int mnid = _trkPanelMap->panel_map_by_offline_ind(pln,ip)->mnid();
-        pd->mnid = mnid;
+    for (auto is=0; is<ns; is++) {
+      int isl = _slot[is];
+      for (int pln=2*isl; pln<2*isl+2; pln++) {
+        int ipln2 = pln % 2;
+        for (int ip=0; ip<6; ip++) {
+          int pnl = 6*ipln2+ip;
+          PanelData_t* pd = &_edata.station[isl].panel[pnl];
+          int mnid = _trkPanelMap->panel_map_by_offline_ind(pln,ip)->mnid();
+          pd->mnid = mnid;
+        }
       }
     }
 //-----------------------------------------------------------------------------
@@ -351,14 +366,18 @@ int StationAna::init_event(const art::Event& ArtEvent) {
   _edata.nshg       = 0;
   _edata.nshdt      = 0;
 
-  for (int ip=0; ip<12; ip++) {
-    PanelData_t* pd = &_edata.panel[ip];
-    pd->nsht      = 0;
-    pd->nshg      = 0;
-    for (int is=0; is<96; ++is) {
-      StrawData_t* sd = &pd->straw_data[is];
-      sd->list_of_hits.clear();
-      sd->list_of_good_hits.clear();
+  for (auto is=0; is<ns; is++) {
+                                        // slots 11 and 12, for example
+    int isl = _slot[is];
+    for (int ip=0; ip<12; ip++) {
+      PanelData_t* pd = &_edata.station[isl].panel[ip];
+      pd->nsht      = 0;
+      pd->nshg      = 0;
+      for (int is=0; is<96; ++is) {
+        StrawData_t* sd = &pd->straw_data[is];
+        sd->list_of_hits.clear();
+        sd->list_of_good_hits.clear();
+      }
     }
   }
 
@@ -383,6 +402,7 @@ void StationAna::analyze(const art::Event& ArtEvent) {
     int pln = sh->strawId().plane();
     int pnl = sh->strawId().panel();
     int is  = sh->strawId().straw();
+    int isl = sh->strawId().station();
     
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
@@ -390,17 +410,19 @@ void StationAna::analyze(const art::Event& ArtEvent) {
     int ipanel    = pcie_addr*6+tpm->link();
     
     _edata.nsht               += 1;
-    _edata.panel[ipanel].nsht += 1;
-    std::vector<const mu2e::StrawHit*>* x = &_edata.panel[ipanel].straw_data[is].list_of_hits;
+
+    PanelData_t* pdata = &_edata.station[isl].panel[ipanel];
+    pdata->nsht += 1;
+    std::vector<const mu2e::StrawHit*>* x = &pdata->straw_data[is].list_of_hits;
     x->push_back(sh);
 
-    // good ("track") hits
+                                        // good ("track") hits
     if (fabs(sh->dt()) < _maxDt) {
       _edata.nshdt += 1;
       if (sh->energyDep() > _minEDep) {
         _edata.nshg               += 1;
-        _edata.panel[ipanel].nshg += 1;
-        _edata.panel[ipanel].straw_data[is].list_of_good_hits.push_back(sh);
+        pdata->nshg += 1;
+        pdata->straw_data[is].list_of_good_hits.push_back(sh);
       }
       if (sh->energyDep() > _edata.max_edep) {
         _edata.max_edep = sh->energyDep();

@@ -84,8 +84,8 @@ physics : {
         }
         StationAna : { @table::daqana.analyzers.StationAna
             shCollTag : "makeSH"
-            slot      : 12             ## station 4
-            minEDep   : 0.001          ## default : 0.0006
+            slot      : [ 12 ]         ## station 4
+            minEDep   : 0.0006         ## default : 0.0006
         }
     }
 

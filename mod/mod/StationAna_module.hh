@@ -95,13 +95,13 @@ namespace mu2e {
       StrawHist_t   str1 [96];          // nhits = 1
     };
 
-    struct PanelHistSet_t {
+    struct StationHist_t {
       PanelHist_t   panel[12];
     };
 
     struct Hist_t {
-      EventHist_t*      event    [kNEventHistSets];
-      PanelHistSet_t    panel_set[kNPanelHistSets];
+      EventHist_t*               event [kNEventHistSets];
+      std::vector<StationHist_t> slot;
     };
     
     struct StrawData_t {
@@ -118,17 +118,21 @@ namespace mu2e {
       int         nshg;
       StrawData_t straw_data[96];
     };
+
+    struct StationData_t {
+      PanelData_t        panel[12];
+    };
                                         // pointer to the raw event data
     struct EventData_t {
-      const art::Event*  event;
-      int                nsht;
-      int                nshg;
-      int                nshdt;
-      float              max_edep;
-      int                run_number;
-      int                srn_number;
-      int                evt_number;
-      PanelData_t        panel[12];
+      const art::Event*     event;
+      int                   nsht;
+      int                   nshg;
+      int                   nshdt;
+      float                 max_edep;
+      int                   run_number;
+      int                   srn_number;
+      int                   evt_number;
+      StationData_t         station[18];         // stations ordered in Z
     } _edata;
 
 //-----------------------------------------------------------------------------
@@ -147,7 +151,7 @@ namespace mu2e {
     Hist_t                          _hist;
     int                             _initialized;
     int                             _last_run;
-    int                             _slot;
+    std::vector<int>                _slot;
 
     const TrackerPanelMap*          _trkPanelMap;
 //-----------------------------------------------------------------------------
@@ -165,14 +169,16 @@ namespace mu2e {
     
     void         book_event_histograms  (art::TFileDirectory* Dir, int RunNumber, EventHist_t* Hist);
     void         book_panel_histograms  (art::TFileDirectory* Dir, int RunNumber, PanelHist_t* Hist, int Mnid);
+    void         book_station_histograms(art::TFileDirectory* Dir, int RunNumber, StationHist_t* Hist, int Slot);
     void         book_straw_histograms  (art::TFileDirectory* Dir, int RunNumber, StrawHist_t* Hist, int Mnid, int Is);
 
     void         book_histograms        (int RunNumber);
     void         debug                  (const art::Event& event);
   
-    void         fill_straw_histograms  (StrawHist_t* Hist, StrawData_t* Data);
-    void         fill_panel_histograms  (PanelHist_t* Hist, PanelData_t* Data);
-    void         fill_event_histograms  (EventHist_t* Hist, EventData_t* Data);
+    void         fill_straw_histograms  (StrawHist_t*   Hist, StrawData_t*   Data);
+    void         fill_panel_histograms  (PanelHist_t*   Hist, PanelData_t*   Data);
+    void         fill_station_histograms(StationHist_t* Hist, StationData_t* Data);
+    void         fill_event_histograms  (EventHist_t*   Hist, EventData_t*   Data);
 
     int          fill_histograms();
 

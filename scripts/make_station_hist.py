@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # will run a mu2e job with daqana/fcl/make_station_hist.fcl for a given run
 # calling example: 
-#               v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005 --slot=12 --nfiles=1
+#               v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005 --slots=11:12 --nfiles=1
 # parameters:
 # --rn         : run number to process
 # --diag_level : 
@@ -20,7 +20,7 @@ class SubmitJob:
         self.nfiles     = None;
         self.min_edep   = None;
         self.run_number = None
-        self.slot       = None
+        self.slots      = None;  ## a range : s1:s2, with all in between
         self.diag_level = 0;
         
 # ---------------------------------------------------------------------
@@ -39,7 +39,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['diag_level=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slot=' ] )
+                     ['diag_level=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slots=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -60,15 +60,15 @@ class SubmitJob:
                 self.min_edep = float(val)
             elif (key == '--nfiles'):
                 self.nfiles = int(val)
-            elif (key == '--slot'):
-                self.slot = int(val)
+            elif (key == '--slots'):
+                self.slots = val
 
         self.Print(name,1,'verbose   = %s' % self.diag_level)
         self.Print(name,0,'idsid     = %s' % self.idsid     )
         self.Print(name,0,'min_edep  = %s' % self.min_edep  )
         self.Print(name,0,'nfiles    = %s' % self.nfiles    )
         self.Print(name,0,'rn        = %s' % self.run_number)
-        self.Print(name,0,'slot      = %s' % self.slot      )
+        self.Print(name,0,'slots     = %s' % self.slots     )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -91,8 +91,21 @@ class SubmitJob:
         cmd = f'cat {template_fcl} >| {input_fcl}';
         if (self.min_edep):
             cmd += f'; echo "physics.analyzers.StationAna.minEDep : {self.min_edep}" >> {input_fcl}';
-        if (self.slot):
-            cmd += f'; echo "physics.analyzers.StationAna.slot    : {self.slot}"     >> {input_fcl}';
+        if (self.slots): 
+            slots  = '[ '
+            nw = len(self.slots.split(':'))
+            if (nw == 1):
+                slots += self.slots
+            else:
+                s1 = int(self.slots.split(':')[0])
+                s2 = int(self.slots.split(':')[1])
+                for s in range(s1,s2+1):
+                    slots += f' {s}'
+                    if (s != s2):
+                        slots += ','
+#-----------v-----------^------------------------------------------------------
+            slots += ' ]'
+            cmd += f'; echo "physics.analyzers.StationAna.slot    : {slots}"     >> {input_fcl}';
 
         print('000:cmd:',cmd);
         
@@ -136,6 +149,9 @@ class SubmitJob:
         os.system(f'echo ---------------------------  >> {logfile}');
 
         cmd = f'mu2e -c {input_fcl} -S {input_file_list} >> {logfile} 2>&1 &'
+        os.system(f'echo cmd:"{cmd}"                  >> {logfile}');
+        os.system(f'echo ---------------------------  >> {logfile}');
+
         p   = subprocess.Popen(cmd,
                              executable="/bin/bash",
                              shell=True,
