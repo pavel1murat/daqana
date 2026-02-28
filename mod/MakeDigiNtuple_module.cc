@@ -1081,28 +1081,28 @@ int mu2e::MakeDigiNtuple::fillSeg() {
     DaqTrkStrawHit* nt_tsh(nullptr);
     for (int ih=0; ih<nt_ts->nh; ih++) {
       const mu2e::StrawHit* sh = &_shc->at(ih);
-      SegmentHit* pt           = ts->Hit(ih);
-      const mu2e::ComboHit* ch = pt->ComboHit();
+      SegmentHit* sgh          = ts->Hit(ih);
+      const mu2e::ComboHit* ch = sgh->ComboHit();
 
       int ihh            = nsegsh+ih;
       nt_tsh = new ((*_event->segsh)[ihh]) DaqTrkStrawHit();
 
-      nt_tsh->sid     = ch->strawId().asUint16();      // hit id = sid | (segment #) << 16 | (track #) << 24
-      nt_tsh->zface   = tpm->zface();                  // z-ordered face ... can be deduced from sid...
-      nt_tsh->mnid    = tpm->mnid();                   // Minnesota panel ID 
+      nt_tsh->sid     = ch->strawId().asUint16();           // hit id = sid | (segment #) << 16 | (track #) << 24
+      nt_tsh->zface   = tpm->zface();                       // z-ordered face ... can be deduced from sid...
+      nt_tsh->mnid    = tpm->mnid();                        // Minnesota panel ID 
       nt_tsh->time    = sh->time(mu2e::StrawEnd::cal); // 0:CAL
-      nt_tsh->dt      = sh->dt();      // cal-hv
+      nt_tsh->dt      = sh->dt();                           // cal-hv
       nt_tsh->tot0    = sh->TOT(mu2e::StrawEnd::cal);
       nt_tsh->tot1    = sh->TOT(mu2e::StrawEnd::hv );
       nt_tsh->edep    = ch->energyDep();
 
-      nt_tsh->rdrift  = ts->R(pt);               // drift distance
-      nt_tsh->doca    = ts->Rho(pt);             // rdrift-(track-wire distance) (assume signed, double check)
-      double sw_dist  = ts->SwDist(pt);
+      nt_tsh->rdrift  = ts->R  (sgh);                    // drift distance
+      nt_tsh->doca    = ts->Doca(sgh);                      // track-wire distance, signed 
+      nt_tsh->dr      = ts->Dr(sgh);                        // (track-wire distance)-Rdrift*drift_sign
 //-----------------------------------------------------------------------------
 // if drho is positive, the hit drift radius needs to be increased, and the T0 - reduced...
 //-----------------------------------------------------------------------------
-      nt_tsh->drho    = fabs(sw_dist)-fabs(nt_tsh->rdrift); // unsigned residual
+      nt_tsh->drho    = fabs(nt_tsh->doca)-fabs(nt_tsh->rdrift); // unsigned residual
 
       nt_tsh->iseg    = iseg;
       nt_tsh->itrk    = -1;

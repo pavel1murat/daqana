@@ -10,12 +10,12 @@ int TrkSegment::fgDebugMode(0);
 double       SegmentHit::fgTOffset =  0.0;      // 1.6;       // ns
 double       SegmentHit::fgVDrift  = 61.3e-3;   // mm/ns
 double const TrkSegment::fgRStraw  =  2.5;      // mm
+
 //-----------------------------------------------------------------------------
 TrkSegment::TrkSegment(int Plane, int Panel) {
   Clear();
   fPlane      = Plane;
   fPanel      = Panel;
-  //  fCombiTrans = nullptr; // geometry - to be initialized just once
   fTrkPanel    = nullptr;
 }
 
@@ -35,7 +35,7 @@ void TrkSegment::Clear(){
 //-----------------------------------------------------------------------------
 // expect 'ListOfHits' to be already ordered in the ascending straw order
 //-----------------------------------------------------------------------------
-int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int UniquePlane, int Panel) {
+int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int UniquePlane, int Panel, int DoTransform) {
   int rc(0);
 
   
@@ -106,8 +106,10 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
         fNTransitions += 1;
                                         // z becomes Y in points
-        double dz = (last_hit->pos().z()-hit->pos().z())*fTrkPanel->dsToPanel().rotation().zz();
-        //        if (last_hit->pos().z() > hit->pos().z()) {
+
+        double dz = last_hit->pos().z()-hit->pos().z();
+        if (DoTransform) dz = dz*fTrkPanel->dsToPanel().rotation().zz();
+
         if (dz > 0) {
           drs[last_i]      = -1; // those are uint16_t, so use sign+2
           drs[i]           =  1;
@@ -159,11 +161,14 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   for (int i=0; i<nhits; i++) {
     SegmentHit*           sgh  = Hit(i);
     const mu2e::ComboHit* ch   = sgh->ComboHit();
-    CLHEP::Hep3Vector     posl = fTrkPanel->dsToPanel()*ch->posCLHEP();
 //-----------------------------------------------------------------------------
 // points have coordinates in the local coordinate system of the panel
 // add all hits, including flagged ones - those will not be used in the fit
 //-----------------------------------------------------------------------------
+    CLHEP::Hep3Vector     posl = ch->posCLHEP();
+    if (DoTransform) {
+      posl            = fTrkPanel->dsToPanel()*posl;
+    }
     sgh->x          = posl.y();
     sgh->y          = posl.z();
     sgh->drs        = drs[i];
@@ -178,7 +183,9 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
       fNGoodHits += 1;
       fXMean     += posl.y();
       fYMean     += posl.z();
-                                        // time() is the early end time, assum ptime is the propagation time for that end
+//-----------------------------------------------------------------------------
+// time() is the early end time, assum ptime is the propagation time for that end
+//-----------------------------------------------------------------------------
       fTMean     += ch->time()-ch->propTime();
     }
     if (fgDebugMode != 0) {
@@ -234,15 +241,16 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 // updates hit contribuitons to the total chi2 and the numbers of good hits
 //-----------------------------------------------------------------------------
 double TrkSegment::Chi2() {
-  double const res2(0.2*0.2);            // assume 200 um
 
-  double chi2 = 0;
-  int nhits = nHits();
-  int n_good_hits(0);
-  int nghl[2] = {};
-  double t0 = T0();
-  double a  = DyDx();
-  double b  = Y0();
+  double chi2  = 0;
+  int    nhits = nHits();
+
+  int    n_good_hits(0);
+
+  int    nghl[2] = {};
+  double t0      = T0();
+  double a       = DyDx();
+  double b       = Y0();
 
   for (int i=0; i<nhits; ++i) {
     SegmentHit* sgh = Hit(i);
@@ -251,8 +259,9 @@ double TrkSegment::Chi2() {
     double rd   = R(sgh,t0);
     if (rd < 0) rd = 0;
     if (rd > fgRStraw) rd = fgRStraw;
-    double dist = (a*sgh->x + b - sgh->y)/sqrt(1+a*a)-rd*sgh->drs;
-    sgh->fChi2   = dist*dist/res2; 
+    double dist  = (a*sgh->x + b - sgh->y)/sqrt(1+a*a)-rd*sgh->drs;
+    double sigr2 = sgh->fSigmaR*sgh->fSigmaR;
+    sgh->fChi2   = dist*dist/sigr2; 
     chi2        += sgh->fChi2;
     n_good_hits += 1;
     nghl[sgh->fComboHit->strawId().layer()] += 1;
@@ -396,17 +405,18 @@ void TrkSegment::print(const char* Message, std::ostream& Stream) {
          << std::format("DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
                         fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
 
-  Stream << std::format(" i   sid  pnl:str  mask   ch_mask       x      y        t      time      tprop  tdrift  radius drs      rho     chi2   fixed\n");
-  Stream <<             "----------------------------------------------------------------------------------------------------------------------------\n" ;
+  Stream << std::format(" i   sid  pnl:str  mask   ch_mask       x      y        t      time      tprop  tdrift  radius drs      rho     sigr    chi2   fixed\n");
+  Stream <<             "------------------------------------------------------------------------------------------------------------------------------------\n" ;
   double t0 = fPar.T0();
   for (int i=0; i<nhits; i++) {
     SegmentHit* sgh = Hit(i);
     mu2e::StrawId sid = sgh->ComboHit()->strawId();
     int ch_flag = std::stoi(sgh->ComboHit()->flag().hex());
-    Stream << std::format("{:2d} 0x{:04x} {:2}:{}:{:2} 0x{:04x} 0x{:08x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:8.2f} {:5d}",
+    Stream << std::format("{:2d} 0x{:04x} {:2}:{}:{:2} 0x{:04x} 0x{:08x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:7.3f} {:8.2f} {:5d}",
                           i,sid.asUint16(),sid.plane(),sid.panel(),sid.straw(),sgh->fMask, ch_flag,
                           sgh->x,sgh->y,sgh->t,sgh->fComboHit->time(),sgh->fComboHit->propTime(),
-                          DriftTime(sgh,t0),R(sgh,t0),sgh->drs,Rho(sgh,&fPar),sgh->fChi2,sgh->sign_fixed)
+                          DriftTime(sgh,t0),R(sgh,t0),sgh->drs,
+                          Dr(sgh,&fPar),sgh->fSigmaR,sgh->fChi2,sgh->sign_fixed)
            << std::endl;
   }
 }
