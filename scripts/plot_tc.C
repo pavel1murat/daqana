@@ -13,7 +13,7 @@ public:
 
   int plot_panel_edep(int Panel);
   int plot_panel_dt  (int Panel1, int Panel2);
-  int plot_plane_dt  ();
+  int plot_plane_dt  (int Station);
 };
 
 
@@ -103,11 +103,12 @@ int PlotTC::plot_panel_dt(int Panel1, int Panel2) {
 }
 
 //-----------------------------------------------------------------------------
-int PlotTC::plot_plane_dt() {
+int PlotTC::plot_plane_dt(int Station) {
   std::string hname(Form("h_plane_dt_%06i",fRunNumber));
   
   std::string var  = Form("tc.timep(0)-tc.timep(1)");
-  std::string sel  = Form("run==%d && tc.nh_panel(0)>1 && tc.nh_panel(1)>1",fRunNumber);
+  std::string sel  = Form("run==%d && tc.nh_panel(%d,0)>1 && tc.nh_panel(%d,1)>1",
+                          fRunNumber,Station,Station);
 
   fTree->Draw(Form("%s>>%s(250,-250,250)",var.data(),hname.data()),sel.data());
 

@@ -27,7 +27,8 @@ services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etr
 #------------------------------------------------------------------------------
 # update DB section
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v5.fcl"
+#! #include "daqana/fcl/calibration_set_v5.fcl"
+#include "daqana/fcl/calibration_set_v1.fcl"
 services.ProditionsService.strawResponse.truncateLongitudinal : false
 
 source : {
@@ -56,6 +57,7 @@ outputs:  {
                            "keep *_TZClusterFinder_*_*",
                            "keep *_SimpleTimeCluster_*_*",
                            "keep *_LineFinder_*_*",
+                           "keep *_TriggerResults_*_*",
                            @sequence::Reconstruction.GeneralProducts,
                            @sequence::Reconstruction.HighRecoProducts
                           ]
@@ -65,7 +67,7 @@ outputs:  {
 # filenames: make names consistent with the calibrations
 #------------------------------------------------------------------------------
 source.fileNames : [ "/projects/mu2e/data/projects/vst/datasets/raw.mu2e.trk.vst.art/raw.mu2e.trk.vst.107995_000001.art" ]
-outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r030n000.%06r_%06s.art"   # 011 or 111: after cosmic reco
+outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r003n000.%06r_%06s.art"   # 011 or 111: after cosmic reco
 
 physics : {
     producers : {
@@ -112,6 +114,8 @@ physics : {
         SimpleTimeCluster : { @table::CosmicReco.producers.SimpleTimeCluster
             HitNonNoiseSelectionBits : ["EnergySelection"]
             minNStrawHits : 6
+            TimeWindow    : 500
+            TimeStep      : 50
         }
 
         KKLine  : { @table::Reconstruction.producers.KKLine   }

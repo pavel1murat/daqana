@@ -149,7 +149,7 @@ class SubmitJob:
 # form input file list
 #------------------------------------------------------------------------------
             input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
-            cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
+            cmd  = f"ls -al $RAW_DATA_DIR/raw.mu2e.trk.{self.idsid}.art/* | awk '{{print $9}}'"
             cmd += f' | grep {self.run_number} | sort';
             if (self.nfiles):
                 cmd += f' | head -n {self.nfiles}'

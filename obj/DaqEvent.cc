@@ -40,13 +40,13 @@ void DaqEvent::Clear(const char* Opt) {
     }
   }
 
-  for (int i=0; i<2; i++) {
-    for (int link=0; link<6; link++) {
-      for (int ich=0; ich<96; ich++) {
-        nsd[i][link][ich] = 0;
-      }
-    }
-  }
+  // for (int i=0; i<2; i++) {
+  //   for (int link=0; link<6; link++) {
+  //     for (int ich=0; ich<96; ich++) {
+  //       nsd[i][link][ich] = 0;
+  //     }
+  //   }
+  // }
 
   nsdtot  = 0; sd->Clear();
   nshtot  = 0; sh->Clear();

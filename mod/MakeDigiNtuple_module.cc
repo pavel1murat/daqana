@@ -374,6 +374,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   _nstrawhits    = 0;
   _ncombohits    = 0;
   _ntimeclusters = 0;
+  _ntracks       = 0;
   // _ncalodigis  = 0;
   // _ncrvdigis   = 0;
   // _nstmdigis   = 0;
@@ -546,7 +547,7 @@ int mu2e::MakeDigiNtuple::fillSD() {
 
     int pcie_addr = tpm->dtc() % 2;                   // convention
     int link      = tpm->link();
-    _event->nsd[pcie_addr][link][ich] += 1;
+    //    _event->nsd[pcie_addr][link][ich] += 1;
 
     nt_sd->mnid         = tpm->mnid();
     
@@ -713,6 +714,7 @@ int mu2e::MakeDigiNtuple::fillTC() {
       szy.addPoint(z,y,w);
       
       int plane = hit->strawId().plane();
+      int stn   = plane / 2;
       int pln2  = plane % 2;
       int panel = hit->strawId().panel();
       //      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
@@ -721,50 +723,54 @@ int mu2e::MakeDigiNtuple::fillTC() {
 
       int loc = 6*pln2+panel;
       
-      if (nt_tc->_nh_panel[loc] == 0) nt_tc->npanels++;
-      nt_tc->_nh_panel[loc]++;
-      nt_tc->_time_panel[loc] += hit->correctedTime();
-      nt_tc->_edep_panel[loc] += hit->energyDep();
+      if (nt_tc->_nh_panel[stn][loc] == 0) nt_tc->npanels++;
+      nt_tc->_nh_panel  [stn][loc]++;
+      nt_tc->_time_panel[stn][loc] += hit->correctedTime();
+      nt_tc->_edep_panel[stn][loc] += hit->energyDep();
 
       if (hit->energyDep() > nt_tc->edep_max) nt_tc->edep_max = hit->energyDep();
 
-      if (nt_tc->_nhp[pln2] == 0) nt_tc->nplanes++;
-      nt_tc->_nhp[pln2]++;
-      nt_tc->_timep [pln2] += hit->correctedTime();
+      if (nt_tc->_nhp[stn][pln2] == 0) nt_tc->nplanes++;
+      nt_tc->_nhp  [stn][pln2]++;
+      nt_tc->_timep[stn][pln2] += hit->correctedTime();
 
-      if (nt_tc->_nhf[zface] == 0) {
+      if (nt_tc->_nhf[stn][zface] == 0) {
         nt_tc->nfaces++;
-        nt_tc->_mnid[zface] = tpm->mnid();
+        nt_tc->_mnid[stn][zface] = tpm->mnid();
       }
-      nt_tc->_nhf[zface]++;
-      nt_tc->_timef [zface] += hit->correctedTime();
+      nt_tc->_nhf  [stn][zface]++;
+      nt_tc->_timef[stn][zface] += hit->correctedTime();
 
       if (hit->correctedTime() < nt_tc->tmin) nt_tc->tmin = hit->correctedTime();
       if (hit->correctedTime() > nt_tc->tmax) nt_tc->tmax = hit->correctedTime();
     }
-
+//-----------------------------------------------------------------------------
+// done looping over the time cluster hits,
+//-----------------------------------------------------------------------------
     nt_tc->y0     = szy.y0();
     nt_tc->dydz   = szy.dydx();
     nt_tc->chi2yz = szy.chi2Dof();
 
-    for (int ip=0; ip<2; ip++) {
-      if (nt_tc->_nhp[ip] > 0) nt_tc->_timep[ip] = nt_tc->_timep[ip]/nt_tc->_nhp[ip];
-    }
+    for (int stn=0; stn<18; stn++) {
+      for (int ip=0; ip<2; ip++) {
+        if (nt_tc->_nhp[stn][ip] > 0) nt_tc->_timep[stn][ip] = nt_tc->_timep[stn][ip]/nt_tc->_nhp[stn][ip];
+      }
 
-    for (int i=0; i<4; i++) {
-      if (nt_tc->_nhf[i] > 0) nt_tc->_timef[i] = nt_tc->_timef[i]/nt_tc->_nhf[i];
-    }
+      for (int i=0; i<4; i++) {
+        if (nt_tc->_nhf[stn][i] > 0) nt_tc->_timef[stn][i] = nt_tc->_timef[stn][i]/nt_tc->_nhf[stn][i];
+      }
 //-----------------------------------------------------------------------------
 // average time and charge of the hits in a given panel
 //-----------------------------------------------------------------------------
-    for (int i=0; i<12; i++) {
-      if (nt_tc->_nh_panel[i] > 0) {
-        nt_tc->_time_panel[i] = nt_tc->_time_panel[i]/nt_tc->_nh_panel[i];
-        nt_tc->_edep_panel[i] = nt_tc->_edep_panel[i]/nt_tc->_nh_panel[i];
-      }
+      for (int i=0; i<12; i++) {
+        if (nt_tc->_nh_panel[stn][i] > 0) {
+          nt_tc->_time_panel[stn][i] = nt_tc->_time_panel[stn][i]/nt_tc->_nh_panel[stn][i];
+          nt_tc->_edep_panel[stn][i] = nt_tc->_edep_panel[stn][i]/nt_tc->_nh_panel[stn][i];
+        }
 
-      if (nt_tc->_nh_panel[i] > nt_tc->max_nh_panel) {
-        nt_tc->max_nh_panel = nt_tc->_nh_panel[i];
+        if (nt_tc->_nh_panel[stn][i] > nt_tc->max_nh_panel) {
+          nt_tc->max_nh_panel = nt_tc->_nh_panel[stn][i];
+        }
       }
     }
 //-----------------------------------------------------------------------------
@@ -849,8 +855,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 //-----------------------------------------------------------------------------
 // cosmic track: assume one segment per panel, in principle, there could be more than one
 //-----------------------------------------------------------------------------
-      int pln2 = plane % 2;
-      TrkSegment* ts = &_tseg[pln2][panel];
+      TrkSegment* ts = &_tseg[plane][panel];
       if (ts->nHits() == 0) {
         _ptseg.push_back(ts);
         _nseg    += 1;
@@ -864,7 +869,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 // cleanup: loop over segments one more time and try to identify 'extra' hits
 //-----------------------------------------------------------------------------
   struct SubSegment {
-    int first_hit;                      // indes in the segment hit list
+    int first_hit;                      // index in the segment hit list
     int last_hit;
     int nhits() { return last_hit-first_hit+1; }
   };

@@ -18,10 +18,10 @@ public:
   int            srn;                   // subrun number
   int            evn;                   // event number
   int            nsdtot;                // number of straw digis in event
-  short          nsd[2][6][96];         // by [dtc][link][channel]
+  //  short          nsd[36][6][96];        // by [dtc_id][link][channel] - could be too sparse
   TClonesArray*  sd;
   int            nshtot;                // total number of straw digis in event
-  int            nsh[2][6];             // by [dtc][link]
+  int            nsh[36][6];             // per panel, by [dtc_id][link] , dtc_id, NOT pcie_arrd
   TClonesArray*  sh;
   float          maxEdep;               // max hit Edep in the event
   int            nch;
@@ -48,8 +48,8 @@ public:
   DaqStrawHit*     Sh(int I) { return (DaqStrawHit*   ) sh->At(I); }
   DaqTimeCluster*  Tc(int I) { return (DaqTimeCluster*) tc->At(I); }
   DaqSegment*      Seg(int I) { return (DaqSegment*) seg->At(I); }
-  int              Nsh(int I, int J) { return nsh[I][J]; }
-  int              Nsd(int Dtc, int Link, int Channel) { return nsd[Dtc][Link][Channel]; }
+  int              Nsh(int Plane, int Panel) { return nsh[Plane][Panel]; }
+  //  int              Nsd(int Dtc, int Link, int Channel) { return nsd[Dtc][Link][Channel]; }
 
   /* virtual */ void     Clear(const char* Opt = "") ; // override;
   

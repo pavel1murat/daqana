@@ -8,6 +8,7 @@ set(dict   "${PROJECT_NAME}_${subpkg}_dict")
 set(lib    "${PROJECT_NAME}_${subpkg}"     )
 
 include_directories(
+  $ENV{SPACK_VIEW}/include
   $ENV{ROOTSYS}/include/root
   ${CMAKE_CURRENT_SOURCE_DIR}/${subpkg}
   $ENV{SPACK_ENV}/${PROJECT_NAME} 
@@ -18,15 +19,17 @@ include_directories(
 ROOT_GENERATE_DICTIONARY(${dict}
   DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
   TrkSegment.hh SegmentFit.hh DaqTrkStrawHit.hh
-  digis.hh simres.hh
+  digis.hh simres.hh TrkPanelMap_t.hh
+  fit_functions.hh
   LINKDEF obj/Linkdef.h)
 
 set_property(SOURCE ${dict}.cxx PROPERTY generated)
 
 add_library(${lib} SHARED
   DaqEvent.cc DaqTrack.cc DaqSegment.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
-  TrkSegment.cc SegmentFit.cc DaqTrkStrawHit.cc
+  TrkSegment.cc SegmentFit.cc DaqTrkStrawHit.cc TrkPanelMap_t.cc
   digis.cc simres.cc
+  fit_dt01_msh.cc
   ${dict}.cxx
 )
 

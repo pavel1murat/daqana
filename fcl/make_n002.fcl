@@ -101,12 +101,12 @@ physics : {
             hitBkgBits                 : ["Noisy","Dead","Background"]
             radSelect                  : 0        ## 1
             chunkSep                   : 5
-            chunkWindow                : 300.0    ## 20.0
+            chunkWindow                : 500.0    ## 20.0
             chunkThresh                : 5        ## 3
-            combineWindow              : 300.0    ## 30.0
+            combineWindow              : 500.0    ## 30.0
             maxCombineSep              : 2500.0
             chunkFitThresh             : 5
-            recoverWindow              : 30.0
+            recoverWindow              : 50.0
             clusterThresh              : 5        ## 15
             minCaloSize                : 2
             minCaloEnergy              : 50.0

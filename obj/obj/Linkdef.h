@@ -20,4 +20,5 @@
 #pragma link C++  class  simres;
 
 #pragma link C++  class  TrkSegment;
+#pragma link C++  class  TrkPanelMap_t;
 #endif

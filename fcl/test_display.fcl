@@ -5,7 +5,7 @@
 # is the same as used by the reconstruction
 #------------------------------------------------------------------------------
 BEGIN_PROLOG
-  TRIGGER_PATHS                     : [ p1 ]
+TRIGGER_PATHS                     :  [ p3 ]
   COMBO_HIT_COLL_TAG @protect_ignore: "makeSH"
 END_PROLOG
 
@@ -13,15 +13,97 @@ END_PROLOG
 # #include "daqana/fcl/calibration_set_v2.fcl"
 # #include "daqana/fcl/calibration_set_v9.fcl"
 # #include "daqana/fcl/calibration_set_v3.fcl"
-#include "daqana/fcl/calibration_set_v0.fcl"
+
+#include "daqana/fcl/calibration_set_v1.fcl"
 
 process_name : Display
 
-source       : { module_type : RootInput   }
+source       : { module_type : RootInput
+#    inputCommands: ["keep *",
+#                    "drop StrawHits_*_*_*",
+#                    "drop TimeClusters_*_*_*",
+#                    "drop KalSeeds_*_*_*",
+#                    "drop CosmicTrackSeeds_*_*_*"
+#                   ]    
+}
 
 physics : {
-    producers  : { @table::stntuple.producers 
-        FlagBkgHits : { @table::stntuple.producers.DeltaFinder }
+    producers  : {
+        @table::stntuple.producers
+        
+        EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+            SpillType:          0   ## offspill
+            RecoFromMCTruth: false  ## default
+            RecoFromMCTruthErr: 0   ## default
+            InitialPhaseShift:  0   ## optional, set it to zero just in case
+        }
+
+        makeSD: { @table::DAQ.producers.makeSD
+            debugMode        : 0 ## 10
+            debugBits        : ["bit0:1"]
+            saveWaveforms    : true
+            geography        : [  ]
+            # dtcHeaderPresent : false
+            keyOnMnid        : true ## true    ## default:false
+        }
+
+        flagPHAAA : { @table::stntuple.producers.DeltaFinder }
+        
+        flagPH : { @table::TrkHitReco.producers.makePH
+            ComboHitCollection    : "makeSH"
+            EventWindowMarker     : "EWMProducer"
+            StrawHitSelectionBits : [ ]                 ## "EnergySelection", "TimeSelection", "RadiusSelection"]
+            StrawHitMask          : ["Dead"]
+            MaxDt                 : 45 # ns
+            UseTOT                : false               ## true
+            MaxWireDistDiffPull   : 10.                 ## 5.0
+            MaxDS                 : 10                  ## 3
+            UError                : 20.                 ## 10.0 # mm
+            MinimumTime           : 0                   ## 410.0 # ns
+            MaximumTime           : 300000              ## 1700.0 # ns
+            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
+            MaximumEnergy         : 0.006               ## 0.0045 # MeV
+            MinimumRadius         : 300.                ## 380.0 # mm
+            MaximumRadius         : 1000.               ## 700.0 # mm
+            MinimumNHits          : 1
+            MaximumNHits          : 1                   ## 8
+            CheckWres             : false               ## true
+            Unsorted              : false               ## VST data are readout by panel
+        }
+
+        TZClusterFinder : { @table::CalPatRec.producers.TZClusterFinder
+            diagLevel                  : 0
+            debugLevel                 : 0
+            printFrequency             : 1000
+            runDisplay                 : 0
+            useCCs                     : 1
+            recoverCCs                 : 1
+            chCollLabel                : "flagPH" ## "makePH" ## "flagPH"
+            # chCollLabel2               : "makeSH"
+            tcCollLabel                : "TimeClusterFinderDe"
+            ccCollLabel                : "CaloClusterMaker"
+            hitBkgBits                 : ["Noisy","Dead","Background"]
+            radSelect                  : 0        ## 1
+            chunkSep                   : 5
+            chunkWindow                : 600.0    ## 20.0
+            chunkThresh                : 5        ## 3
+            combineWindow              : 300.0    ## 30.0
+            maxCombineSep              : 2500.0
+            chunkFitThresh             : 5
+            recoverWindow              : 30.0
+            clusterThresh              : 5        ## 15
+            minCaloSize                : 2
+            minCaloEnergy              : 50.0
+            caloDtMax                  : 30.0
+            doRefine                   : 1        ## 0
+        }
+        
+        SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+            minNStrawHits : 4
+            minNPanels    : 1
+            TimeWindow    : 800
+            TimeStep      : 30
+        }
     }
     filters    : {
         @table::stntuple.filters
@@ -29,19 +111,23 @@ physics : {
     }
     analyzers  : { @table::stntuple.analyzers }
 
+    p00 : [  ]
+
     p0 : [ makeSD, makeSH ]
+    
     p1 : [ @sequence::CaloReco.Reco,
 	   @sequence::CaloCluster.Reco,
 	   @sequence::TrkHitReco.PrepareHits   ## [ PBTFSD, makeSH, makePH, FlagBkgHits ] 
                                                ##  see Offline/TrkHitReco/prolog.fcl
            , TZClusterFinder
 	  ]
-    
     p2 : [ EventIDFilter ]
+
+    p3: [ EWMProducer, makeSD, makeSH, flagPH, TZClusterFinder ]
 
     e1 : [ MuHitDisplay ]
 
-    trigger_paths : [ p2 ]  ## p1 ]
+    trigger_paths : [ ] ## p3 ]
     out           : [    ]  ## [detectorOutput] # defined in Stntuple/fcl/stntuple.fcl]
     end_paths     : [ e1 ]  ## , out ]
 }
@@ -57,8 +143,8 @@ outputs.detectorOutput.fileName           : "sim.user.display.xxx.000001.art"
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org for more details
 #------------------------------------------------------------------------------
 physics.analyzers.MuHitDisplay.primaryParticleTag   : ""
-physics.analyzers.MuHitDisplay.timeClusterCollTag   : "SimpleTimeCluster" ## "TZClusterFinder"
-physics.analyzers.MuHitDisplay.phiClusterCollTag    : "SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.timeClusterCollTag   : "SimpleTimeCluster" ## SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.phiClusterCollTag    : "SimpleTimeCluster" ## "SimpleTimeCluster" ## "TZClusterFinder"
 physics.analyzers.MuHitDisplay.comboHitCollTag      : @local::COMBO_HIT_COLL_TAG    ## "makePH" "FlagBkgHits"
 physics.analyzers.MuHitDisplay.strawHitCollTag      : "makeSH"  ## "FlagBkgHits"
 physics.analyzers.MuHitDisplay.kffCollTag           : "KKLine"  ##
@@ -77,7 +163,7 @@ physics.producers.StrawDigisFromArtdaqFragments.saveWaveforms :  1
 
 # scan 20 events
 
-physics.analyzers.MuHitDisplay.SelectEvents : [ "p2" ]
+physics.analyzers.MuHitDisplay.SelectEvents : [ @sequence::TRIGGER_PATHS ]
 physics.filters.EventIDFilter.idsToMatch :
 [
 # supposedly mostly good events

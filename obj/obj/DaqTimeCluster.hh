@@ -1,5 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
-// for now, assume the time cluster in one station, update later
+// change time cluster format to accomodata 18 stations
+// the record is fairly sparse, but the number of time clusters is not too large
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __daqana_obj_DaqTimeCluster_hh__
 #define __daqana_obj_DaqTimeCluster_hh__
@@ -23,30 +24,30 @@ public:
   int     nfaces ;
   int     npanels;   // n panels with hits
 
-  int     _nhf  [4];
-  float   _timef[4];
+  int     _nhf  [18][4];
+  float   _timef[18][4];
 
-  int     _nhp  [2];
-  float   _timep[2];
+  int     _nhp  [18][2];
+  float   _timep[18][2];
 
-  int     _mnid      [12];
-  int     _nh_panel  [12];
-  float   _time_panel[12];
-  float   _edep_panel[12];
+  int     _mnid      [18][12];
+  int     _nh_panel  [18][12];
+  float   _time_panel[18][12];
+  float   _edep_panel[18][12];
   int     max_nh_panel;                 // max number of hits in one of the panels
 
   DaqTimeCluster();
 
   virtual ~DaqTimeCluster();
 
-  int   mnid       (int i) { return _mnid [i]; }
-  int   nhf        (int i) { return _nhf  [i]; }
-  float timef      (int i) { return _timef[i]; }
-  int   nhp        (int i) { return _nhp  [i]; }
-  float timep      (int i) { return _timep[i]; }
-  int   nh_panel   (int i) { return _nh_panel  [i]; }
-  float time_panel (int i) { return _time_panel[i]; }
-  float edep_panel (int i) { return _edep_panel[i]; }
+  int   mnid       (int stn, int ip) { return _mnid      [stn][ip]; }
+  int   nhf        (int stn, int ip) { return _nhf       [stn][ip]; }
+  float timef      (int stn, int ip) { return _timef     [stn][ip]; }
+  int   nhp        (int stn, int ip) { return _nhp       [stn][ip]; }
+  float timep      (int stn, int ip) { return _timep     [stn][ip]; }
+  int   nh_panel   (int stn, int ip) { return _nh_panel  [stn][ip]; }
+  float time_panel (int stn, int ip) { return _time_panel[stn][ip]; }
+  float edep_panel (int stn, int ip) { return _edep_panel[stn][ip]; }
 
   ClassDef(DaqTimeCluster,1);
 };
