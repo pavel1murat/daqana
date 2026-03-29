@@ -63,8 +63,8 @@
 
 // #define TRACEMF_USE_VERBATIM 1
 
-// #include "TRACE/tracemf.h"
-// #define TRACE_NAME "MakeDigiNtuple"
+#include "TRACE/tracemf.h"
+#define TRACE_NAME "MakeDigiNtuple"
 
 
 namespace mu2e {
@@ -256,6 +256,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
   SegmentFit::fgDebugMode = _debugBit[4];
 }
 
+
+//-----------------------------------------------------------------------------
 std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> result;
     std::regex re(delimiter);
@@ -543,11 +545,9 @@ int mu2e::MakeDigiNtuple::fillSD() {
     //    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    // works for one station, not more...
-
-    int pcie_addr = tpm->dtc() % 2;                   // convention
+    int dtc_id    = tpm->dtc();
+    int pcie_addr = dtc_id % 2;                   // convention
     int link      = tpm->link();
-    //    _event->nsd[pcie_addr][link][ich] += 1;
 
     nt_sd->mnid         = tpm->mnid();
     
@@ -556,6 +556,13 @@ int mu2e::MakeDigiNtuple::fillSD() {
     nt_sd->tot0         = sd->TOT(mu2e::StrawEnd::cal);
     nt_sd->tot1         = sd->TOT(mu2e::StrawEnd::hv );
     nt_sd->pmp          = sd->PMP();
+    if (_event->pmp[dtc_id] == -1) {
+      _event->pmp[dtc_id] = nt_sd->pmp;
+    }
+    else if (_event->pmp[dtc_id] !=  nt_sd->pmp) {
+      TLOG(TLVL_ERROR) << std::format("dtc_id:{} _event->pmp[dtc_id]:{} hit_pmp{}",dtc_id,_event->pmp[dtc_id],nt_sd->pmp);
+    }
+    
     nt_sd->flag         = *((uint8_t*) &sd->digiFlag());
 //-----------------------------------------------------------------------------
 // store the waveform

@@ -12,6 +12,7 @@ class SubmitJob:
     def __init__(self):
         self.calib      = None;
         self.idsid      = None;
+        self.nev        = None;
         self.nfiles     = None;
         self.ntid       = 'n001';
         self.nsbl       = None;
@@ -35,7 +36,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'idsid=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=', 'source=' ] )
+                     ['calib=', 'diag_level=', 'idsid=', 'nev=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=', 'source=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -44,7 +45,7 @@ class SubmitJob:
 
         for key, val in optlist:
 
-            # print('key,val = ',key,val)
+            print('key,val = ',key,val)
 
             if   (key == '--calib'):
                 self.calib = val
@@ -54,6 +55,8 @@ class SubmitJob:
                 self.run_number = int(val)
             elif (key == '--idsid'):
                 self.idsid = val
+            elif (key == '--nev'):
+                self.nev = int(val)
             elif (key == '--nfiles'):
                 self.nfiles = int(val)
             elif (key == '--ntid'):
@@ -127,7 +130,7 @@ class SubmitJob:
     def run(self):
         name      = 'run';
 #------------------------------------------------------------------------------
-# form the input fcl
+# form input fcl
 #------------------------------------------------------------------------------
         input_fcl    = f'/tmp/make_digi_ntuple_{os.getpid()}.fcl';
         self.form_input_fcl(input_fcl)
@@ -149,7 +152,8 @@ class SubmitJob:
 # form input file list
 #------------------------------------------------------------------------------
             input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
-            cmd  = f"ls -al $RAW_DATA_DIR/raw.mu2e.trk.{self.idsid}.art/* | awk '{{print $9}}'"
+#            cmd  = f"ls -al $RAW_DATA_DIR/raw.mu2e.trk.{self.idsid}.art/* | awk '{{print $9}}'"
+            cmd  = f"ls -al $RAW_DATA_DIR/* | awk '{{print $9}}'"
             cmd += f' | grep {self.run_number} | sort';
             if (self.nfiles):
                 cmd += f' | head -n {self.nfiles}'
@@ -169,6 +173,9 @@ class SubmitJob:
             self.Print(name,0,f'input_file_list:{input_file_list}')
             
             main_cmd += f' -S {input_file_list}'
+
+        if (self.nev):
+            main_cmd += f' -n {self.nev}'
 
         main_cmd += f'>> {logfile} 2>&1 &'
         

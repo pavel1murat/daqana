@@ -40,6 +40,8 @@ void DaqEvent::Clear(const char* Opt) {
     }
   }
 
+  for (int i=0; i<36; i++) pmp[i] = -1;  // because normal value is non-negative
+
   // for (int i=0; i<2; i++) {
   //   for (int link=0; link<6; link++) {
   //     for (int ich=0; ich<96; ich++) {
