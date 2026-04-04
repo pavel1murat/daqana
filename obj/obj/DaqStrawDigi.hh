@@ -17,9 +17,11 @@ public:
   int    fs;
   float  bl;
   float  ph;
-  int    ns;        // N(ADC samples)
+  int    ns;        //     N(ADC samples)
   short* adc;       //[ns] ns shorts
-  
+//-----------------------------------------------------------------------------
+// functions
+//-----------------------------------------------------------------------------
   DaqStrawDigi();
   DaqStrawDigi(int ns);
   virtual ~DaqStrawDigi();
@@ -28,7 +30,9 @@ public:
 
   int      straw() {return (sid      ) & 0x7f; }
   int      panel() {return (sid >>  7) & 0x07; } 
-  int      plane() {return (sid >> 10) & 0x3f; } 
+  int      plane() {return (sid >> 10) & 0x3f; }
+
+  virtual void Clear(const char* Opt) override ;
 
   ClassDef(DaqStrawDigi,1);
 };

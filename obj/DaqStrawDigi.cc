@@ -7,23 +7,31 @@ ClassImp(DaqStrawDigi)
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::DaqStrawDigi() : TObject() {
+  //  adc = nullptr;
   ns = -1;
-  adc = nullptr;
-}
-
-//-----------------------------------------------------------------------------
-DaqStrawDigi::DaqStrawDigi(int Ns) {
-  Init(Ns);
 }
 
 //-----------------------------------------------------------------------------
 void DaqStrawDigi::Init(int Ns) {
-  ns = Ns;
-  //   ns  = Ns;                             // shouldn't change within the job
-  adc = new int16_t[ns];
+  
+
+  // if (cleared != 1) {
+  //   ns  = Ns;
+  //   adc = new uint16_t[Ns];
+  // }
+  if (ns < 0) {
+    ns = Ns;
+    adc = new short[Ns];
+  }
 }
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::~DaqStrawDigi() {
-  delete adc; 
+  //  delete adc; 
+}
+
+//-----------------------------------------------------------------------------
+void DaqStrawDigi::Clear(const char* Opt) {
+  //cleared = 1;
+  // adc.clear();
 }

@@ -138,8 +138,6 @@ class SubmitJob:
 # submit the job
 #-------v----------------------------------------------------------------------
         logfile=f'{self.idsid}.make_{self.ntid}.{self.run_number}.log' ;
-        os.system(f'cat {input_fcl} >| {logfile}');
-        os.system(f'echo ---------------------------  >> {logfile}');
 
         main_cmd = f'mu2e -c {input_fcl}';
         
@@ -166,7 +164,7 @@ class SubmitJob:
                                  executable="/bin/bash",
                                  shell=True,
                                  stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
                                  encoding="utf-8")
             (out, err) = p.communicate();
 
@@ -178,7 +176,16 @@ class SubmitJob:
             main_cmd += f' -n {self.nev}'
 
         main_cmd += f'>> {logfile} 2>&1 &'
-        
+#------------------------------------------------------------------------------
+# submit
+#------------------------------------------------------------------------------
+        os.system(f'cat {input_fcl}                   >| {logfile}');
+        os.system(f'echo ---------------------------  >> {logfile}');
+        os.system(f'cat {input_file_list}             >> {logfile}');
+        os.system(f'echo ---------------------------  >> {logfile}');
+        os.system(f'echo cmd:"{main_cmd}"             >> {logfile}');
+        os.system(f'echo ---------------------------  >> {logfile}');
+
         p   = subprocess.Popen(main_cmd,
                              executable="/bin/bash",
                              shell=True,

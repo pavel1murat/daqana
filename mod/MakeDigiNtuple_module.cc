@@ -536,7 +536,9 @@ int mu2e::MakeDigiNtuple::fillSD() {
                                         // one-time initializatiion
     if (_n_adc_samples == -1) _n_adc_samples = ns;
 
-    DaqStrawDigi* nt_sd = new ((*_event->sd)[i]) DaqStrawDigi(ns);
+    DaqStrawDigi* nt_sd = _event->sd->ConstructedAt(i);
+    nt_sd->Init(ns);
+    
     nt_sd->sid          = sd->strawId().asUint16();
  
     int pln = sd->strawId().plane();
