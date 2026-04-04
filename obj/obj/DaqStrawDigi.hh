@@ -1,6 +1,7 @@
 #ifndef __daqana_obj_DaqStrawDigi_hh__
 #define __daqana_obj_DaqStrawDigi_hh__
 
+#include <vector>
 #include "TClonesArray.h"
 #include "TObject.h"
 
@@ -17,8 +18,9 @@ public:
   int    fs;
   float  bl;
   float  ph;
+  std::vector<uint16_t> adc;
   int    ns;        //     N(ADC samples)
-  short* adc;       //[ns] ns shorts
+  // short* adc;       //[ns] ns shorts
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------

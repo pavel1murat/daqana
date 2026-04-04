@@ -11,10 +11,10 @@ DaqEvent::DaqEvent() { // : TObject() {
   sh    = new TClonesArray("DaqStrawHit"   ,100);
   ch    = new TClonesArray("DaqComboHit"   ,100);
   tc    = new TClonesArray("DaqTimeCluster", 10);
-  trk   = new TClonesArray("DaqTrack", 10);
-  seg   = new TClonesArray("DaqSegment"    ,  10);
-  segsh = new TClonesArray("DaqTrkStrawHit", 100);
-  trksh = new TClonesArray("DaqTrkStrawHit", 100);
+  trk   = new TClonesArray("DaqTrack"      , 10);
+  seg   = new TClonesArray("DaqSegment"    , 10);
+  segsh = new TClonesArray("DaqTrkStrawHit",100);
+  trksh = new TClonesArray("DaqTrkStrawHit",100);
 
   Clear();
 }

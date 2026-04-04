@@ -7,7 +7,6 @@ ClassImp(DaqStrawDigi)
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::DaqStrawDigi() : TObject() {
-  //  adc = nullptr;
   ns = -1;
 }
 
@@ -20,8 +19,8 @@ void DaqStrawDigi::Init(int Ns) {
   //   adc = new uint16_t[Ns];
   // }
   if (ns < 0) {
+    adc.resize(Ns);
     ns = Ns;
-    adc = new short[Ns];
   }
 }
 
