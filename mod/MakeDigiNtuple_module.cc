@@ -636,6 +636,8 @@ int mu2e::MakeDigiNtuple::fillSH() {
     nt_sh->tot0        = sh->TOT(mu2e::StrawEnd::cal);
     nt_sh->tot1        = sh->TOT(mu2e::StrawEnd::hv );
     nt_sh->edep        = sh->energyDep();
+    nt_sh->dped        = sh->digitalPedestal();
+    nt_sh->dpmp        = sh->digitalPulseHeight();
     if (sh->energyDep() > _event->maxEdep) _event->maxEdep = sh->energyDep();
 
     if (_debugMode  > 0) {

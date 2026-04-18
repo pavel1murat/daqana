@@ -36,7 +36,7 @@ public:
 
   virtual void Clear(const char* Opt) override ;
 
-  ClassDef(DaqStrawDigi,1);
+  ClassDefOverride(DaqStrawDigi,1);
 };
 
 #endif

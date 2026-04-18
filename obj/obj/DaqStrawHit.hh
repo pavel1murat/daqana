@@ -16,6 +16,8 @@ public:
   float   tot0;
   float   tot1;
   float   edep;
+  float   dped;                         // 2026-04-17 
+  float   dpmp;                         // 2026-04-17 
 
   DaqStrawHit();
 

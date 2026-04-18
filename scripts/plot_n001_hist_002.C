@@ -1,14 +1,8 @@
-///////////////////////////////////////////////////////////////////////////////
-/*
-  gSystem->Load("v001/.spack-env/view/lib/libdaqana_obj.so");
-  .L v001/daqana/scripts/plot_n001_hist_001.C
-  auto x07 = new plot_n001_hist(120807);
-  x07->Loop(151,44,229,44,20000);
-  
-*/
+#define plot_n001_hist_cxx
+
 #include <format>
 
-#include "daqana/scripts/plot_n001_hist_001.h"
+#include "daqana/scripts/plot_n001_hist_002.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
@@ -16,20 +10,15 @@
 //-----------------------------------------------------------------------------
 plot_n001_hist::plot_n001_hist(int RunNumber) : fChain(0) {
 
-  std::string dir("/data/mu2e/mu2etrk/datasets/vst00s000r000n001"); 
-  std::string fn = std::format("{}/nts.mu2e.trk.vst00s000r000n001.{:06d}_000001.root",dir,RunNumber);
+  std::string fn = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000n001/nts.mu2e.trk.vst00s000r000n001.{:06d}_000001.root",RunNumber);
   
   TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject(fn.data());
   if (!f || !f->IsOpen()) {
     f = new TFile(fn.data());
   }
 
-  // plane 20: MN 122, 080, 133, 150, 199, 278
-  // plane 21: MN 112, 072, 202, 193, 200, 270
-  // plane 22: MN 053, 052, 169, 035, 039, 043
-  // plane 23: MN 151, 254, 225, 229, 275, 274
-  // plane 24: MN 132, 145, 082, 207, 139, 155
-  // plane 25: MN 055, 069, 064, 062, 063, 067
+  // plane 20: MN 122, 80, 133, 150, 199, 278
+  // plane 21: 
 
   TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
 
@@ -40,10 +29,9 @@ plot_n001_hist::plot_n001_hist(int RunNumber) : fChain(0) {
 
   fHist.fDtVsEvt = nullptr;
 }
+
 //-----------------------------------------------------------------------------
 plot_n001_hist::plot_n001_hist(const char* Fn) : fChain(0) {
-// if parameter tree is not specified (or zero), connect the file
-// used to generate this class and read the Tree.
 
   std::string fn = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000n001/{}",Fn);
   TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject(fn.data());
@@ -58,13 +46,11 @@ plot_n001_hist::plot_n001_hist(const char* Fn) : fChain(0) {
   fHist.fDtVsEvt = nullptr;
 }
 
-
 //-----------------------------------------------------------------------------
 plot_n001_hist::~plot_n001_hist() {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
-
 
 //-----------------------------------------------------------------------------
 int plot_n001_hist::BookHistograms(Hist_t* Hist, int Mnid1, int Ch1, int Mnid2, int Ch2, float DtMin, float DtMax) {
@@ -75,38 +61,37 @@ int plot_n001_hist::BookHistograms(Hist_t* Hist, int Mnid1, int Ch1, int Mnid2, 
     dt_max = DtMax;
   }
 
-  std::string prefix = std::format("h_r_{:06d}_mn{:03d}_{:02d}_mn{:03d}_{:02d}",fRunNumber,Mnid1,Ch1,Mnid2,Ch2);
+  std::string prefix = std::format("mn{:03d}_{:02d}_mn{:03d}_{:02d}",Mnid1,Ch1,Mnid2,Ch2);
 
-  std::string name  = std::format("{}_dt_vs_evt",prefix);
-  std::string title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fDtVsEvt = new TH2F(name.data(),title.data(),600,0,2400000,2000,dt_min,dt_max);
+  std::string name = std::format("{}_dt_vs_evt",prefix);
+  Hist->fDtVsEvt = new TH2F(name.data(),name.data(),600,0,2400000,2000,dt_min,dt_max);
   Hist->fDtVsEvt->GetYaxis()->SetTitle("time, ns");
 
-  name  = std::format("{}_dt10k",prefix);
-  title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fDt10k = new TH1F(name.data(),title.data(),20000,0,20000);
+  name = std::format("{}_dt10k",prefix);
+  Hist->fDt10k = new TH1F(name.data(),name.data(),10000,0,10000);
 
-  name  = std::format("{}_nh_ch1",prefix);
-  title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fNhCh1 = new TH1F(name.data(),title.data(),50,0,50);
+  name = std::format("{}_nh_ch1",prefix);
+  Hist->fNhCh1 = new TH1F(name.data(),name.data(),50,0,50);
 
-  name  = std::format("{}_nh_ch2",prefix);
-  title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fNhCh2 = new TH1F(name.data(),title.data(),50,0,50);
+  name = std::format("{}_nh_ch2",prefix);
+  Hist->fNhCh2 = new TH1F(name.data(),name.data(),50,0,50);
   
-  name  = std::format("{}_gen_dt1",prefix);
-  title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fGenDt1 = new TH1F(name.data(),title.data(),2000,16300,16500);
+  name = std::format("{}_gen_dt1",prefix);
+  Hist->fGenDt1 = new TH1F(name.data(),name.data(),2000,16300,16500);
 
-  name  = std::format("{}_gen_dt2",prefix);
-  title = std::format("run:{} {}",fRunNumber,name);
-  Hist->fGenDt2 = new TH1F(name.data(),title.data(),2000,16300,16500);
+  name = std::format("{}_gen_dt2",prefix);
+  Hist->fGenDt2 = new TH1F(name.data(),name.data(),2000,16300,16500);
   
   return 0;
 }
 
 //-----------------------------------------------------------------------------
-void plot_n001_hist::Loop(int Mnid1, int Ch1, int Mnid2, int Ch2, int NEvents, double DtMin, double DtMax) {
+void plot_n001_hist::FillHistograms() {
+}
+
+//-----------------------------------------------------------------------------
+void plot_n001_hist::Loop(int Plane)int Mnid1, int Ch1, int Mnid2, int Ch2, int NEvents, double DtMin, double DtMax) {
+   if (fChain == 0) return;
 
    BookHistograms(&fHist,Mnid1,Ch1,Mnid2,Ch2,DtMin,DtMax);
 
@@ -129,16 +114,18 @@ void plot_n001_hist::Loop(int Mnid1, int Ch1, int Mnid2, int Ch2, int NEvents, d
 
       for (int i=0; i<nsdtot; i++) {
         int ich = sd_sid[i] & 0x7f;
-        if ((sd_mnid[i] == Mnid1) and (ich == Ch1)) {
-          ind1.push_back(i);
-        }
-        if ((sd_mnid[i] == Mnid2) and (ich == Ch2)) {
-          ind2.push_back(i);
-        }
+
+        TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_mnid(mnid[i]);
+        int plane = tpmd->plane;
+        int panel = tpmd->plane;
+//-----------------------------------------------------------------------------
+// one more hit in channel ich
+//-----------------------------------------------------------------------------
+        PanelData_t* pd = fData.plane_data[plane]->panel_data[panel];
+        pd->index[ich].push_back(i);
       }
-      
-      int nh_ch1 = ind1.size();
-      int nh_ch2 = ind2.size();
+
+      FillHistograms();
       
       if ((nh_ch1 > 0) and (nh_ch2 > 0)) {
         int i1 = ind1[0];

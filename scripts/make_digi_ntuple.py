@@ -10,6 +10,7 @@ import inspect
 class SubmitJob:
     
     def __init__(self):
+        self.filename   = None;
         self.calib      = None;
         self.idsid      = None;
         self.nev        = None;
@@ -36,7 +37,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'idsid=', 'nev=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=', 'source=' ] )
+                     ['calib=', 'diag_level=', 'fn=', 'idsid=', 'nev=', 'ntid=', 'rn=', 'nfiles=', 'nsbl=', 'source=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -51,6 +52,8 @@ class SubmitJob:
                 self.calib = val
             elif (key == '--diag_level'):
                 self.diag_level = int(val)
+            elif (key == '--fn'):
+                self.filename = val
             elif (key == '--rn'):
                 self.run_number = int(val)
             elif (key == '--idsid'):
@@ -150,26 +153,29 @@ class SubmitJob:
 # form input file list
 #------------------------------------------------------------------------------
             input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
-#            cmd  = f"ls -al $RAW_DATA_DIR/raw.mu2e.trk.{self.idsid}.art/* | awk '{{print $9}}'"
+            #            cmd  = f"ls -al $RAW_DATA_DIR/raw.mu2e.trk.{self.idsid}.art/* | awk '{{print $9}}'"
             cmd  = f"ls -al $RAW_DATA_DIR/* | awk '{{print $9}}'"
             cmd += f' | grep {self.run_number} | sort';
             if (self.nfiles):
                 cmd += f' | head -n {self.nfiles}'
-
+                
             cmd += f' >| {input_file_list}'
 
-            print('001:cmd:',cmd);
+        print('001:cmd:',cmd);
 
-            p = subprocess.Popen(cmd,
-                                 executable="/bin/bash",
-                                 shell=True,
-                                 stderr=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 encoding="utf-8")
-            (out, err) = p.communicate();
+        p = subprocess.Popen(cmd,
+                             executable="/bin/bash",
+                             shell=True,
+                             stderr=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                             encoding="utf-8")
+        (out, err) = p.communicate();
 
-            self.Print(name,0,f'input_file_list:{input_file_list}')
-            
+        self.Print(name,0,f'input_file_list:{input_file_list}')
+    
+        if (self.filename):
+            main_cmd += f' -s {self.filename}'
+        else:
             main_cmd += f' -S {input_file_list}'
 
         if (self.nev):

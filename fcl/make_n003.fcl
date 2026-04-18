@@ -94,16 +94,26 @@ physics : {
         }
     }
 
-    p1 : [ EWMProducer, makeSD, makeSH  ]
+    # p1 : [ EWMProducer, makeSD, makeSH  ]
     p2 : [ EWMProducer, makeSD, makeSH, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
-    trigger_paths  : [ p1 ]
+    trigger_paths  : [ p2 ]
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
 services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+
+services.ProditionsService.crvPhotonYield.useDb : false
+services.ProditionsService.crvStatus.useDb : false
+services.ProditionsService.crvCalib.useDb : false
+
+services.scheduler.wantSummary                   : true
+
+services.message.destinations.log.categories.ArtReport.reportEvery : 1
+services.message.destinations.log.categories.ArtReport.limit : 1000
+services.message.destinations.log.categories.ArtReport.timespan : 300

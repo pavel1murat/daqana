@@ -7,8 +7,8 @@ services.DbService : {
     
     textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-#                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use FCL
-                 "daqana/calibrations/TrkPanelMap.txt"            , ## use local copy
+#                 "daqana/calibrations/TrkPanelMap.txt"            , ## use local copy
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is evolving
                  "daqana/calibrations/TrkDelayPanel.txt"    ]       ## everything needed
                 
     verbose  : 100

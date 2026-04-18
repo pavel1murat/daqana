@@ -2,6 +2,9 @@
 // plot histograms made by StationAna module
 // plot by plane - 6 panels at a time
 // c->Print("trk_fragment_ana_run_002386.figure_0001.pdf")
+//
+// gSystem->Load("v001/.spack-env/view/lib/libdaqana_obj.so");
+// 
 //-----------------------------------------------------------------------------
 #include <format>
 
@@ -49,7 +52,8 @@ int plot_edep(int RunNumber, int Slot, int Plane, const char* Fn = nullptr) {
 
   int plane = 2*Slot+Plane;
 
-  TCanvas* c = new TCanvas(Form("c_%05i",_figure),Form("c_%05i",_figure),1700,1000);
+  std::string cname = std::format("c_plane_{:02d}",2*Slot+Plane);
+  TCanvas* c = new TCanvas(cname.data(),cname.data(),1800,1000);
   c->Divide(3,2);
 
   for (int panel=0; panel<6; panel++) {
@@ -62,7 +66,7 @@ int plot_edep(int RunNumber, int Slot, int Plane, const char* Fn = nullptr) {
     gPad->SetLogy(1);
     std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/edep",Slot,mnid);
     TH1* h1 = (TH1*) f->Get(hname.data());
-    // h1->GetYaxis()->SetRangeUser(0.1,2*h1->GetEntries());
+    if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
     h1->Draw();
   }
 
@@ -88,7 +92,7 @@ int plot(int RunNumber, int Figure, int Slot, int Plane, const char* Fn = nullpt
   if ((rc == 0) and (Print > 0)) {
     // everything looks ok, print
     char fn[1000];
-    sprintf(fn,"trk_fragment_ana_run_%06i.figure_%05i.pdf",RunNumber,Figure+100*Plane);
+    sprintf(fn,"station_ana_run_%06i.figure_%05i.pdf",RunNumber,Figure+100*Plane);
     _canvas->Print(fn);
   }
 

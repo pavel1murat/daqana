@@ -113,11 +113,6 @@ namespace mu2e {
       }
     }
     
-    // int book_panel_histset[kNPanelHistSets];
-    // for (int iset=0; iset<kNPanelHistSets; iset++) book_panel_histset[iset] = 0;
-
-    // book_panel_histset[ 0] = 1;		// all events
-
     int ns = _slot.size();
                                         // histogram records for ns slots
     for (int is=0; is<ns; is++) {
@@ -348,7 +343,7 @@ int StationAna::init_event(const art::Event& ArtEvent) {
       for (int pln=2*isl; pln<2*isl+2; pln++) {
         int ipln2 = pln % 2;
         for (int ip=0; ip<6; ip++) {
-          int pnl = 6*ipln2+ip;
+          int pnl = 6*ipln2+ip;         // pnl is the offline panel index ???
           PanelData_t* pd = &_edata.station[isl].panel[pnl];
           int mnid = _trkPanelMap->panel_map_by_offline_ind(pln,ip)->mnid();
           pd->mnid = mnid;
@@ -406,8 +401,9 @@ void StationAna::analyze(const art::Event& ArtEvent) {
     
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    int pcie_addr = tpm->dtc() % 2;  // this is a convention
-    int ipanel    = pcie_addr*6+tpm->link();
+    // int pcie_addr = tpm->dtc() % 2;              // this is a convention
+    // int ipanel    = pcie_addr*6+tpm->link();
+    int ipanel = (pln % 2)*6+pnl;                   // use offline indices conssitently
     
     _edata.nsht               += 1;
 

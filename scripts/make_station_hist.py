@@ -16,6 +16,7 @@ import inspect
 class SubmitJob:
     
     def __init__(self):
+        self.filename   = None;
         self.idsid      = 'vst';
         self.nfiles     = None;
         self.min_edep   = None;
@@ -39,7 +40,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['diag_level=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slots=' ] )
+                     ['diag_level=', 'fn=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slots=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -52,6 +53,8 @@ class SubmitJob:
 
             if   (key == '--diag_level'):
                 self.diag_level = int(val)
+            elif (key == '--fn'):
+                self.filename = val
             elif (key == '--rn'):
                 self.run_number = int(val)
             elif (key == '--idsid'):
@@ -148,7 +151,12 @@ class SubmitJob:
         os.system(f'cat {input_file_list}             >| {logfile}');
         os.system(f'echo ---------------------------  >> {logfile}');
 
-        cmd = f'mu2e -c {input_fcl} -S {input_file_list} >> {logfile} 2>&1 &'
+        if (self.filename):
+            cmd = f'mu2e -c {input_fcl} -s {self.filename}';
+        else:
+            cmd = f'mu2e -c {input_fcl} -S {input_file_list}';
+
+        cmd += f' >> {logfile} 2>&1 &'
         os.system(f'echo cmd:"{cmd}"                  >> {logfile}');
         os.system(f'echo ---------------------------  >> {logfile}');
 

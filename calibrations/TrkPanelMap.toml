@@ -1,6 +1,6 @@
 # .toml version of TRK_PANEL_MAP
 [["TrkPanelMap"]]
-run_range = [ 108000,200000 ]
+run_range = [ 108000,120470 ]
 panel_data = [
 # ------------------------------------------------------------------------------ station 13 / slot 0
     {mnid = 244, dtc_id = 21, link = 4,  plane =  0, ppid=17, panel=1, zface=0},
@@ -54,6 +54,65 @@ panel_data = [
     {mnid =  63, dtc_id = 15, link = 4,  plane = 25, ppid= 3, panel=1, zface=3},
     {mnid =  62, dtc_id = 15, link = 3,  plane = 25, ppid= 3, panel=5, zface=3},
     {mnid =  55, dtc_id = 15, link = 0,  plane = 25, ppid= 3, panel=3, zface=3}
+]
+#------------------------------------------------------------------------------
+# done with the run range
+#------------------------------------------------------------------------------
+[["TrkPanelMap"]]
+run_range = [ 120471,200000 ]
+panel_data = [
+# ------------------------------------------------------------------------------ slot 0 / station 13
+    {mnid = 244, dtc_id = 21, link = 4,  plane =  0, ppid=17, panel=1, zface=0},
+    {mnid = 210, dtc_id = 21, link = 1,  plane =  0, ppid=17, panel=3, zface=0},
+    {mnid = 191, dtc_id = 21, link = 2,  plane =  0, ppid=17, panel=5, zface=0},
+    {mnid = 126, dtc_id = 21, link = 5,  plane =  0, ppid=17, panel=2, zface=1},
+    {mnid = 269, dtc_id = 21, link = 0,  plane =  0, ppid=17, panel=4, zface=1},
+    {mnid = 120, dtc_id = 21, link = 3,  plane =  0, ppid=17, panel=0, zface=1},
+    {mnid =  74, dtc_id = 20, link = 5,  plane =  1, ppid= 4, panel=2, zface=2},
+    {mnid =  73, dtc_id = 20, link = 2,  plane =  1, ppid= 4, panel=0, zface=2},
+    {mnid =  77, dtc_id = 20, link = 1,  plane =  1, ppid= 4, panel=4, zface=2},
+    {mnid = 242, dtc_id = 20, link = 4,  plane =  1, ppid= 4, panel=1, zface=3},
+    {mnid =  38, dtc_id = 20, link = 3,  plane =  1, ppid= 4, panel=5, zface=3},
+    {mnid =  65, dtc_id = 20, link = 0,  plane =  1, ppid= 4, panel=3, zface=3},
+# ------------------------------------------------------------------------------ slot 10 / station 14 / root [3] print_trk_panel_map(10);
+    {mnid = 199, dtc_id = 17, link = 4,  plane = 20, ppid= 9, panel=1, zface=0},
+    {mnid =  80, dtc_id = 17, link = 1,  plane = 20, ppid= 9, panel=3, zface=0},
+    {mnid = 133, dtc_id = 17, link = 2,  plane = 20, ppid= 9, panel=5, zface=0},
+    {mnid = 278, dtc_id = 17, link = 5,  plane = 20, ppid= 9, panel=2, zface=1},
+    {mnid = 122, dtc_id = 17, link = 0,  plane = 20, ppid= 9, panel=4, zface=1},
+    {mnid = 150, dtc_id = 17, link = 3,  plane = 20, ppid= 9, panel=0, zface=1},
+    {mnid = 270, dtc_id = 18, link = 5,  plane = 21, ppid=19, panel=2, zface=2},
+    {mnid = 202, dtc_id = 18, link = 2,  plane = 21, ppid=19, panel=0, zface=2},
+    {mnid =  72, dtc_id = 18, link = 1,  plane = 21, ppid=19, panel=4, zface=2},
+    {mnid = 200, dtc_id = 18, link = 4,  plane = 21, ppid=19, panel=1, zface=3},
+    {mnid = 193, dtc_id = 18, link = 3,  plane = 21, ppid=19, panel=5, zface=3},
+    {mnid = 112, dtc_id = 18, link = 0,  plane = 21, ppid=19, panel=3, zface=3},
+# ----------------------------------------------------------------------------- slot 11 / station 5 / root [12] print_trk_panel_map(11);
+    {mnid =  43, dtc_id = 16, link = 5,  plane = 22, ppid=33, panel=2, zface=0},
+    {mnid = 169, dtc_id = 16, link = 2,  plane = 22, ppid=33, panel=0, zface=0},
+    {mnid =  52, dtc_id = 16, link = 1,  plane = 22, ppid=33, panel=4, zface=0},
+    {mnid =  39, dtc_id = 16, link = 4,  plane = 22, ppid=33, panel=1, zface=1},
+    {mnid =  35, dtc_id = 16, link = 3,  plane = 22, ppid=33, panel=5, zface=1},
+    {mnid =  53, dtc_id = 16, link = 0,  plane = 22, ppid=33, panel=3, zface=1},
+    {mnid = 275, dtc_id = 15, link = 4,  plane = 23, ppid=29, panel=1, zface=2},
+    {mnid = 254, dtc_id = 15, link = 1,  plane = 23, ppid=29, panel=3, zface=2},
+    {mnid = 229, dtc_id = 15, link = 3,  plane = 23, ppid=29, panel=5, zface=3},
+    {mnid = 274, dtc_id = 15, link = 5,  plane = 23, ppid=29, panel=0, zface=3},
+    {mnid = 151, dtc_id = 15, link = 0,  plane = 23, ppid=29, panel=4, zface=3},
+    {mnid = 225, dtc_id = 15, link = 2,  plane = 23, ppid=29, panel=2, zface=3},
+#------------------------------------------------------------------------------ slot 12 / station 4 / root [13] print_trk_panel_map(12);
+    {mnid = 139, dtc_id = 13, link = 4,  plane = 24, ppid=27, panel=1, zface=0},
+    {mnid = 145, dtc_id = 13, link = 1,  plane = 24, ppid=27, panel=3, zface=0},
+    {mnid =  82, dtc_id = 13, link = 2,  plane = 24, ppid=27, panel=5, zface=0},
+    {mnid = 155, dtc_id = 13, link = 5,  plane = 24, ppid=27, panel=2, zface=1},
+    {mnid = 132, dtc_id = 13, link = 0,  plane = 24, ppid=27, panel=4, zface=1},
+    {mnid = 207, dtc_id = 13, link = 3,  plane = 24, ppid=27, panel=0, zface=1},
+    {mnid =  67, dtc_id = 14, link = 5,  plane = 25, ppid= 3, panel=2, zface=2},
+    {mnid =  64, dtc_id = 14, link = 2,  plane = 25, ppid= 3, panel=0, zface=2},
+    {mnid =  69, dtc_id = 14, link = 1,  plane = 25, ppid= 3, panel=4, zface=2},
+    {mnid =  63, dtc_id = 14, link = 4,  plane = 25, ppid= 3, panel=1, zface=3},
+    {mnid =  62, dtc_id = 14, link = 3,  plane = 25, ppid= 3, panel=5, zface=3},
+    {mnid =  55, dtc_id = 14, link = 0,  plane = 25, ppid= 3, panel=3, zface=3}
 ]
 #------------------------------------------------------------------------------
 # done with the run range
