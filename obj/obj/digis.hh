@@ -132,7 +132,7 @@ public :
    Int_t           srn;
    Int_t           evn;
    Int_t           nsdtot;
-   Short_t         nsd[2][6][96];
+  // short_t         nsd[2][6][96];
    Int_t           sd_;
    UInt_t          sd_fUniqueID[kMaxsd];   //[sd_]
    UInt_t          sd_fBits[kMaxsd];   //[sd_]
@@ -150,7 +150,7 @@ public :
    Int_t           sd_ns[kMaxsd];   //[sd_]
    Short_t        *sd_adc[kMaxsd];   //[sd_ns]
    Int_t           nshtot;
-   Int_t           nsh[2][6];
+   Int_t           nsh[36][6];
    Int_t           sh_;
    UInt_t          sh_fUniqueID[kMaxsh];   //[sh_]
    UInt_t          sh_fBits[kMaxsh];   //[sh_]

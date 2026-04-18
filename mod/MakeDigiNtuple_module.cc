@@ -701,6 +701,8 @@ int mu2e::MakeDigiNtuple::fillCH() {
 }
 
 //-----------------------------------------------------------------------------
+// time clusters are filled using offline indices
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTC() {
 
   for (int itc=0; itc<_ntimeclusters; itc++) {
@@ -728,7 +730,6 @@ int mu2e::MakeDigiNtuple::fillTC() {
       int stn   = plane / 2;
       int pln2  = plane % 2;
       int panel = hit->strawId().panel();
-      //      const TrkPanelMap_t *tpm = _panel_map[plane][panel];
       const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(plane,panel);
       int zface = tpm->zface();
 

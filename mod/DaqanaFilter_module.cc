@@ -34,13 +34,13 @@ namespace mu2e {
     struct Config{
       using Name    = fhicl::Name;
       using Comment = fhicl::Comment;
-      fhicl::Atom<bool>            debugMode     {  Name("debugMode"     ), Comment("Debug Mode, default:false")};
-      fhicl::Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits")};
-      fhicl::Atom<std::string>     shCollTag     {Name("shCollTag"     ), Comment("StrawHitCollection tag") };
-      fhicl::Atom<std::string>     tcCollTag     {Name("tcCollTag"     ), Comment("TimeClusterCollection tag") };
-      fhicl::Atom<float>           maxDt         {Name("maxDt"         ), Comment("max abs(DT)")};
-      fhicl::Atom<float>           minEDep       {Name("minEDep"       ), Comment("min EDep")};
-      fhicl::Atom<int>             minNGoodSh    {Name("minNGoodSh"    ), Comment("min N good straw hits")};
+      fhicl::Atom<bool>            debugMode       {Name("debugMode"       ), Comment("Debug Mode, default:false")};
+      fhicl::Sequence<std::string> debugBits       {Name("debugBits"       ), Comment("debug bits")};
+      fhicl::Atom<std::string>     shCollTag       {Name("shCollTag"       ), Comment("StrawHitCollection tag") };
+      fhicl::Atom<std::string>     tcCollTag       {Name("tcCollTag"       ), Comment("TimeClusterCollection tag") };
+      fhicl::Atom<float>           maxDt           {Name("maxDt"           ), Comment("max abs(DT)")};
+      fhicl::Atom<float>           minEDep         {Name("minEDep"         ), Comment("min EDep")};
+      fhicl::Atom<int>             minNGoodSh      {Name("minNGoodSh"      ), Comment("min N good straw hits")};
       fhicl::Atom<int>             minNTimeClusters{Name("minNTimeClusters"), Comment("min N time clusters")};
       fhicl::Atom<bool>            fillHistograms  {Name("fillHistograms"  ), Comment("fill histogrms, default:false")};
     };
@@ -146,6 +146,7 @@ namespace mu2e {
     _hist[0].nshg = d1.make<TH1F>("nshg", Form("run:%06i N(shG)      [0]", RunNumber),   100, -0.5,  99.5);
     _hist[0].dt   = d1.make<TH1F>("dt"  , Form("run:%06i delta(T), ns[0]", RunNumber),   200, -100, 100. );
     _hist[0].edep = d1.make<TH1F>("edep", Form("run:%06i edep, keV   [0]", RunNumber),   100, -  2,   8. );
+    _hist[0].ntc  = d1.make<TH1F>("ntc" , Form("run:%06i ntc         [0]", RunNumber),   100, -0.5,  99.5);
     
     art::TFileDirectory d2 = tfs->mkdir("passed");
 
@@ -154,6 +155,7 @@ namespace mu2e {
     _hist[1].nshg = d2.make<TH1F>("nshg", Form("run:%06i N(shG)      [1]", RunNumber),   100, -0.5,  99.5);
     _hist[1].dt   = d2.make<TH1F>("dt"  , Form("run:%06i delta(T), ns[1]", RunNumber),   200, -100, 100. );
     _hist[1].edep = d2.make<TH1F>("edep", Form("run:%06i edep, keV   [1]", RunNumber),   100, -  2,   8. );
+    _hist[1].ntc  = d1.make<TH1F>("ntc" , Form("run:%06i ntc         [0]", RunNumber),   100, -0.5,  99.5);
 
     return 0;
   }
@@ -172,6 +174,7 @@ namespace mu2e {
   
     Hist->nsht->Fill(_nsht);
     Hist->nshg->Fill(_nshg);
+    Hist->ntc->Fill(_ntc);
                      
     return 0;
   }

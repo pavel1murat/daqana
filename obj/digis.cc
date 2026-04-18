@@ -1,4 +1,6 @@
-#define digis_cxx
+///////////////////////////////////////////////////////////////////////////////
+// run on output of n002
+///////////////////////////////////////////////////////////////////////////////
 #include "daqana/obj/digis.hh"
 #include <TH2.h>
 // #include <TStyle.h>
@@ -864,7 +866,7 @@ void digis::Init() {
    fChain->SetBranchAddress("srn", &srn, &b_evt_srn);
    fChain->SetBranchAddress("evn", &evn, &b_evt_evn);
    fChain->SetBranchAddress("nsdtot", &nsdtot, &b_evt_nsdtot);
-   fChain->SetBranchAddress("nsd[2][6][96]", nsd, &b_evt_nsd);
+   //   fChain->SetBranchAddress("nsd[2][6][96]", nsd, &b_evt_nsd);
    fChain->SetBranchAddress("sd", &sd_, &b_evt_sd_);
    fChain->SetBranchAddress("sd.fUniqueID", &sd_fUniqueID, &b_sd_fUniqueID);
    fChain->SetBranchAddress("sd.fBits", &sd_fBits, &b_sd_fBits);
@@ -882,7 +884,7 @@ void digis::Init() {
    fChain->SetBranchAddress("sd.ns", &sd_ns, &b_sd_ns);
    fChain->SetBranchAddress("sd.adc", &sd_adc, &b_sd_adc);
    fChain->SetBranchAddress("nshtot", &nshtot, &b_evt_nshtot);
-   fChain->SetBranchAddress("nsh[2][6]", nsh, &b_evt_nsh);
+   fChain->SetBranchAddress("nsh[36][6]", nsh, &b_evt_nsh);
    fChain->SetBranchAddress("sh", &sh_, &b_evt_sh_);
    fChain->SetBranchAddress("sh.fUniqueID", sh_fUniqueID, &b_sh_fUniqueID);
    fChain->SetBranchAddress("sh.fBits", sh_fBits, &b_sh_fBits);
@@ -928,14 +930,14 @@ void digis::Init() {
    fChain->SetBranchAddress("tc.nplanes", tc_nplanes, &b_tc_nplanes);
    fChain->SetBranchAddress("tc.nfaces", tc_nfaces, &b_tc_nfaces);
    fChain->SetBranchAddress("tc.npanels", tc_npanels, &b_tc_npanels);
-   fChain->SetBranchAddress("tc._nhf[4]", tc__nhf, &b_tc__nhf);
-   fChain->SetBranchAddress("tc._timef[4]", tc__timef, &b_tc__timef);
-   fChain->SetBranchAddress("tc._nhp[2]", tc__nhp, &b_tc__nhp);
-   fChain->SetBranchAddress("tc._timep[2]", tc__timep, &b_tc__timep);
-   fChain->SetBranchAddress("tc._mnid[12]", tc__mnid, &b_tc__mnid);
-   fChain->SetBranchAddress("tc._nh_panel[12]", tc__nh_panel, &b_tc__nh_panel);
-   fChain->SetBranchAddress("tc._time_panel[12]", tc__time_panel, &b_tc__time_panel);
-   fChain->SetBranchAddress("tc._edep_panel[12]", tc__edep_panel, &b_tc__edep_panel);
+   fChain->SetBranchAddress("tc._nhf[18][4]", tc__nhf, &b_tc__nhf);
+   fChain->SetBranchAddress("tc._timef[18][4]", tc__timef, &b_tc__timef);
+   fChain->SetBranchAddress("tc._nhp[18][2]", tc__nhp, &b_tc__nhp);
+   fChain->SetBranchAddress("tc._timep[18][2]", tc__timep, &b_tc__timep);
+   fChain->SetBranchAddress("tc._mnid[18][12]", tc__mnid, &b_tc__mnid);
+   fChain->SetBranchAddress("tc._nh_panel[18][12]", tc__nh_panel, &b_tc__nh_panel);
+   fChain->SetBranchAddress("tc._time_panel[18][12]", tc__time_panel, &b_tc__time_panel);
+   fChain->SetBranchAddress("tc._edep_panel[18][12]", tc__edep_panel, &b_tc__edep_panel);
    fChain->SetBranchAddress("tc.max_nh_panel", tc_max_nh_panel, &b_tc_max_nh_panel);
    fChain->SetBranchAddress("ntrk", &ntrk, &b_evt_ntrk);
    fChain->SetBranchAddress("trk", &trk_, &b_evt_trk_);

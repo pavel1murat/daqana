@@ -6,20 +6,32 @@
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
+BEGIN_PROLOG
+TRIGGER_PATHS : [ p3 ]
+END_PROLOG
+
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
 
-#include "Offline/DAQ/fcl/prolog.fcl"
-
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
+#------------------------------------------------------------------------------
+# prologs end here
+#------------------------------------------------------------------------------
 #include "Stntuple/fcl/stntuple_templates.fcl"
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
 
-process_name : FilterTimeClusters
+services.TimeTracker : {}
+
+services.message.destinations.log.categories.MAKE_SD: {
+    # reportEvery :  1
+    limit       : 1000   # -1
+}
+
+process_name : MakeDaqNtuple
 
 source : {
     module_type : RootInput
@@ -27,20 +39,19 @@ source : {
 
     # firstEvent  : 500
     maxEvents   : -1
-#       inputCommands: [ "keep *",
-#                        "drop *_*_*_*"
-#                      ]
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
 }
 
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
         fileName      :   "trk_fragment_ana.art"
-        SelectEvents  : [ p3 ]
-        outputCommands: [ "keep *_*_*_*",
+#        SelectEvents  : [ @sequence::TRIGGER_PATHS ]
+#        outputCommands: [
 #                         "drop *_*_*_*",
-                          "drop *_*_*_FilterTimeClusters"
-                        ]
+#                         "keep *_*_*_*"
+#                        ]
     }
 }
 
@@ -96,17 +107,24 @@ physics : {
             hitBkgBits                 : ["Noisy","Dead","Background"]
             radSelect                  : 0        ## 1
             chunkSep                   : 5
-            chunkWindow                : 300.0    ## 20.0
+            chunkWindow                : 500.0    ## 20.0
             chunkThresh                : 5        ## 3
-            combineWindow              : 300.0    ## 30.0
+            combineWindow              : 500.0    ## 30.0
             maxCombineSep              : 2500.0
             chunkFitThresh             : 5
-            recoverWindow              : 30.0
+            recoverWindow              : 50.0
             clusterThresh              : 5        ## 15
             minCaloSize                : 2
             minCaloEnergy              : 50.0
             caloDtMax                  : 30.0
             doRefine                   : 1        ## 0
+        }
+
+        SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+            minNStrawHits : 4
+            minNPanels    : 1
+            TimeWindow    : 400
+            TimeStep      : 30
         }
     }
     
@@ -117,25 +135,25 @@ physics : {
             makeSD    : 0
             makeSH    : 1
             makeTC    : 1
-            tcCollTag : "TZClusterFinder"
+            makeTrk   : 0
+            tcCollTag : "TZClusterFinder"  ## "SimpleTimeCluster"   ## 
         }
     }
 
-    p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
-    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ]
+    # p1 : [ EWMProducer, makeSD, makeSH ]
+    # p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
+    p1 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ] ## TZClusterFinder ]
 
-    e0 : [ ]
-    e1 : [ defaultOutput  ]
-    e2 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    e0 : []
+    # e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    e1 : [ defaultOutput ]
 
-    trigger_paths  : [ p3 ] 
+    trigger_paths  : [ p1 ]   ## p1
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-#
+# 
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
-outputs.defaultOutput.fileName   : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.art"
 physics.filters.DaqanaFilter.minNTimeClusters : 1
-
+physics.filters.DaqanaFilter.fillHistograms   : true
+services.TFileService.fileName                : "nts.mu2e.trk.vst00s001r000n002.%06r_%06s.root"

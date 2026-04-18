@@ -1,27 +1,24 @@
 #!/usr/bin/env python
 # example :
-#        v001/daqana/scripts/submit_mu2e_job.py --c=a.fcl --rn=105935 --idsid=vst --calib=v9 --diag_level=10
+# ---------
+#  v001/daqana/scripts/submit_mu2e_job.py --c=a.fcl --rn=105935 --idsid=vst --calib=v0 --diag_level=10
+#
+# --rn  : use files of a given run number
+# --fcl : 
 #------------------------------------------------------------------------------
 import subprocess, shutil, datetime, socket
-import sys, string, getopt, glob, os, time, re, array
+import sys, string, argparse, glob, os, time, re, array
 import json
 import inspect
 
 class SubmitJob:
     
     def __init__(self):
-        self.calib       = None;
-        self.idsid       = None;
-        self.nev         = None;
-        self.first_event = None;
-        self.nfiles      = None;
-        self.fcl         = None;
-        self.run_number  = None
-        self.diag_level  = 0;
-        self.source      = None;
+        self.args = None;
+
 # ---------------------------------------------------------------------
     def Print(self,Name,level,Message):
-        if (level > self.diag_level): return 0;
+        if (level > self.args.diag_level): return 0;
         now = time.strftime('%Y/%m/%d %H:%M:%S',time.localtime(time.time()))
         message = now+' [ SubmitJob::'+Name+' ] '+Message
         print(message)
@@ -30,46 +27,30 @@ class SubmitJob:
     def parse_parameters(self):
         name = 'parse_parameters'
         
-        self.Print(name,2,'Starting')
-        self.Print(name,2, '%s' % sys.argv)
+#        self.Print(name,2,'Starting')
+#        self.Print(name,2, '%s' % sys.argv)
+        
+        parser = argparse.ArgumentParser()
 
-        try:
-            optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['calib=', 'diag_level=', 'fcl=', 'e=', 'idsid=', 'nev=', 'nfiles=', 'rn=', 's=' ])
-                     
-        except getopt.GetoptError:
-            self.Print(name,0,'%s' % sys.argv)
-            self.Print(name,0,'Errors arguments did not parse')
-            return 110
+        parser.add_argument("--calib_version"   , default=None,           help="Path to the configuration file")
+        parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
+        parser.add_argument('-c',"--fcl"        , default=None,           help="Path to the configuration file")
+        parser.add_argument('-e',"--first_event", type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('--idsid'           , default=None,           help="input dataset ID")
+        parser.add_argument('-n','--nevents'    , type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('--nfiles'          , type=int, default=None, help="N(files) to process")
+        parser.add_argument('--nskip'           , type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('-r','--run_number' , type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
+        parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
 
-        for key, val in optlist:
+        self.args = parser.parse_args()
 
-            # print('key,val = ',key,val)
-
-            if   (key == '--calib'):
-                self.calib = val
-            elif (key == '--diag_level'):
-                self.diag_level = int(val)
-            elif (key == '--fcl'):
-                self.fcl = val
-            elif (key == '--e'):
-                self.first_event = val   # '107995:1:10445'
-            elif (key == '--idsid'):
-                self.idsid = val
-            elif (key == '--rn'):
-                self.run_number = int(val)
-            elif (key == '--nev'):
-                self.nev = int(val)
-            elif (key == '--nfiles'):
-                self.nfiles = int(val)
-            elif (key == '--s'):
-                self.source = val
-
-        self.Print(name,0,'self.diag_level = %s' % self.diag_level)
-        self.Print(name,0,'self.calib      = %s' % self.calib     )
-        self.Print(name,0,'self.rn         = %s' % self.run_number)
-        self.Print(name,0,'self.fcl        = %s' % self.fcl       )
-        self.Print(name,0,'self.nfiles     = %s' % self.nfiles    )
+        self.Print(name,0,'self.diag_level = %s' % self.args.diag_level)
+        self.Print(name,0,'self.calib      = %s' % self.args.calib_version)
+        self.Print(name,0,'self.rn         = %s' % self.args.run_number)
+        self.Print(name,0,'self.fcl        = %s' % self.args.fcl       )
+        self.Print(name,0,'self.nfiles     = %s' % self.args.nfiles    )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -86,7 +67,7 @@ class SubmitJob:
 #------------------------------------------------------------------------------
 # make output directory and cd to there
 #------------------------------------------------------------------------------
-        fcl_job_stub  = os.path.splitext(os.path.basename(self.fcl))[0];
+        fcl_job_stub  = os.path.splitext(os.path.basename(self.args.fcl))[0];
         now           = datetime.datetime.now()
         formatted_now = now.strftime("%Y-%m-%d-%H-%M")
         host          = socket.gethostname()
@@ -106,7 +87,7 @@ class SubmitJob:
 #------------------------------------------------------------------------------
 # form input fcl
 #------------------------------------------------------------------------------
-        template_fcl = os.getcwd()+'/'+self.fcl;
+        template_fcl = os.getcwd()+'/'+self.args.fcl;
         pid          = os.getpid();
         job_fcl      = f'{fcl_job_stub}.{pid}.fcl';
         print(f'000:template_fcl:{template_fcl} job_fcl:{job_fcl}');
@@ -114,9 +95,9 @@ class SubmitJob:
 # overrides, calib: 'v1'
 #------------------------------------------------------------------------------
         overrides_cmd = ''
-        if (self.calib):
-            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{self.calib}/'
-            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{self.calib}/'
+        if (self.args.calib_version):
+            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{self.args.calib}/'
+            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{self.args.calib}/'
 
 #------------------------------------------------------------------------------
 # redefinitions --> appends 
@@ -126,46 +107,48 @@ class SubmitJob:
         os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
 
-        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{self.calib}n000.%06r_%06s.art\\"'
+        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{self.args.calib_version}n000.%06r_%06s.art\\"'
         print(f'0011:x:{x}')
         os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
 #------------------------------------------------------------------------------
 # form the input file list
-#------------------------------------------------------------------------------
-        input_file_list=f'/tmp/submit_mu2e_job_input.{self.run_number}.txt.{os.getpid()}'
-        cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
-        cmd += f' | grep {self.run_number} | sort';          ## grep the run number
-        if (self.nfiles):
-            cmd += f' | head -n {self.nfiles}'
+#-------v----------------------------------------------------------------------
+        input_file_list=None
+        if (not self.args.source):
+            input_file_list=f'/tmp/submit_mu2e_job_input.{self.args.run_number}.txt.{os.getpid()}'
+            cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
+            cmd += f' | grep {self.args.run_number} | sort';          ## grep the run number
+            if (self.args.nfiles):
+                cmd += f' | head -n {self.args.nfiles}'
 
-        cmd += f' >| {input_file_list}'
+            cmd += f' >| {input_file_list}'
 
-        print('001:cmd:',cmd);
+            print('001:cmd:',cmd);
 
-        p = subprocess.Popen(cmd,
-                             executable="/bin/bash",
-                             shell=True,
-                             stderr=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             encoding="utf-8")
-        (out, err) = p.communicate();
+            p = subprocess.Popen(cmd,
+                                 executable="/bin/bash",
+                                 shell=True,
+                                 stderr=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 encoding="utf-8")
+            (out, err) = p.communicate();
 
-        self.Print(name,0,f'input_file_list:{input_file_list}')
+            self.Print(name,0,f'input_file_list:{input_file_list}')
 #------------------------------------------------------------------------------
 # form the command to execute
 #-------v----------------------------------------------------------------------
-        input_dsid = self.idsid
+        input_dsid = self.args.idsid
         if (input_dsid == None):
-            if (self.source):
+            if (self.args.source):
                 # input file defined, assume Mu2e naming conventions
-                input_dsid = os.path.basename(self.source).split('.')[3]
+                input_dsid = os.path.basename(self.args.source).split('.')[3]
                 if (input_dsid == 'vst'): input_dsid='vst00s000r000n000'
 
-        run_number = self.run_number
+        run_number = self.args.run_number
         if (run_number == None):
-            if (self.source):
+            if (self.args.source):
                 # input file defined, assume Mu2e naming conventions
-                run_number = os.path.basename(self.source).split('.')[4]
+                run_number = os.path.basename(self.args.source).split('.')[4]
 
         fn = os.getenv("WORK_DIR")+'/.source_me';
         if (os.path.exists(fn)):
@@ -174,10 +157,11 @@ class SubmitJob:
             cmd  = f'cd $WORK_DIR; source $WORK_DIR/.source_me ;'
             cmd += f' cd {output_dir}; mu2e -c {job_fcl}' # fcl file is in the output_dif
         
-            if (self.source     ): cmd += f' -s {self.source}'
-            cmd                        += f' -S {input_file_list}'
-            if (self.first_event): cmd += f' -e {self.first_event}'
-            if (self.nev        ): cmd += f' -n {self.nev}'
+            if (self.args.source     ): cmd += f' -s {self.args.source}'
+            else:                       cmd += f' -S {input_file_list}'
+            
+            if (self.args.first_event): cmd += f' -e {self.args.first_event}'
+            if (self.args.nevents    ): cmd += f' -n {self.args.nevents}'
 
             cmd += f' >> {logfile} 2>&1 &'
 #------------------------------------------------------------------------------
@@ -189,9 +173,10 @@ class SubmitJob:
             os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
             os.system(f'cat {output_dir}/{job_fcl}                     >> {output_dir}/{logfile}')
             os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
-            os.system(f'echo "input file list:"                        >> {output_dir}/{logfile}')
-            os.system(f'cat  {input_file_list}                         >> {output_dir}/{logfile}')
-            os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
+            if (input_file_list):
+                os.system(f'echo "input file list:"                        >> {output_dir}/{logfile}')
+                os.system(f'cat  {input_file_list}                         >> {output_dir}/{logfile}')
+                os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
                
             p   = subprocess.Popen(cmd,
                                    executable="/bin/bash",

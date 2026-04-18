@@ -1,4 +1,6 @@
-//
+///////////////////////////////////////////////////////////////////////////////
+// for now, process one station at a time
+///////////////////////////////////////////////////////////////////////////////
 #include <format>
 
 class PlotTC {
@@ -11,8 +13,8 @@ public:
   PlotTC(const char* Fn);
   ~PlotTC();
 
-  int plot_panel_edep(int Panel);
-  int plot_panel_dt  (int Panel1, int Panel2);
+  int plot_panel_edep(int Station,int Panel);
+  int plot_panel_dt  (int Station1, int Panel1, int Station2, int Panel2);
   int plot_plane_dt  (int Station);
 };
 
@@ -73,12 +75,12 @@ PlotTC::~PlotTC() {
 }
 
 //-----------------------------------------------------------------------------
-int PlotTC::plot_panel_edep(int Panel) {
+int PlotTC::plot_panel_edep(int Station, int Panel) {
   std::string hname(Form("h_edep_%02d_%06i",Panel,fRunNumber));
 
-  std::string sel  = Form("run == %d && tc.nh_panel(%d)>1",fRunNumber,Panel);
+  std::string sel  = Form("run == %d && tc.nh_panel(%d,%d)>1",fRunNumber,Station,Panel);
   std::string hist = Form("%s(120,0,0.006)",hname.data());
-  std::string cmd  = Form("tc.edep_panel(%d)",Panel);
+  std::string cmd  = Form("tc.edep_panel(%d,%d)",Station,Panel);
     
   fTree->Draw(Form("%s>>%s",cmd.data(),hist.data()),sel.data());
 
@@ -88,12 +90,14 @@ int PlotTC::plot_panel_edep(int Panel) {
 
 
 //-----------------------------------------------------------------------------
-int PlotTC::plot_panel_dt(int Panel1, int Panel2) {
-  std::string hname(Form("h_%02d%02d_%06i",Panel1,Panel2,fRunNumber));
+// within one station, panels are numbered from 0 to 11
+//-----------------------------------------------------------------------------
+int PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2,int Panel2) {
+  std::string hname(Form("h_%02d%02d_%02d%02d_%06i",Station1,Panel1,Station2,Panel2,fRunNumber));
 
-  std::string sel  = Form("run == %d && tc.nh_panel(%d)>1 && tc.nh_panel(%d)>1",fRunNumber,Panel1,Panel2);
+  std::string sel  = Form("run == %d && tc.nh_panel(%d,%d)>1 && tc.nh_panel(%d,%d)>1",fRunNumber,Station1,Panel1,Station2,Panel2);
   std::string hist = Form("%s(250,-250,250)",hname.data());
-  std::string cmd  = Form("tc.time_panel(%d)-tc.time_panel(%d)",Panel1,Panel2);
+  std::string cmd  = Form("tc.time_panel(%d,%d)-tc.time_panel(%d,%d)",Station1,Panel1,Station2,Panel2);
     
   fTree->Draw(Form("%s>>%s",cmd.data(),hist.data()),sel.data());
 

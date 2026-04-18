@@ -6,11 +6,18 @@
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
+BEGIN_PROLOG
+TRIGGER_PATHS : [ p3 ]
+END_PROLOG
+
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"
 
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
+#------------------------------------------------------------------------------
+# prologs end here
+#------------------------------------------------------------------------------
 #include "Stntuple/fcl/stntuple_templates.fcl"
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
@@ -95,7 +102,6 @@ physics : {
             useCCs                     : 1
             recoverCCs                 : 1
             chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
-            # chCollLabel2               : "makeSH"
             tcCollLabel                : "TimeClusterFinderDe"
             ccCollLabel                : "CaloClusterMaker"
             hitBkgBits                 : ["Noisy","Dead","Background"]
@@ -120,7 +126,6 @@ physics : {
             TimeWindow    : 400
             TimeStep      : 30
         }
-
     }
     
     filters   : {  @table::daqana.filters  }
@@ -137,7 +142,7 @@ physics : {
 
     p1 : [ EWMProducer, makeSD, makeSH ]
     p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
-    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, SimpleTimeCluster, FilterTimeClusters ] ## TZClusterFinder, FilterTimeClusters ]
+    p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ] ## TZClusterFinder ]
 
     e0 : []
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
@@ -146,6 +151,7 @@ physics : {
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+# 
 #------------------------------------------------------------------------------
-services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n002.%06r_%06s.root"
+physics.filters.DaqanaFilter.minNTimeClusters : 0
+services.TFileService.fileName                : "nts.mu2e.trk.vst00s001r000n002.%06r_%06s.root"
