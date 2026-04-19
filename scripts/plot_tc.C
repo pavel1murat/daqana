@@ -1,21 +1,53 @@
 ///////////////////////////////////////////////////////////////////////////////
 // for now, process one station at a time
 ///////////////////////////////////////////////////////////////////////////////
+/* Example:
+root [0] .L v001/daqana/scripts/plot_tc.C
+root [1] auto x = new PlotTC(120950,1,"/data/mu2e/mu2etrk/datasets/vst00s001r000n002/nts.mu2e.trk.vst00s001r000n002.120950_000001.root")
+root [2] x->station_time_calib(11)
+Info in <TCanvas::MakeDefCanvas>:  created default TCanvas with name c1
+station:11 panel: 0 mnid:MN169 nent:  22909 panel_mask:0x0000
+station:11 panel: 1 mnid:MN039 nent:     31 panel_mask:0x0002
+station:11 panel: 2 mnid:MN043 nent:      0 panel_mask:0x0001
+station:11 panel: 3 mnid:MN053 nent:  20669 panel_mask:0x0000
+station:11 panel: 4 mnid:MN052 nent:  21283 panel_mask:0x0000
+station:11 panel: 5 mnid:MN035 nent:  22479 panel_mask:0x0000
+station:11 panel: 6 mnid:MN207 nent:  43942 panel_mask:0x0000
+station:11 panel: 7 mnid:MN139 nent:  23577 panel_mask:0x0000
+station:11 panel: 8 mnid:MN155 nent:  20922 panel_mask:0x0000
+station:11 panel: 9 mnid:MN145 nent:  14917 panel_mask:0x0000
+station:11 panel:10 mnid:MN132 nent:  26675 panel_mask:0x0000
+station:11 panel:11 mnid:MN082 nent:  18300 panel_mask:0x0000
+*/
 #include <format>
+#include "daqana/obj/TrkPanelMap_t.hh"
 
 class PlotTC {
 public:
+
+  struct Hist_t {
+    TH1F* h_edep[12];
+    TH1F* h_dt  [12][12]; // dt_ij = t[i]-t[j], i<j, only upper triangle is populated 
+  } fHist;
+  
   TFile* fFile;
   TTree* fTree;
   int    fRunNumber;
+
+  int    fPanelMask[12];
+
+  TrkPanelMap_t*  fTpm;
 
   PlotTC(int RunNumber, int RecoVersion=0, const char* Fn = "");
   PlotTC(const char* Fn);
   ~PlotTC();
 
-  int plot_panel_edep(int Station,int Panel);
-  int plot_panel_dt  (int Station1, int Panel1, int Station2, int Panel2);
-  int plot_plane_dt  (int Station);
+  TH1F* plot_panel_edep(int Station,int Panel);
+                                        // by defalt, fit, however sometimes do not want that
+  TH1F* plot_panel_dt  (int Station1, int Panel1, int Station2, int Panel2, int PerformFit = 1);
+  int   plot_plane_dt  (int Station);
+  
+  int   station_time_calib(int Station);
 };
 
 
@@ -31,7 +63,7 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
 
   if (fn == "") {
     std::string top_dir = "/projects/mu2e/data/projects/vst/datasets";
-    std::string dsid    = std::format("nts.mu2e.trk.vst00s000r{:03d}n002.root",RecoVersion);
+    std::string dsid    = std::format("nts.mu2e.trk.vst00s001r{:03d}n002.root",RecoVersion);
     fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s000r{:03d}n002.{:06d}_000001.root",
                                       top_dir,dsid,RecoVersion,RunNumber);
   }
@@ -52,6 +84,8 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
   else {
     fTree = (TTree*) fFile->Get("/MakeDigiNtuple/digis");
   }
+
+  fTpm = TrkPanelMap_t::Instance(RunNumber);
 }
 
 //-----------------------------------------------------------------------------
@@ -68,6 +102,7 @@ PlotTC::PlotTC(const char* Fn) {
   }
 
   fRunNumber = -1;
+  fTpm = nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -75,7 +110,7 @@ PlotTC::~PlotTC() {
 }
 
 //-----------------------------------------------------------------------------
-int PlotTC::plot_panel_edep(int Station, int Panel) {
+TH1F* PlotTC::plot_panel_edep(int Station, int Panel) {
   std::string hname(Form("h_edep_%02d_%06i",Panel,fRunNumber));
 
   std::string sel  = Form("run == %d && tc.nh_panel(%d,%d)>1",fRunNumber,Station,Panel);
@@ -84,15 +119,14 @@ int PlotTC::plot_panel_edep(int Station, int Panel) {
     
   fTree->Draw(Form("%s>>%s",cmd.data(),hist.data()),sel.data());
 
-  TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
-  return 0;
+  return (TH1F*) gROOT->FindObject(hname.data());
 }
 
 
 //-----------------------------------------------------------------------------
 // within one station, panels are numbered from 0 to 11
 //-----------------------------------------------------------------------------
-int PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2,int Panel2) {
+TH1F* PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2, int Panel2, int PerformFit) {
   std::string hname(Form("h_%02d%02d_%02d%02d_%06i",Station1,Panel1,Station2,Panel2,fRunNumber));
 
   std::string sel  = Form("run == %d && tc.nh_panel(%d,%d)>1 && tc.nh_panel(%d,%d)>1",fRunNumber,Station1,Panel1,Station2,Panel2);
@@ -102,8 +136,10 @@ int PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2,int Panel2) {
   fTree->Draw(Form("%s>>%s",cmd.data(),hist.data()),sel.data());
 
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
-  h->Fit("gaus","");
-  return 0;
+                                        // sometimes fitting needs to be more intelligent...
+  if (PerformFit) h->Fit("gaus","");
+  
+  return h;
 }
 
 //-----------------------------------------------------------------------------
@@ -119,4 +155,56 @@ int PlotTC::plot_plane_dt(int Station) {
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
   h->Fit("gaus","","",-50.,50.);
   return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// all numbering : offline
+// 'Station' : offline slot number
+// 'plane'   : 2*Station+i/6
+// 'i'       : offline panel number in a plane
+//-----------------------------------------------------------------------------
+int PlotTC::station_time_calib(int Station) {
+  int rc(0);
+
+  int   nent[12];
+
+  for (int i=0; i<12; i++) {
+    fPanelMask[i] = 0;
+    int offline_plane = 2*Station + i/6;        // 20 and 21 for Station=10
+    int offline_panel = i % 6;
+    
+    TrkPanelMap_t::Data_t* tpmd = fTpm->panel_data_by_offline(offline_plane,offline_panel);
+    
+    fHist.h_edep[i] = plot_panel_edep(Station,i);
+    nent        [i] = fHist.h_edep[i]->Integral();
+//-----------------------------------------------------------------------------
+// just in case, try to distinguish between panels which have been excluded from the readout
+// and panels which have been read out but had low HV
+//-----------------------------------------------------------------------------
+    if      (nent[i] ==  0) fPanelMask[i] = 0x1;
+    else if (nent[i] < 200) fPanelMask[i] = 0x2;
+    
+    std::cout << std::format("station:{:2d} panel:{:2d} mnid:MN{:03d} nent:{:7d} panel_mask:0x{:04x}\n",Station,i,tpmd->mnid,nent[i],fPanelMask[i]);
+  }
+
+  std::cout << std::format("... fill dt histograms ...\n");
+  
+  for (int i1=0; i1<12; i1++) {
+                                        // reset all dt histograms 
+    for (int i2=0; i2<12; i2++) {
+      fHist.h_dt[i1][i2] = nullptr;
+    }
+    
+    if (fPanelMask[i1] != 0) continue;
+
+    for (int i2=i1+1; i2<12; i2++) {
+      if (fPanelMask[i2] != 0) continue;
+                                        // do not fit, just fill the histograms
+      int perform_fit(0);
+      fHist.h_dt[i1][i2] = plot_panel_dt(Station, i1, Station, i2, perform_fit);
+    }
+  }
+ 
+  return rc;
 }

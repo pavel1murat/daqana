@@ -24,9 +24,10 @@ int MaxEvent   (-1);
 int MaxY       (-1);
 
 namespace {
-  //  const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
-  //  const char* HistDir   = "/data/tracker/vst/hist" ;
-  const char*    HistDir   = "./" ;        // local
+  // const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
+  // const char* HistDir   = "/data/tracker/vst/hist" ;
+  // const char*    HistDir   = "./" ;        // local
+  const char*    HistDir   = "/data/mu2e/mu2etrk/hist" ;        // mu2e-dl-01
   int            _figure   = 0;
   TCanvas*       _canvas(nullptr);
 
