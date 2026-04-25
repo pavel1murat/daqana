@@ -1,5 +1,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 // for now, process one station at a time
+// station_time_calib :
+// 1. fills edep histograms, masks off 'bad' panels: histograms with small number of entries
+//     0x1: N(entries) = 0  ; 0x2: N(entries) < 200
+// 2. for 'good' panels fills histograms in delta_t(i,j) = T(i)-T(j), i<j,
+//    where T(i) and T(j) are the average per panel hit times within the time cluster
+//    - optionally fit.
+// 3. look at the histograms and determine the needed per-panel offsets
+// 4. at this stage, don't need accuracy better than 1 ns
 ///////////////////////////////////////////////////////////////////////////////
 /* Example:
 root [0] .L v001/daqana/scripts/plot_tc.C
@@ -18,6 +26,27 @@ station:11 panel: 8 mnid:MN155 nent:  20922 panel_mask:0x0000
 station:11 panel: 9 mnid:MN145 nent:  14917 panel_mask:0x0000
 station:11 panel:10 mnid:MN132 nent:  26675 panel_mask:0x0000
 station:11 panel:11 mnid:MN082 nent:  18300 panel_mask:0x0000
+
+*** iteration 1: add 5 ns to T05; add 6 ns to T00; subtract 7 from T02       
+|----------+----------+----------+----------+----------+----------+----------+----------+----------+--------+----------+----------+----------+-------|
+| i1\i2    | 00:mn207 | 01:mn139 | 02:mn155 | 03:mn145 | 04:mn132 | 05:mn082 | 06:mn064 | 07:mn063 | 08:067 | 09:mn055 | 10:mn069 | 11:mn062 |  mean |
+|----------+----------+----------+----------+----------+----------+----------+----------+----------+--------+----------+----------+----------+-------|
+| 00:mn207 |          |      1.1 |      0.3 |          |          |      1.1 |          |      0.5 |    1.1 |      0.1 |      1.6 |      0.7 |  0.81 |
+| 01:mn139 |          |          |      0.5 |          |          |     -1.5 |          |     -0.9 |   -0.5 |      0.2 |      0.1 |      0.6 | -0.21 |
+| 02:mn155 |          |          |          |          |          |      0.2 |          |     -1.5 |   -1.1 |      0.4 |      0.2 |     -0.1 | -0.32 |
+| 03:mn145 |          |          |          |          |          |          |          |          |        |          |          |          |  0.00 |
+| 04:mn132 |          |          |          |          |          |          |          |          |        |          |          |          |  0.00 |
+| 05:mn082 |          |          |          |          |          |          |          |     -0.7 |    0.1 |     -1.3 |      0.7 |     -1.6 | -0.56 |
+| 06:mn064 |          |          |          |          |          |          |          |          |        |          |          |          |  0.00 |
+| 07:mn063 |          |          |          |          |          |          |          |          |    0.1 |     -0.2 |      1.4 |     -0.2 |  0.28 |
+| 08:mn067 |          |          |          |          |          |          |          |          |        |     -1.0 |      0.8 |      0.0 | -0.07 |
+| 09:mn055 |          |          |          |          |          |          |          |          |        |          |      1.8 |      1.3 |  1.55 |
+| 10:mn069 |          |          |          |          |          |          |          |          |        |          |          |      0.1 |  0.10 |
+|----------+----------+----------+----------+----------+----------+----------+----------+----------+--------+----------+----------+----------+-------|
+| #ERROR   |     0.00 |     1.10 |     0.40 |     0.00 |     0.00 |    -0.07 |     0.00 |    -0.65 |  -0.06 |    -0.30 |     0.94 |     0.10 |  0.14 |
+|----------+----------+----------+----------+----------+----------+----------+----------+----------+--------+----------+----------+----------+-------|
+#+TBLFM: @13=vmean(@2..@12);%.2f::$14=vmean($2..$13);%.2f::
+
 */
 #include <format>
 #include "daqana/obj/TrkPanelMap_t.hh"
@@ -62,9 +91,11 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
   std::string fn(Fn);
 
   if (fn == "") {
-    std::string top_dir = "/projects/mu2e/data/projects/vst/datasets";
-    std::string dsid    = std::format("nts.mu2e.trk.vst00s001r{:03d}n002.root",RecoVersion);
-    fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s000r{:03d}n002.{:06d}_000001.root",
+    //    std::string top_dir = "/projects/mu2e/data/projects/vst/datasets";
+    // std::string dsid    = std::format("nts.mu2e.trk.vst00s001r{:03d}n002.root",RecoVersion);
+    std::string top_dir = "/data/mu2e/mu2etrk/datasets";
+    std::string dsid    = std::format("vst00s001r{:03d}n002",RecoVersion);
+    fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s001r{:03d}n002.{:06d}_000001.root",
                                       top_dir,dsid,RecoVersion,RunNumber);
   }
   
@@ -137,23 +168,25 @@ TH1F* PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2, int Panel2, 
 
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
                                         // sometimes fitting needs to be more intelligent...
-  if (PerformFit) h->Fit("gaus","");
+  if (PerformFit) h->Fit("gaus","",-50,50);
   
   return h;
 }
 
 //-----------------------------------------------------------------------------
-int PlotTC::plot_plane_dt(int Station) {
+// for a given 'Station' plots delta_t = T(plane=1)-T(plane=0)
+//-----------------------------------------------------------------------------
+int PlotTC::plot_plane_dt(int Station, int PerformFit) {
   std::string hname(Form("h_plane_dt_%06i",fRunNumber));
   
-  std::string var  = Form("tc.timep(0)-tc.timep(1)");
-  std::string sel  = Form("run==%d && tc.nh_panel(%d,0)>1 && tc.nh_panel(%d,1)>1",
+  std::string var  = Form("tc.timep(1)-tc.timep(0)");
+  std::string sel  = Form("run==%d && tc.nh_panel(%d,1)>1 && tc.nh_panel(%d,0)>1",
                           fRunNumber,Station,Station);
 
   fTree->Draw(Form("%s>>%s(250,-250,250)",var.data(),hname.data()),sel.data());
 
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
-  h->Fit("gaus","","",-50.,50.);
+  if (PerformFit) h->Fit("gaus","","",-50.,50.);
   return 0;
 }
 
@@ -185,7 +218,8 @@ int PlotTC::station_time_calib(int Station) {
     if      (nent[i] ==  0) fPanelMask[i] = 0x1;
     else if (nent[i] < 200) fPanelMask[i] = 0x2;
     
-    std::cout << std::format("station:{:2d} panel:{:2d} mnid:MN{:03d} nent:{:7d} panel_mask:0x{:04x}\n",Station,i,tpmd->mnid,nent[i],fPanelMask[i]);
+    std::cout << std::format("station:{:2d} panel:{:2d} mnid:MN{:03d} nent:{:7d} panel_mask:0x{:04x}\n",
+                             Station,i,tpmd->mnid,nent[i],fPanelMask[i]);
   }
 
   std::cout << std::format("... fill dt histograms ...\n");

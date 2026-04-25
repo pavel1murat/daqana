@@ -77,7 +77,7 @@ int plot_edep(int RunNumber, int Slot, const char* Fn = nullptr) {
 }
 
 //-----------------------------------------------------------------------------
-int plot_occupg(int RunNumber, int Slot, const char* Fn = nullptr) {
+int plot_occupg(int RunNumber, int Slot, int LogY = 0, const char* Fn = nullptr) {
 
   TFile* f = open_file(Fn,RunNumber);
 
@@ -96,8 +96,40 @@ int plot_occupg(int RunNumber, int Slot, const char* Fn = nullptr) {
       std::cout << std::format("Slot:{:02d} plane:{} panel:{:2d} plane:{} mnid:MN{:03d}\n",Slot,pln,plane,panel,mnid);
       
       c->cd(6*pln+panel+1);
-      gPad->SetLogy(1);
+      gPad->SetLogy(LogY);
       std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occupg",Slot,mnid);
+      TH1* h1 = (TH1*) f->Get(hname.data());
+      if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
+      h1->Draw();
+    }
+  }
+
+  _canvas = c;
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int plot_occup(int RunNumber, int Slot, int LogY = 0, const char* Fn = nullptr) {
+
+  TFile* f = open_file(Fn,RunNumber);
+
+  TrkPanelMap_t* tpm = TrkPanelMap_t::Instance(RunNumber);
+
+  std::string cname = std::format("c_slot_{:02d}",Slot);
+  TCanvas* c = new TCanvas(cname.data(),cname.data(),1800,1050);
+  c->Divide(4,3);
+
+  for (int pln=0; pln<2; pln++) {
+    int plane = 2*Slot+pln;
+    for (int panel=0; panel<6; panel++) {
+      TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_offline(plane,panel);
+      int mnid = tpmd->mnid;
+      // TLOG(TLVL_DEBUG) << std::format("Slot:{:02d} Plane:{} panel:{:2d} mnin:MN{:03d}",Slot,Plane,plane,mnid);
+      std::cout << std::format("Slot:{:02d} plane:{} panel:{:2d} plane:{} mnid:MN{:03d}\n",Slot,pln,plane,panel,mnid);
+      
+      c->cd(6*pln+panel+1);
+      gPad->SetLogy(LogY);
+      std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occup",Slot,mnid);
       TH1* h1 = (TH1*) f->Get(hname.data());
       if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
       h1->Draw();
@@ -112,13 +144,14 @@ int plot_occupg(int RunNumber, int Slot, const char* Fn = nullptr) {
 // if Fn = nullptr, use defaults
 // Plane = 0 or 1
 //-----------------------------------------------------------------------------
-int plot(int RunNumber, int Figure, int Slot, const char* Fn = nullptr, int Print = 0) {
+int plot(int RunNumber, int Figure, int Slot, int LogY = 0, const char* Fn = nullptr, int Print = 0) {
   int rc(0);
   
   _figure = Figure;
   
   if      (Figure == 1) rc = plot_edep  (RunNumber, Slot, Fn);
-  else if (Figure == 2) rc = plot_occupg(RunNumber, Slot, Fn);
+  else if (Figure == 2) rc = plot_occup (RunNumber, Slot, LogY, Fn);
+  else if (Figure == 3) rc = plot_occupg(RunNumber, Slot, LogY, Fn);
   else {
     std::cout << std::format("ERROR: undefined figure {}\n",Figure);
     return -1;

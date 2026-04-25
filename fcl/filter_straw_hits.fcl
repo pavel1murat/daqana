@@ -143,5 +143,7 @@ physics : {
 services.TFileService.fileName   : "nts.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
 outputs.defaultOutput.fileName   : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.art"
 
+physics.filters.StrawHitFilter.channelsToSkip      : [ 207, 25] ## [ 80, 278 ]      ## MN080 and MN278 have awkward eDep distributions 
+
 physics.filters.StrawHitFilter.minEDep        : 0.0005
 physics.filters.StrawHitFilter.fillHistograms : true

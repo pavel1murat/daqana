@@ -22,7 +22,7 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v0.fcl"
+#include "daqana/fcl/calibration_set_v1.fcl"
 
 services.TimeTracker : {}
 

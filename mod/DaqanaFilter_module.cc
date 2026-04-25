@@ -155,7 +155,7 @@ namespace mu2e {
     _hist[1].nshg = d2.make<TH1F>("nshg", Form("run:%06i N(shG)      [1]", RunNumber),   100, -0.5,  99.5);
     _hist[1].dt   = d2.make<TH1F>("dt"  , Form("run:%06i delta(T), ns[1]", RunNumber),   200, -100, 100. );
     _hist[1].edep = d2.make<TH1F>("edep", Form("run:%06i edep, keV   [1]", RunNumber),   100, -  2,   8. );
-    _hist[1].ntc  = d1.make<TH1F>("ntc" , Form("run:%06i ntc         [0]", RunNumber),   100, -0.5,  99.5);
+    _hist[1].ntc  = d2.make<TH1F>("ntc" , Form("run:%06i ntc         [0]", RunNumber),   100, -0.5,  99.5);
 
     return 0;
   }
