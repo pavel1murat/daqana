@@ -21,6 +21,10 @@
 // #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
 // #include "Offline/DataProducts/inc/TrkTypes.hh"
+#include "Offline/RecoDataProducts/inc/CrvDigi.hh"
+#include "Offline/RecoDataProducts/inc/CrvRecoPulse.hh"
+#include "Offline/RecoDataProducts/inc/CrvCoincidenceCluster.hh"
+
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
@@ -80,14 +84,20 @@ public:
 
   struct Config {
     
-    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"       ),""};
-    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"       ),""};
-    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"     ),""};
-    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"               ),""};
-    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                )};
-    Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                )};
-    Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"          )};
-    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms")};
+    Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          ),""};
+    Atom<art::InputTag>   crvpCollTag   {Name("crvpCollTag"   ), Comment("CRV reco pulse coll tag"    ),""};
+    Atom<art::InputTag>   crvcCollTag   {Name("crvcCollTag"   ), Comment("CRV coins cluster coll tag" ),""};
+    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"        ),""};
+    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"        ),""};
+    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"      ),""};
+    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"                ),""};
+    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                 )};
+    Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                 )};
+    Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"           )};
+    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms" )};
+    Atom<int>             makeCrvD      {Name("makeCrvD"      ), Comment("make CRV digis"             ),1};
+    Atom<int>             makeCrvP      {Name("makeCrvP"      ), Comment("make CRV pulses"            ),1};
+    Atom<int>             makeCrvC      {Name("makeCrvC"      ), Comment("make CRV cclusters"         ),1};
     Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     ),1};
     Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
     Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
@@ -116,6 +126,10 @@ public:
   
   int      makeSegments();
 
+  int      fillCrvD();
+  int      fillCrvP();
+  int      fillCrvC();              // CRV coincidence clusters
+
   int      fillSD ();
   int      fillSH ();
   int      fillCH ();
@@ -135,12 +149,18 @@ public:
   int                      _debugMode;
   std::vector<std::string> _debugBits;
   int                      _debugBit[100];
+  art::InputTag            _crvdCollTag;        // CRV digi collection tag
+  art::InputTag            _crvpCollTag;        // CRV reco pulse collection tag
+  art::InputTag            _crvcCollTag;        // CRV CC collection tag
   art::InputTag            _sdCollTag;          // straw digi collection tag
   art::InputTag            _shCollTag;          // straw hit collection tag
   art::InputTag            _tcCollTag;          // time cluster collection tag
   art::InputTag            _ksCollTag;          // kalseed collection tag
   std::string              _outputDir;
   int                      _saveWaveforms;
+  int                      _makeCrvD;
+  int                      _makeCrvP;
+  int                      _makeCrvC;
   int                      _makeSD;
   int                      _makeSH;
   int                      _makeCH;
@@ -170,9 +190,13 @@ public:
   int                     _nsegments;
   int                     _ntracks;
   
-  int                     _ncalodigis;
-  int                     _ncrvdigis;
-  int                     _nstmdigis;
+  int                     _ncalod;      // N(calo digis)
+
+  int                     _ncrvd;       // N(CRV digis)
+  int                     _ncrvp;       // N(CRV pulses)
+  int                     _ncrvc;       // N(CRV coincidence clusters - muon stub candidates)
+
+  int                     _nstmd;       // STM digis ?
                           
   TFile*                  _file;
   TTree*                  _tree;
@@ -180,6 +204,10 @@ public:
 
   int                     _hist_booked;
    
+  const mu2e::CrvDigiCollection*               _crvdc;
+  const mu2e::CrvRecoPulseCollection*          _crvpc;
+  const mu2e::CrvCoincidenceClusterCollection* _crvcc;
+
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
   const mu2e::StrawHitCollection*              _shc;
@@ -211,6 +239,9 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _ksCollTag     (config().ksCollTag     ()),
     _outputDir     (config().outputDir     ()),
     _saveWaveforms (config().saveWaveforms ()),
+    _makeCrvD      (config().makeCrvD      ()),
+    _makeCrvP      (config().makeCrvP      ()),
+    _makeCrvC      (config().makeCrvC      ()),
     _makeSD        (config().makeSD        ()),
     _makeSH        (config().makeSH        ()),
     _makeCH        (config().makeCH        ()),
@@ -466,6 +497,47 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // CRV
 //-----------------------------------------------------------------------------
+  if (_makeCrvD != 0) {
+    art::Handle<mu2e::CrvDigiCollection>     crvdch;
+    ok = ArtEvent.getByLabel(_crvdCollTag,crvdch);
+    if (ok) { 
+      _crvdc = crvdch.product();
+      _ncrvd = _crvdc->size();
+    }
+    else {
+      print_(std::format("ERROR: CrvDigiCollection:{:s} is not available. Bail out\n",
+                         _crvdCollTag.encode().data()));
+      return -1;
+    }
+  }
+  
+  if (_makeCrvP != 0) {
+    art::Handle<mu2e::CrvRecoPulseCollection>      crvpch;
+    ok = ArtEvent.getByLabel(_crvpCollTag,crvpch);
+    if (ok) { 
+      _crvpc = crvpch.product();
+      _ncrvp = _crvpc->size();
+    }
+    else {
+      print_(std::format("ERROR: CrvRecoPulseCollection:{:s} is not available. Bail out\n",
+                         _crvpCollTag.encode().data()));
+      return -1;
+    }
+  }
+  
+  if (_makeCrvC != 0) {
+    art::Handle<mu2e::CrvCoincidenceClusterCollection>     crvcch;
+    ok = ArtEvent.getByLabel(_crvcCollTag,crvcch);
+    if (ok) { 
+      _crvcc = crvcch.product();
+      _ncrvc = _crvcc->size();
+    }
+    else {
+      print_(std::format("ERROR: CrvCoincidenceClusterCollection:{:s} is not available. Bail out\n",
+                         _crvcCollTag.encode().data()));
+      return -1;
+    }
+  }
 //-----------------------------------------------------------------------------
 // STM
 //-----------------------------------------------------------------------------
@@ -527,6 +599,89 @@ int mu2e::MakeDigiNtuple::process_adc_waveform(float* Wf, WfParam_t* Wp) {
 }
   
 //-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCrvD() {
+  for (int i=0; i<_ncrvd; i++) {
+    const mu2e::CrvDigi* crvd = &_crvdc->at(i);
+    int ns = crvd->GetADCs().size();
+
+    DaqCrvDigi* nt_crvd = (DaqCrvDigi*) _event->crvd->ConstructedAt(i);
+    nt_crvd->Init(ns);
+    
+    nt_crvd->sbid         = crvd->GetScintillatorBarIndex().asInt();
+    nt_crvd->tdc          = crvd->GetStartTDC();
+    nt_crvd->nzs          = crvd->IsNZS();
+    nt_crvd->odd_ts       = crvd->HasOddTimestamp();
+    nt_crvd->sipm         = crvd->GetSiPMNumber();
+    nt_crvd->roc          = crvd->GetROC();
+    nt_crvd->feb          = crvd->GetFEB();
+    nt_crvd->ch           = crvd->GetFEBchannel();
+//-----------------------------------------------------------------------------
+// store the waveform
+//-----------------------------------------------------------------------------
+    for (int is=0; is<ns; is++) {
+      nt_crvd->adc[is] = crvd->GetADCs()[is];
+    }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCrvP() {
+  for (int i=0; i<_ncrvp; i++) {
+    const mu2e::CrvRecoPulse* crvp = &_crvpc->at(i);
+
+    DaqCrvRecoPulse* nt_crvp = (DaqCrvRecoPulse*)_event->crvp->ConstructedAt(i);
+    nt_crvp->Init();
+    
+    nt_crvp->npes            = crvp->GetPEs();
+    
+    nt_crvp->pes_ph          = crvp->GetPEsPulseHeight();
+
+    nt_crvp->time            = crvp->GetPulseTime();
+    nt_crvp->ph              = crvp->GetPulseHeight();
+    nt_crvp->ped             = crvp->GetPedestal();
+    nt_crvp->beta            = crvp->GetPulseBeta();
+    nt_crvp->chi2            = crvp->GetPulseFitChi2();
+    nt_crvp->le_time         = crvp->GetLEtime();
+    nt_crvp->flags           = crvp->GetRecoPulseFlags().to_ulong();
+    
+    nt_crvp->npes_nofit      = crvp->GetPEsNoFit();
+    nt_crvp->time_nofit      = crvp->GetPulseTimeNoFit();
+    nt_crvp->tstart          = crvp->GetPulseStart();
+    nt_crvp->tend            = crvp->GetPulseEnd();
+
+    nt_crvp->sbid            = crvp->GetScintillatorBarIndex().asInt();
+    nt_crvp->sipm            = crvp->GetSiPMNumber();
+    nt_crvp->roc             = crvp->GetROC();
+    nt_crvp->feb             = crvp->GetFEB();
+    nt_crvp->ch              = crvp->GetFEBchannel();
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCrvC() {
+  for (int i=0; i<_ncrvc; i++) {
+    const mu2e::CrvCoincidenceCluster* crvc = &_crvcc->at(i);
+
+    DaqCrvCoincidenceCluster* nt_crvc = (DaqCrvCoincidenceCluster*) _event->crvc->ConstructedAt(i);
+    nt_crvc->Init();
+
+    nt_crvc->stype   = crvc->GetCrvSectorType();
+    nt_crvc->tstart  = crvc->GetStartTime();
+    nt_crvc->tend    = crvc->GetEndTime();
+    nt_crvc->pes     = crvc->GetPEs();
+    nt_crvc->time    = crvc->GetAvgHitTime();
+    nt_crvc->x       = crvc->GetAvgHitPos().x();
+    nt_crvc->y       = crvc->GetAvgHitPos().y();
+    nt_crvc->z       = crvc->GetAvgHitPos().z();
+    nt_crvc->nlayers = crvc->GetLayers().size();
+    nt_crvc->nsides  = (crvc->HasTwoReadoutSides() == 0) ? 1 : 2;
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
 
   for (int i=0; i<_nstrawdigis; i++) {
@@ -536,20 +691,20 @@ int mu2e::MakeDigiNtuple::fillSD() {
                                         // one-time initializatiion
     if (_n_adc_samples == -1) _n_adc_samples = ns;
 
-    DaqStrawDigi* nt_sd = _event->sd->ConstructedAt(i);
+    DaqStrawDigi* nt_sd = (DaqStrawDigi*) _event->sd->ConstructedAt(i);
     nt_sd->Init(ns);
     
     nt_sd->sid          = sd->strawId().asUint16();
  
     int pln = sd->strawId().plane();
     int pnl = sd->strawId().panel();
-    int ich = sd->strawId().straw();
-    //    const TrkPanelMap_t* tpm = _panel_map[pln][pnl];
+    // int ich = sd->strawId().straw();
+
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     int dtc_id    = tpm->dtc();
-    int pcie_addr = dtc_id % 2;                   // convention
-    int link      = tpm->link();
+    // int pcie_addr = dtc_id % 2;                   // convention
+    // int link      = tpm->link();
 
     nt_sd->mnid         = tpm->mnid();
     
@@ -573,7 +728,7 @@ int mu2e::MakeDigiNtuple::fillSD() {
       nt_sd->adc[is] = sdawf->samples()[is];
     }
 //-----------------------------------------------------------------------------
-// process the waveform and store teh waveform parameters
+// process the waveform and store the waveform parameters
 //-----------------------------------------------------------------------------
     float wf[100];
     for (int is=0; is<ns; is++) {

@@ -136,12 +136,12 @@ physics : {
             makeSH    : 1
             makeTC    : 1
             makeTrk   : 0
-            tcCollTag : "TZClusterFinder"  ## "SimpleTimeCluster"   ## 
+            tcCollTag : "SimpleTimeCluster"   ## "TZClusterFinder"  ## 
         }
     }
 
     p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
+    p2 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster ] ## TZClusterFinder ] ## 
     p3 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ] ## TZClusterFinder ]
 
     e0 : []

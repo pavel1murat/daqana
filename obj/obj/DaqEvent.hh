@@ -4,6 +4,10 @@
 #include "TClonesArray.h"
 #include "TObject.h"
 
+#include "daqana/obj/DaqCrvDigi.hh"
+#include "daqana/obj/DaqCrvRecoPulse.hh"
+#include "daqana/obj/DaqCrvCoincidenceCluster.hh"
+
 #include "daqana/obj/DaqStrawDigi.hh"
 #include "daqana/obj/DaqStrawHit.hh"
 #include "daqana/obj/DaqComboHit.hh"
@@ -18,11 +22,11 @@ public:
   int            srn;                   // subrun number
   int            evn;                   // event number
   int            nsdtot;                // number of straw digis in event
-  //  short          nsd[36][6][96];        // by [dtc_id][link][channel] - could be too sparse
   TClonesArray*  sd;
   int            nshtot;                // total number of straw digis in event
   int            nsh[36][6];            // per panel, by [dtc_id][link] , dtc_id, NOT pcie_arrd
   int            pmp[36];               // per plane, by [dtc_id]
+  
   TClonesArray*  sh;
   float          maxEdep;               // max hit Edep in the event
   int            nch;
@@ -40,8 +44,16 @@ public:
 
   // int            ncalodigis;         // number of calo digis
   // TClonesArray*  calodigis;
-  // int            ncrvdigis;          // number of crv digis
-  // TClonesArray*  crvdigis;
+
+  int            ncrvd;                 // number of crv digis
+  TClonesArray*  crvd;
+
+  int            ncrvp;                 // number of crv digis
+  TClonesArray*  crvp;
+
+  int            ncrvc;                 // number of crv digis
+  TClonesArray*  crvc;
+
   // int            nstmdigis;          // number of stm digis
   // TClonesArray*  stmdigis;
 

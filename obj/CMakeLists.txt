@@ -19,6 +19,7 @@ include_directories(
 ROOT_GENERATE_DICTIONARY(${dict}
   DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
   TrkSegment.hh SegmentFit.hh DaqTrkStrawHit.hh
+  DaqCrvRecoPulse.hh DaqCrvDigi.hh DaqCrvCoincidenceCluster.hh
   digis.hh simres.hh TrkPanelMap_t.hh
   fit_functions.hh
   LINKDEF obj/Linkdef.h)
@@ -28,6 +29,7 @@ set_property(SOURCE ${dict}.cxx PROPERTY generated)
 add_library(${lib} SHARED
   DaqEvent.cc DaqTrack.cc DaqSegment.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
   TrkSegment.cc SegmentFit.cc DaqTrkStrawHit.cc TrkPanelMap_t.cc
+  DaqCrvRecoPulse.cc DaqCrvDigi.cc DaqCrvCoincidenceCluster.cc
   digis.cc simres.cc
   fit_dt01_msh.cc
   ${dict}.cxx

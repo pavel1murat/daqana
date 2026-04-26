@@ -14,7 +14,7 @@ public:
   int    sipm;
   int    roc;
   int    feb;
-  int    chan;
+  int    ch;
   std::vector<uint16_t> adc;
 //-----------------------------------------------------------------------------
 // functions
@@ -23,7 +23,9 @@ public:
   DaqCrvDigi(int ns);
   virtual ~DaqCrvDigi();
 
-  void     Init(int Ns);
+  int   ns() { return adc.size(); }
+  
+  int     Init(int Ns);
 
   virtual void Clear(const char* Opt) override ;
 

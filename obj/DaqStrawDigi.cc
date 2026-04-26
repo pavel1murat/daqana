@@ -11,7 +11,7 @@ DaqStrawDigi::DaqStrawDigi() : TObject() {
 }
 
 //-----------------------------------------------------------------------------
-void DaqStrawDigi::Init(int Ns) {
+int DaqStrawDigi::Init(int Ns) {
   
 
   // if (cleared != 1) {

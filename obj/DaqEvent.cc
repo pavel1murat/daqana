@@ -7,6 +7,10 @@
 
 //-----------------------------------------------------------------------------
 DaqEvent::DaqEvent() { // : TObject() {
+  crvd  = new TClonesArray("DaqCrvDigi"                 ,100);
+  crvp  = new TClonesArray("DaqCrvRecoPulse"            ,100);
+  crvc  = new TClonesArray("DaqCrvCoincidenceCluster"   ,100);
+
   sd    = new TClonesArray("DaqStrawDigi"  ,100);
   sh    = new TClonesArray("DaqStrawHit"   ,100);
   ch    = new TClonesArray("DaqComboHit"   ,100);

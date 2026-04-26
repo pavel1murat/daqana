@@ -7,35 +7,34 @@
 
 class DaqCrvRecoPulse : public TObject {
 public:
-  float    npe;
-  float    pe_ph;
-  float    pe_time;
+  float    npes;
+  float    pes_ph;
+  float    time;
+
   float    ph;
+  float    ped;                         // pedestal;
   float    beta;
   float    chi2;
   float    le_time;
-  float    chan;
   int      flags;
-  float    npe_nofit;
+  
+  float    npes_nofit;
   float    time_nofit;
   float    tstart;
   float    tend;
 
   int      sbid;                        // scintillator bar index
+  int      sipm;
   int      roc;
   int      feb;
-  int      chan;
-
-  float    ped;                         // pedestal;
-  bool     ped_from_db;
+  int      ch;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
-  DaqCrvRecoPulse();i
-  DaqCrvRecoPulse(int ns);
+  DaqCrvRecoPulse();
   virtual ~DaqCrvRecoPulse();
 
-  void     Init(int Ns);
+  int      Init();
 
   virtual void Clear(const char* Opt) override ;
 

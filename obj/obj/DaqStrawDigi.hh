@@ -28,7 +28,7 @@ public:
   DaqStrawDigi(int ns);
   virtual ~DaqStrawDigi();
 
-  void     Init(int Ns);
+  int      Init(int Ns);
 
   int      straw() {return (sid      ) & 0x7f; }
   int      panel() {return (sid >>  7) & 0x07; } 

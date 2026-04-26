@@ -8,6 +8,11 @@
 #pragma link C++  nestedtypedefs;
 #
 #pragma link C++  class  DaqEvent;
+
+#pragma link C++  class  DaqCrvDigi;
+#pragma link C++  class  DaqCrvRecoPulse;
+#pragma link C++  class  DaqCrvCoincidenceCluster;
+
 #pragma link C++  class  DaqComboHit;
 #pragma link C++  class  DaqStrawDigi;
 #pragma link C++  class  DaqStrawHit;
