@@ -31,7 +31,7 @@ public:
   
   virtual ~DaqComboHit();
 
-  ClassDef(DaqComboHit,1);
+  ClassDefOverride(DaqComboHit,1);
 };
 
 #endif

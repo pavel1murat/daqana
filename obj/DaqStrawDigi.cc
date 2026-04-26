@@ -1,33 +1,41 @@
 //
 
 #include "daqana/obj/DaqStrawDigi.hh"
-// #include "DaqStrawDigi.hh"
 
 ClassImp(DaqStrawDigi)
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::DaqStrawDigi() : TObject() {
-  ns = -1;
-}
-
-//-----------------------------------------------------------------------------
-int DaqStrawDigi::Init(int Ns) {
+  _ns = -1;
   
-
-  // if (cleared != 1) {
-  //   ns  = Ns;
-  //   adc = new uint16_t[Ns];
-  // }
-  if (ns < 0) {
-    adc.resize(Ns);
-    ns = Ns;
-  }
+  sid  = -1;
+  mnid = -1;
 }
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::~DaqStrawDigi() {
   //  delete adc; 
 }
+
+//-----------------------------------------------------------------------------
+int DaqStrawDigi::InitSD(int Ns) {
+  int rc(0);
+  if (_ns < 0) {
+    _ns = Ns;
+    adc.resize(Ns);
+  }
+  return rc;
+}
+
+// //-----------------------------------------------------------------------------
+// int DaqStrawDigi::InitSD2(int Ns) {
+//   int rc(0);
+//   // if (_ns < 0) {
+//   //   _ns = Ns;
+//   //   //    adc.resize(Ns);
+//   // }
+//   return rc;
+// }
 
 //-----------------------------------------------------------------------------
 void DaqStrawDigi::Clear(const char* Opt) {

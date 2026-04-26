@@ -7,6 +7,7 @@
 
 class DaqStrawDigi : public TObject {
 public:
+  int    _ns;                   //     N(ADC samples)
   int    sid;
   int    mnid;                          // 
   int    tdc0;
@@ -19,8 +20,7 @@ public:
   float  bl;
   float  ph;
   std::vector<uint16_t> adc;
-  int    ns;        //     N(ADC samples)
-  // short* adc;       //[ns] ns shorts
+  //  uint16_t adc[15];
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -28,7 +28,8 @@ public:
   DaqStrawDigi(int ns);
   virtual ~DaqStrawDigi();
 
-  int      Init(int Ns);
+  int      InitSD(int Ns);
+  // int      InitSD2(int Ns);
 
   int      straw() {return (sid      ) & 0x7f; }
   int      panel() {return (sid >>  7) & 0x07; } 

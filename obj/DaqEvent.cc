@@ -7,30 +7,38 @@
 
 //-----------------------------------------------------------------------------
 DaqEvent::DaqEvent() { // : TObject() {
-  crvd  = new TClonesArray("DaqCrvDigi"                 ,100);
-  crvp  = new TClonesArray("DaqCrvRecoPulse"            ,100);
-  crvc  = new TClonesArray("DaqCrvCoincidenceCluster"   ,100);
 
-  sd    = new TClonesArray("DaqStrawDigi"  ,100);
-  sh    = new TClonesArray("DaqStrawHit"   ,100);
-  ch    = new TClonesArray("DaqComboHit"   ,100);
-  tc    = new TClonesArray("DaqTimeCluster", 10);
-  trk   = new TClonesArray("DaqTrack"      , 10);
-  seg   = new TClonesArray("DaqSegment"    , 10);
-  segsh = new TClonesArray("DaqTrkStrawHit",100);
-  trksh = new TClonesArray("DaqTrkStrawHit",100);
+  crvd  = new TClonesArray("DaqCrvDigi"              ,100);
+  crvp  = new TClonesArray("DaqCrvRecoPulse"         ,100);
+  crvc  = new TClonesArray("DaqCrvCoincidenceCluster",100);
+
+  sd    = new TClonesArray("DaqStrawDigi"  ,1000);
+  sh    = new TClonesArray("DaqStrawHit"   , 100);
+  ch    = new TClonesArray("DaqComboHit"   , 100);
+  tc    = new TClonesArray("DaqTimeCluster",  10);
+  trk   = new TClonesArray("DaqTrack"      ,  10);
+  seg   = new TClonesArray("DaqSegment"    ,  10);
+  segsh = new TClonesArray("DaqTrkStrawHit", 100);
+  trksh = new TClonesArray("DaqTrkStrawHit", 100);
 
   Clear();
 }
 
 //-----------------------------------------------------------------------------
 DaqEvent::~DaqEvent() {
+
+  crvd->Delete(); delete crvd;
+  crvp->Delete(); delete crvp;
+  crvc->Delete(); delete crvc;
+  
   sd->Delete(); delete sd;
   sh->Delete(); delete sh;
   ch->Delete(); delete ch;
+
   tc->Delete(); delete tc;
   trk->Delete(); delete trk;
   seg->Delete(); delete seg;
+
   segsh->Delete(); delete segsh;
   trksh->Delete(); delete trksh;
 }
@@ -46,14 +54,6 @@ void DaqEvent::Clear(const char* Opt) {
 
   for (int i=0; i<36; i++) pmp[i] = -1;  // because normal value is non-negative
 
-  // for (int i=0; i<2; i++) {
-  //   for (int link=0; link<6; link++) {
-  //     for (int ich=0; ich<96; ich++) {
-  //       nsd[i][link][ich] = 0;
-  //     }
-  //   }
-  // }
-
   nsdtot  = 0; sd->Clear();
   nshtot  = 0; sh->Clear();
   nch     = 0; ch->Clear();
@@ -62,5 +62,9 @@ void DaqEvent::Clear(const char* Opt) {
   ntrksh  = 0; trksh->Clear();
   nseg    = 0; seg->Clear();
   nsegsh  = 0; segsh->Clear();
+
+  ncrvd   = 0; crvd->Clear();
+  ncrvp   = 0; crvp->Clear();
+  ncrvc   = 0; crvc->Clear();
 
 }

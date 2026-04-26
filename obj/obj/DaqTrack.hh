@@ -16,7 +16,7 @@ public:
 
   virtual ~DaqTrack();
 
-  ClassDef(DaqTrack,1);
+  ClassDefOverride(DaqTrack,1);
 };
 
 #endif

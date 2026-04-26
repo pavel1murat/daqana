@@ -15,7 +15,7 @@ public:
   int    roc;
   int    feb;
   int    ch;
-  std::vector<uint16_t> adc;
+  //  std::vector<uint16_t> adc;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -23,7 +23,7 @@ public:
   DaqCrvDigi(int ns);
   virtual ~DaqCrvDigi();
 
-  int   ns() { return adc.size(); }
+  int   ns() { return -1; } // return adc.size(); }
   
   int     Init(int Ns);
 

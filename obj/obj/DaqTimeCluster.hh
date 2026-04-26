@@ -49,7 +49,7 @@ public:
   float time_panel (int stn, int ip) { return _time_panel[stn][ip]; }
   float edep_panel (int stn, int ip) { return _edep_panel[stn][ip]; }
 
-  ClassDef(DaqTimeCluster,1);
+  ClassDefOverride(DaqTimeCluster,1);
 };
 
 #endif

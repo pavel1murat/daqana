@@ -14,7 +14,7 @@ DaqCrvDigi::~DaqCrvDigi() {
 
 //-----------------------------------------------------------------------------
 int DaqCrvDigi::Init(int Ns) {
-  adc.resize(Ns);
+  //  adc.resize(Ns);
   return 0;
 }
 

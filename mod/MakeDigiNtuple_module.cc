@@ -9,6 +9,8 @@
 //                  4: SegmentFit::fgDebugMode
 //                  5: print HepTransform's for all panels
 //                  6: print reconstructed segments in the end
+//                 21: print number of CRV things
+//                 31: print segments
 // ======================================================================
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -84,12 +86,12 @@ public:
 
   struct Config {
     
-    Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          ),""};
-    Atom<art::InputTag>   crvpCollTag   {Name("crvpCollTag"   ), Comment("CRV reco pulse coll tag"    ),""};
-    Atom<art::InputTag>   crvcCollTag   {Name("crvcCollTag"   ), Comment("CRV coins cluster coll tag" ),""};
-    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"        ),""};
-    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"        ),""};
-    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"      ),""};
+    Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          )};
+    Atom<art::InputTag>   crvpCollTag   {Name("crvpCollTag"   ), Comment("CRV reco pulse coll tag"    )};
+    Atom<art::InputTag>   crvcCollTag   {Name("crvcCollTag"   ), Comment("CRV coins cluster coll tag" )};
+    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"        )};
+    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"        )};
+    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"      )};
     Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"                ),""};
     Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                 )};
     Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                 )};
@@ -233,6 +235,9 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     art::EDAnalyzer{config},
     _debugMode     (config().debugMode     ()),
     _debugBits     (config().debugBits     ()),
+    _crvdCollTag   (config().crvdCollTag   ()),
+    _crvpCollTag   (config().crvpCollTag   ()),
+    _crvcCollTag   (config().crvcCollTag   ()),
     _sdCollTag     (config().sdCollTag     ()),
     _shCollTag     (config().shCollTag     ()),
     _tcCollTag     (config().tcCollTag     ()),
@@ -335,7 +340,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 
     _event = new DaqEvent();
 
-    _branch = _tree->Branch("evt","DaqEvent",_event,32000,99);
+    _branch = _tree->Branch("evt","DaqEvent",_event,64000,99);
     _branch->SetAutoDelete(kFALSE);
     
     if (_branch) { 
@@ -505,9 +510,8 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvd = _crvdc->size();
     }
     else {
-      print_(std::format("ERROR: CrvDigiCollection:{:s} is not available. Bail out\n",
+      print_(std::format("ERROR: CrvDigiCollection:{:s} not found.\n",
                          _crvdCollTag.encode().data()));
-      return -1;
     }
   }
   
@@ -519,9 +523,8 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvp = _crvpc->size();
     }
     else {
-      print_(std::format("ERROR: CrvRecoPulseCollection:{:s} is not available. Bail out\n",
+      print_(std::format("ERROR: CrvRecoPulseCollection:{:s} not found\n",
                          _crvpCollTag.encode().data()));
-      return -1;
     }
   }
   
@@ -533,10 +536,15 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvc = _crvcc->size();
     }
     else {
-      print_(std::format("ERROR: CrvCoincidenceClusterCollection:{:s} is not available. Bail out\n",
+      print_(std::format("ERROR: CrvCoincidenceClusterCollection:{:s} not found\n",
                          _crvcCollTag.encode().data()));
-      return -1;
     }
+  }
+//-----------------------------------------------------------------------------
+// bit_21: print CRV inputs:
+//-----------------------------------------------------------------------------
+  if ((_debugMode != 0) and (_debugBit[21])) {
+      print_(std::format("bit21: _ncrvd:{} _ncrvp:{} _ncrvc:{}\n",_ncrvd,_ncrvp,_ncrvc));
   }
 //-----------------------------------------------------------------------------
 // STM
@@ -618,9 +626,9 @@ int mu2e::MakeDigiNtuple::fillCrvD() {
 //-----------------------------------------------------------------------------
 // store the waveform
 //-----------------------------------------------------------------------------
-    for (int is=0; is<ns; is++) {
-      nt_crvd->adc[is] = crvd->GetADCs()[is];
-    }
+    // for (int is=0; is<ns; is++) {
+    //   nt_crvd->adc[is] = crvd->GetADCs()[is];
+    // }
   }
   return 0;
 }
@@ -691,8 +699,14 @@ int mu2e::MakeDigiNtuple::fillSD() {
                                         // one-time initializatiion
     if (_n_adc_samples == -1) _n_adc_samples = ns;
 
-    DaqStrawDigi* nt_sd = (DaqStrawDigi*) _event->sd->ConstructedAt(i);
-    nt_sd->Init(ns);
+    // DaqStrawDigi* nt_sd = (DaqStrawDigi*) _event->sd->ConstructedAt(i);
+    DaqStrawDigi* nt_sd = _event->NewSD(i);
+    nt_sd->InitSD(ns);
+                                        // this is inlined implementation of Init()
+    // if (nt_sd->_ns < 0) {
+    //   nt_sd->_ns = ns;
+    //   nt_sd->adc.resize(ns);
+    // }
     
     nt_sd->sid          = sd->strawId().asUint16();
  
@@ -742,22 +756,20 @@ int mu2e::MakeDigiNtuple::fillSD() {
     nt_sd->bl = wp.bl;
     nt_sd->ph = wp.ph;
 
-    if (_debugMode  > 0) {
-      if (_debugBit[1] != 0) {
+    if ((_debugMode  > 0) and (_debugBit[1] != 0)) {
 //-----------------------------------------------------------------------------
 // for all hits, print hit times assuming contiguous timing
 //-----------------------------------------------------------------------------
-        double t0_offset  = _event->evn*_ewLength*25;                  // in ns
-        double t0         = t0_offset + nt_sd->tdc0*_tdc_bin_ns;
-        double t1         = t0_offset + nt_sd->tdc1*_tdc_bin_ns;
-        printf("%8i %5i %8i %8i %12.4lf %12.4lf %6i %6i %6i 0x%04x\n",
-               _event->evn,
-               (int) nt_sd->sid,
-               nt_sd->tdc0, nt_sd->tdc1,
-               t0, t1,
-               nt_sd->tot0, nt_sd->tot1,
-               nt_sd->pmp, nt_sd->flag);
-      }
+      double t0_offset  = _event->evn*_ewLength*25;                  // in ns
+      double t0         = t0_offset + nt_sd->tdc0*_tdc_bin_ns;
+      double t1         = t0_offset + nt_sd->tdc1*_tdc_bin_ns;
+      printf("%8i %5i %8i %8i %12.4lf %12.4lf %6i %6i %6i 0x%04x\n",
+             _event->evn,
+             (int) nt_sd->sid,
+             nt_sd->tdc0, nt_sd->tdc1,
+             t0, t1,
+             nt_sd->tot0, nt_sd->tot1,
+             nt_sd->pmp, nt_sd->flag);
     }
   }
   return 0;
@@ -766,11 +778,9 @@ int mu2e::MakeDigiNtuple::fillSD() {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSH() {
 
-  if (_debugMode > 0) {
-    if (_debugBit[1] != 0) {
-      printf("evn    sid  pln  pnl mnid    time    dt   tot0 tot1   edep\n");
-      printf("---------------------------------------------------------\n");
-    }
+  if ((_debugMode > 0) and (_debugBit[1] != 0)) {
+    printf("evn    sid  pln  pnl mnid    time    dt   tot0 tot1   edep\n");
+    printf("---------------------------------------------------------\n");
   }
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
@@ -795,15 +805,13 @@ int mu2e::MakeDigiNtuple::fillSH() {
     nt_sh->dpmp        = sh->digitalPulseHeight();
     if (sh->energyDep() > _event->maxEdep) _event->maxEdep = sh->energyDep();
 
-    if (_debugMode  > 0) {
-      if (_debugBit[1] != 0) {
-        printf("%8i %5i %3i %3i %3i %12.4f %12.4f %6.1f %6.1f %7.4f\n",
-               _event->evn,
-               (int) nt_sh->sid, pln, pnl, nt_sh->mnid,
-               nt_sh->time, nt_sh->dt,
-               nt_sh->tot0, nt_sh->tot1,
-               nt_sh->edep);
-      }
+    if ((_debugMode  > 0) and (_debugBit[1] != 0)) {
+      printf("%8i %5i %3i %3i %3i %12.4f %12.4f %6.1f %6.1f %7.4f\n",
+             _event->evn,
+             (int) nt_sh->sid, pln, pnl, nt_sh->mnid,
+             nt_sh->time, nt_sh->dt,
+             nt_sh->tot0, nt_sh->tot1,
+             nt_sh->edep);
     }
   }
   return 0;
@@ -1241,7 +1249,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       nt_ts->y0t     = 1.e6;                                     // at z=Z(mid panel) - to be figured
       nt_ts->dzdyt   = 1.e6;
     }
-    if (_debugMode) {
+    if (_debugMode and (_debugBit[31] != 0)) {
       print_(std::format(" iseg:{} dz/dy(seg):{:12.5f} dz/dy(trk):{:12.5f}\n",iseg,nt_ts->dzdy,nt_ts->dzdyt));
     }
 //-----------------------------------------------------------------------------
@@ -1314,13 +1322,6 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
   _event->Clear();
 
-  // _event->ncalodigis  = _ncalodigis;
-  // _event->ncrvdigis   = _ncrvdigis;
-  // _event->nstmdigis   = _nstmdigis;
-  //  _event->sdgis->Clear();
-  // _event->calodigis->Clear();
-  // _event->crvdigis->Clear();
-  // _event->stmdigis->Clear();
 //-----------------------------------------------------------------------------
 // fill ntuple
 //-----------------------------------------------------------------------------
@@ -1333,6 +1334,11 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->nch     = _ncombohits;
   _event->ntc     = _ntimeclusters;
   _event->ntrk    = _ntracks;
+
+  _event->ncrvd   = _ncrvd;
+  _event->ncrvp   = _ncrvp;
+  _event->ncrvc   = _ncrvc;
+  
   _event->maxEdep = 0;
 
   if (_debugMode > 0) {
@@ -1343,6 +1349,11 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeSH ) fillSH ();
   if (_makeCH ) fillCH ();
   if (_makeTC ) fillTC ();
+
+  if (_makeCrvD) fillCrvD ();
+  if (_makeCrvP) fillCrvP ();
+  if (_makeCrvC) fillCrvC ();
+
   if (_makeSeg) {
     fillSeg  ();
     fillSegSh();

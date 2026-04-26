@@ -29,7 +29,7 @@ public:
 
   virtual ~DaqStrawHit();
 
-  ClassDef(DaqStrawHit,1);
+  ClassDefOverride(DaqStrawHit,1);
 };
 
 #endif

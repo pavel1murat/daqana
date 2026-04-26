@@ -14,6 +14,8 @@ DaqCrvCoincidenceCluster::~DaqCrvCoincidenceCluster() {
 
 //-----------------------------------------------------------------------------
 int DaqCrvCoincidenceCluster::Init() {
+  int rc(0);
+  return rc;
 }
 
 //-----------------------------------------------------------------------------

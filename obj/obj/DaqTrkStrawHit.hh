@@ -30,7 +30,7 @@ public:
   
   virtual ~DaqTrkStrawHit();
 
-  ClassDef(DaqTrkStrawHit,1);
+  ClassDefOverride(DaqTrkStrawHit,1);
 };
 
 #endif

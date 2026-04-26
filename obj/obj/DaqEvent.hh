@@ -63,15 +63,18 @@ public:
   DaqSegment*      Seg(int I) { return (DaqSegment*) seg->At(I); }
   int              Nsh(int Plane, int Panel) { return nsh[Plane][Panel]; }
   int              Pmp(int DtcID) { return pmp[DtcID] ; }
-  
-  //  int              Nsd(int Dtc, int Link, int Channel) { return nsd[Dtc][Link][Channel]; }
 
-  /* virtual */ void     Clear(const char* Opt = "") ; // override;
+  DaqStrawDigi* NewSD(int I) {
+    DaqStrawDigi* digi = new ((*sd)[I]) DaqStrawDigi();
+    return digi;
+  }
+  
+  /* virtual */ void     Clear(const char* Opt = "") ; //  override ;
   
   DaqEvent();
   ~DaqEvent();
 
-  //   ClassDef(DaqEvent,1)
+  //  ClassDefOverride(DaqEvent,1)
 };
 
 #endif

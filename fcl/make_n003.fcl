@@ -1,6 +1,6 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# run interactively, stop after each event to display waveforms
+# n003: tracker(digis+hits+time clusters) CRV: (digis+pulses+coincidence clusters)
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
@@ -23,7 +23,9 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v0.fcl"
+#include "daqana/fcl/calibration_set_v1.fcl"
+
+
 services.message.destinations.log.categories.MAKE_SD: {
     # reportEvery :  1
     limit       : 1000   # -1
@@ -44,7 +46,7 @@ source : {
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
-        fileName      :   "trk_fragment_ana.art"
+        fileName      :   "make_n003.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -58,7 +60,7 @@ physics : {
     producers : {
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 10
+            diagLevel     : 1 ## 10
             # useSubsystem0 : false
         }
 
@@ -81,23 +83,39 @@ physics : {
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
+        
+        TimeCluster : { @table::CosmicReco.SimpleTimeCluster
+            minNStrawHits : 4
+            minNPanels    : 1
+            TimeWindow    : 400
+            TimeStep      : 30
+        }
     }
     
     filters   : {                       }
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeCrvD      : 1
+            makeCrvP      : 1
+            makeCrvC      : 1
             makeSD        : 1
             makeSH        : 1
-            makeTC        : 0
+            makeTC        : 1
             saveWaveforms : 1
-        }
+            
+            tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
+
+            debugMode     : 1
+            debugBits: [ "bit21:1" ]
+       }
     }
 
     # p1 : [ EWMProducer, makeSD, makeSH  ]
-    p2 : [ EWMProducer, makeSD, makeSH, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
     # e1 : []
 
     trigger_paths  : [ p2 ]
@@ -106,7 +124,7 @@ physics : {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"
+services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n003.%06r_%06s.root"
 
 services.ProditionsService.crvPhotonYield.useDb : false
 services.ProditionsService.crvStatus.useDb : false

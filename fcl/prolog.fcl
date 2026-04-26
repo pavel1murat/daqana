@@ -59,6 +59,92 @@ daqana : {
             activeLinks         : [ 0 ]
 	}
 
+        FileCatalog: { module_type: FileCatalog
+	    THistModule: { @table::StntupleTHistModule }   ## base class
+            debugMode    : 0
+        }
+
+        MakeDigiNtuple: { module_type: MakeDigiNtuple
+            makeCrvD       : 0
+            makeCrvP       : 0
+            makeCrvC       : 0
+            makeSD         : 1
+            makeSH         : 1
+            makeCH         : 0
+            makeTC         : 0
+            makeTrk        : 0
+            
+            crvdCollTag    : "CrvDigi"
+            crvpCollTag    : "CrvRecoPulses"
+            crvcCollTag    : "CrvCoincidenceClusterFinder"
+            
+            sdCollTag      : "makeSD"
+            shCollTag      : "makeSH"
+            tcCollTag      : "SimpleTimeCluster"
+            
+            outputDir      : "./"
+
+            saveWaveforms  : 0
+            ewLength       : 1000
+            debugMode      : 0
+            debugBits      : [ "bit0:0", "bit1:0" ]
+            nSamplesBL     : 6
+            minPulseHeight : 5.
+            minNSegments   : 0
+            vDrift         : 61.3e-3  ## mm/ns
+            tOffset        : 0.       ## by default, no drift offsets
+        }
+
+        StationAna: { module_type: StationAna
+	    THistModule: { @table::StntupleTHistModule }   ## base class
+            shCollTag    : "makeSH"
+            debugMode    : 0
+            debugBits    : [ "bit0:0", "bit1:0" ]
+            maxDt        : 100                        ## ns
+            minEDep      : 0.0006                     ##
+        }
+
+        TrackerDQM : { module_type:TrackerDQM
+            analyzeFragments    : 1           ## set to 0 to print only
+            fillHistograms      : 1
+            trkfCollTag         : "daq:TRK"
+#------------------------------------------------------------------------------
+#	    diagLevel           : 2           # print one line per event
+#	    diagLevel           : 3           # print the whole event in hex
+#------------------------------------------------------------------------------
+            diagLevel           :  0          ## print nothing
+            minNBytes           : -1
+            maxNBytes           : 1000000
+            maxFragmentSize     : 20000       ## to catch obvious errors
+            nADCPackets         : 1
+            minNErrors          : 100
+            errorCode           : 258
+            debugBits           : [
+                                   # "bit0:1" ## print everything
+                                  ]
+            dumpDTCRegisters    : 0
+            validateADCPatterns : 0
+#------------------------------------------------------------------------------
+# reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
+# reference channel number is run-dependent
+#------------------------------------------------------------------------------
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
+            refChCal            : [ 91 , 91, 91, 91, 91, 91 ]
+            refChHV             : [ 94 , 94, 94, 94, 94, 94 ]
+#------------------------------------------------------------------------------
+# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
+# in interpreted mode in the art event loop
+# see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
+#------------------------------------------------------------------------------
+            timeWindow          : 2000
+            pulserFrequency     :  250
+            nSamplesBL          : 10
+            minPulseHeight      : 5.
+            port                : 8877
+            plotWaveforms       : [ -1, -1]  ## nothing
+        }
+
 	TrkFragmentAna : { module_type:TrkFragmentAna
 	    THistModule: { @table::StntupleTHistModule }
 	    
@@ -131,80 +217,5 @@ daqana : {
 	    rootMacro           : ""
             activeLinks         : [ 0 ]
 	}
-        
-        TrackerDQM : { module_type:TrackerDQM
-            analyzeFragments    : 1           ## set to 0 to print only
-            fillHistograms      : 1
-            trkfCollTag         : "daq:TRK"
-#------------------------------------------------------------------------------
-#	    diagLevel           : 2           # print one line per event
-#	    diagLevel           : 3           # print the whole event in hex
-#------------------------------------------------------------------------------
-            diagLevel           :  0          ## print nothing
-            minNBytes           : -1
-            maxNBytes           : 1000000
-            maxFragmentSize     : 20000       ## to catch obvious errors
-            nADCPackets         : 1
-            minNErrors          : 100
-            errorCode           : 258
-            debugBits           : [
-                                   # "bit0:1" ## print everything
-                                  ]
-            dumpDTCRegisters    : 0
-            validateADCPatterns : 0
-#------------------------------------------------------------------------------
-# reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
-# reference channel number is run-dependent
-#------------------------------------------------------------------------------
-            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
-            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
-            refChCal            : [ 91 , 91, 91, 91, 91, 91 ]
-            refChHV             : [ 94 , 94, 94, 94, 94, 94 ]
-#------------------------------------------------------------------------------
-# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
-# in interpreted mode in the art event loop
-# see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
-#------------------------------------------------------------------------------
-            timeWindow          : 2000
-            pulserFrequency     :  250
-            nSamplesBL          : 10
-            minPulseHeight      : 5.
-            port                : 8877
-            plotWaveforms       : [ -1, -1]  ## nothing
-        }
-
-        MakeDigiNtuple: { module_type: MakeDigiNtuple
-            makeSD         : 1
-            makeSH         : 1
-            makeCH         : 0
-            makeTC         : 0
-            makeTrk        : 0
-            sdCollTag      : "makeSD"
-            shCollTag      : "makeSH"
-            outputDir      : "./"
-            ewLength       : 1000
-            saveWaveforms  : 0
-            debugMode      : 0
-            debugBits      : [ "bit0:0", "bit1:0" ]
-            nSamplesBL     : 6
-            minPulseHeight : 5.
-            minNSegments   : 0
-            vDrift         : 61.3e-3  ## mm/ns
-            tOffset        : 0.       ## by default, no drift offsets
-        }
-
-        StationAna: { module_type: StationAna
-	    THistModule: { @table::StntupleTHistModule }   ## base class
-            shCollTag    : "makeSH"
-            debugMode    : 0
-            debugBits    : [ "bit0:0", "bit1:0" ]
-            maxDt        : 100                        ## ns
-            minEDep      : 0.0006                     ##
-        }
-
-        FileCatalog: { module_type: FileCatalog
-	    THistModule: { @table::StntupleTHistModule }   ## base class
-            debugMode    : 0
-        }
     }
 }
