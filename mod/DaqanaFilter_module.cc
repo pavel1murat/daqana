@@ -1,5 +1,7 @@
 //
 //  PM: straw hit filter, reject the noise
+//  use single straw combo hits
+//  StrawHitReco module always produces single-straw combohit collection - use that
 //
 //  debugBit[0] : print all WFs
 //  debugBit[1] : print good WFs
@@ -17,10 +19,12 @@
 #include "fhiclcpp/types/Sequence.h"
 // mu2e
 // data
-#include "Offline/RecoDataProducts/inc/StrawHit.hh"
+// #include "Offline/RecoDataProducts/inc/StrawHit.hh"
+#include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
 #include "TRACE/tracemf.h"
+#define TRACE_NAME "DaqAnaFilter"
 
 // c++
 #include <iostream>
@@ -36,11 +40,11 @@ namespace mu2e {
       using Comment = fhicl::Comment;
       fhicl::Atom<bool>            debugMode       {Name("debugMode"       ), Comment("Debug Mode, default:false")};
       fhicl::Sequence<std::string> debugBits       {Name("debugBits"       ), Comment("debug bits")};
-      fhicl::Atom<std::string>     shCollTag       {Name("shCollTag"       ), Comment("StrawHitCollection tag") };
+      fhicl::Atom<std::string>     chCollTag       {Name("chCollTag"       ), Comment("ComboHitColl tag") };
       fhicl::Atom<std::string>     tcCollTag       {Name("tcCollTag"       ), Comment("TimeClusterCollection tag") };
       fhicl::Atom<float>           maxDt           {Name("maxDt"           ), Comment("max abs(DT)")};
       fhicl::Atom<float>           minEDep         {Name("minEDep"         ), Comment("min EDep")};
-      fhicl::Atom<int>             minNGoodSh      {Name("minNGoodSh"      ), Comment("min N good straw hits")};
+      fhicl::Atom<int>             minNGoodSh      {Name("minNGoodCh"      ), Comment("min N good combo hits")};
       fhicl::Atom<int>             minNTimeClusters{Name("minNTimeClusters"), Comment("min N time clusters")};
       fhicl::Atom<bool>            fillHistograms  {Name("fillHistograms"  ), Comment("fill histogrms, default:false")};
     };
@@ -69,7 +73,7 @@ namespace mu2e {
     bool beginRun(art::Run&   Run     ) override;
     bool endRun  (art::Run&   Run     ) override;
 
-    std::string              _shCollTag;
+    std::string              _chCollTag;
     std::string              _tcCollTag;
 
     bool                     _debugMode;
@@ -84,11 +88,12 @@ namespace mu2e {
     
     int                      _nevt;
     int                      _nevp;
-    int                      _nsht;
-    int                      _nshg;
+    int                      _ncht;
+    int                      _nchg;
     int                      _ntc;
+    int                      _ntcg;     // N(time clusters with at least one hit above minEDep)
 
-    const mu2e::StrawHitCollection*    _shc;
+    const mu2e::ComboHitCollection*    _chc;
     const mu2e::TimeClusterCollection* _tcc;
 
     const art::Event* _event;
@@ -99,7 +104,7 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
   DaqanaFilter::DaqanaFilter(const Parameters& conf)
     : art::EDFilter{conf},
-      _shCollTag         (conf().shCollTag()),
+      _chCollTag         (conf().chCollTag()),
       _tcCollTag         (conf().tcCollTag()),
       _debugMode         (conf().debugMode()),
       _debugBits         (conf().debugBits()),
@@ -164,16 +169,17 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
   int DaqanaFilter::fill_histograms(Hist_t* Hist) {
 
-    for (int i = 0; i<_nsht; ++i) {
-      const mu2e::StrawHit* sh = &_shc->at(i);
+    for (int i = 0; i<_ncht; ++i) {
+      const mu2e::ComboHit* ch = &_chc->at(i);
 
       Hist->evt->Fill(_event->event());
-      Hist->dt->Fill(sh->dt());
-      Hist->edep->Fill(sh->energyDep()*1.e3);
+      float dt = ch->endTime(StrawEnd::hv)-ch->endTime(StrawEnd::cal);
+      Hist->dt->Fill(dt);
+      Hist->edep->Fill(ch->energyDep()*1.e3); // single straw hits
     }
   
-    Hist->nsht->Fill(_nsht);
-    Hist->nshg->Fill(_nshg);
+    Hist->nsht->Fill(_ncht);
+    Hist->nshg->Fill(_nchg);
     Hist->ntc->Fill(_ntc);
                      
     return 0;
@@ -212,14 +218,14 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // straw hits
 //-----------------------------------------------------------------------------    
-    art::Handle<mu2e::StrawHitCollection> shch;
-    if (!ArtEvent.getByLabel(_shCollTag, shch)) {
-      TLOG(TLVL_ERROR) << "No straw hit collection tag:" << _shCollTag.data();
-      _shc = nullptr;
+    art::Handle<mu2e::ComboHitCollection> chch;
+    if (!ArtEvent.getByLabel(_chCollTag, chch)) {
+      TLOG(TLVL_ERROR) << "No straw hit collection tag:" << _chCollTag.data();
+      _chc = nullptr;
     }
     else {
-      _shc   =  shch.product();
-      _nsht  = _shc->size();
+      _chc   =  chch.product();
+      _ncht  = _chc->size();
     }
 //-----------------------------------------------------------------------------
 // time clusters
@@ -236,21 +242,40 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // process waveforms, count good hits
 //-----------------------------------------------------------------------------
-    _nshg          = 0;
+    _nchg          = 0;
     
-    for (int i = 0; i<_nsht; ++i) {
-      const mu2e::StrawHit* sh = &_shc->at(i);
-      if (fabs(sh->dt())  > _maxDt  ) continue;
-      if (sh->energyDep() < _minEDep) continue;
-      _nshg++;
+    for (int i = 0; i<_ncht; ++i) {
+      const mu2e::ComboHit* ch = &_chc->at(i);
+      float dt = ch->endTime(StrawEnd::hv)-ch->endTime(StrawEnd::cal);
+      if (fabs(dt)  > _maxDt  ) continue;
+      if (ch->energyDep() < _minEDep) continue;
+      _nchg++;
     }
+//-----------------------------------------------------------------------------
+// count number of good time clusters
+//-----------------------------------------------------------------------------
+    _ntcg = 0;
+    for (int i=0; i<_ntc; i++) {
+      const TimeCluster* tc = &_tcc->at(i);
+      int n_good_ch = 0;
+      int nch     = tc->nhits();
+      for (int ih=0; ih<nch; ih++) {
+        StrawHitIndex hit_index   = tc->hits().at(ih);
+        const mu2e::ComboHit* hit = &_chc->at(hit_index);
+        if (hit->energyDep() > _minEDep) {
+          n_good_ch++;
+        }
+      }
+      if (n_good_ch > 0) _ntcg++;
+    }
+    
   
     if (_fillHistograms) fill_histograms(&_hist[0]);
   
-    if (_debugMode) print_(std::format("-- END, n good hits:{}",_nshg));
+    if (_debugMode) print_(std::format("-- END, n good combo hits:{}",_nchg));
     
     bool passed = false;
-    if ((_nshg >= _minNGoodSh) and (_ntc >= _minNTimeClusters)) {
+    if ((_nchg >= _minNGoodSh) and (_ntcg >= _minNTimeClusters)) {
       passed = true;
       _nevp++;
       if (_fillHistograms) fill_histograms(&_hist[1]);

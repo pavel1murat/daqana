@@ -5,9 +5,10 @@
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
+# calibration_set_v1 already has TrkDelayPanel calibrated with time clusters
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
-TRIGGER_PATHS : [ p3 ]
+TRIGGER_PATHS : [ p1 ]
 END_PROLOG
 
 #include "Offline/fcl/minimalMessageService.fcl"
@@ -31,7 +32,7 @@ services.message.destinations.log.categories.MAKE_SD: {
     limit       : 1000   # -1
 }
 
-process_name : MakeDaqNtuple
+process_name : DaqanaFilter
 
 source : {
     module_type : RootInput
@@ -47,11 +48,11 @@ outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
         fileName      :   "trk_fragment_ana.art"
-#        SelectEvents  : [ @sequence::TRIGGER_PATHS ]
-#        outputCommands: [
-#                         "drop *_*_*_*",
-#                         "keep *_*_*_*"
-#                        ]
+        SelectEvents  : [ p1 ]
+        outputCommands: [
+                         "keep *_*_*_*",
+                         "drop *_*_*_DaqanaFilter"
+                        ]
     }
 }
 
@@ -136,13 +137,13 @@ physics : {
             makeSH    : 1
             makeTC    : 1
             makeTrk   : 0
-            tcCollTag : "TZClusterFinder"  ## "SimpleTimeCluster"   ## 
+            tcCollTag : "SimpleTimeCluster"  ## "TZClusterFinder"  ## 
         }
     }
 
     # p1 : [ EWMProducer, makeSD, makeSH ]
     # p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
-    p1 : [ EWMProducer, makeSD, makeSH, TZClusterFinder, DaqanaFilter ] ## TZClusterFinder ]
+    p1 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster, DaqanaFilter ] ## TZClusterFinder ]
 
     e0 : []
     # e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
@@ -154,6 +155,10 @@ physics : {
 #------------------------------------------------------------------------------
 # 
 #------------------------------------------------------------------------------
+physics.filters.DaqanaFilter.tcCollTag        : "SimpleTimeCluster"
 physics.filters.DaqanaFilter.minNTimeClusters : 1
+physics.filters.DaqanaFilter.minEDep          : 0.0005  ## 0.5 keV (gas amplification included)
 physics.filters.DaqanaFilter.fillHistograms   : true
-services.TFileService.fileName                : "nts.mu2e.trk.vst00s001r000n002.%06r_%06s.root"
+
+services.TFileService.fileName                : "hst.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
+outputs.defaultOutput.fileName                : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.root"

@@ -11,13 +11,13 @@ daqana : {
         }
         
         DaqanaFilter: { module_type: DaqanaFilter
-            shCollTag        : "makeSH"
+            chCollTag        : "makeSH"
             tcCollTag        : "TZClusterFinder"
             debugMode        : false
             debugBits        : [ "bit0:0" ]
             maxDt            : 40
-            minEDep          : 1e-3
-            minNGoodSh       : 0
+            minEDep          : 0.5e-3
+            minNGoodCh       : 0
             minNTimeClusters : 0
             fillHistograms   : false
         }

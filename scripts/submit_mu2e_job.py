@@ -107,9 +107,9 @@ class SubmitJob:
         os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
 
-        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{self.args.calib_version}n000.%06r_%06s.art\\"'
-        print(f'0011:x:{x}')
-        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
+#        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{self.args.calib_version}n000.%06r_%06s.art\\"'
+#        print(f'0011:x:{x}')
+#        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
 #------------------------------------------------------------------------------
 # form the input file list
 #-------v----------------------------------------------------------------------

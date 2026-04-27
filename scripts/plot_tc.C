@@ -8,10 +8,12 @@
 //    - optionally fit.
 // 3. look at the histograms and determine the needed per-panel offsets
 // 4. at this stage, don't need accuracy better than 1 ns
+//
+// need a way of saving all  histograms into a file
 ///////////////////////////////////////////////////////////////////////////////
 /* Example:
 root [0] .L v001/daqana/scripts/plot_tc.C
-root [1] auto x = new PlotTC(120950,1,"/data/mu2e/mu2etrk/datasets/vst00s001r000n002/nts.mu2e.trk.vst00s001r000n002.120950_000001.root")
+root [1] auto x = new PlotTC(120950,1,"/data/mu2e/mu2etrk/datasets/vst00s000r000n002/nts.mu2e.trk.vst00s000r000n002.120950_000001.root")
 root [2] x->station_time_calib(11)
 Info in <TCanvas::MakeDefCanvas>:  created default TCanvas with name c1
 station:11 panel: 0 mnid:MN169 nent:  22909 panel_mask:0x0000
@@ -51,19 +53,26 @@ station:11 panel:11 mnid:MN082 nent:  18300 panel_mask:0x0000
 #include <format>
 #include "daqana/obj/TrkPanelMap_t.hh"
 
+#include "TFolder.h"
+#include "TH1F.h"
+#include "booking.C" // from the same directory
+
 class PlotTC {
 public:
 
   struct Hist_t {
-    TH1F* h_edep[12];
-    TH1F* h_dt  [12][12]; // dt_ij = t[i]-t[j], i<j, only upper triangle is populated 
+    TH1F* h_edep[18][12];
+    TH1F* h_dt  [18][12][12]; // dt_ij = t[i]-t[j], i<j, only upper triangle is populated 
   } fHist;
   
   TFile* fFile;
   TTree* fTree;
   int    fRunNumber;
 
-  int    fPanelMask[12];
+  Booking*  fBook;
+  TFolder*  fTopFolder;
+
+  int       fPanelMask[12];
 
   TrkPanelMap_t*  fTpm;
 
@@ -74,7 +83,7 @@ public:
   TH1F* plot_panel_edep(int Station,int Panel);
                                         // by defalt, fit, however sometimes do not want that
   TH1F* plot_panel_dt  (int Station1, int Panel1, int Station2, int Panel2, int PerformFit = 1);
-  int   plot_plane_dt  (int Station);
+  int   plot_plane_dt  (int Station, int PerformFit = 0);
   
   int   station_time_calib(int Station);
 };
@@ -94,8 +103,8 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
     //    std::string top_dir = "/projects/mu2e/data/projects/vst/datasets";
     // std::string dsid    = std::format("nts.mu2e.trk.vst00s001r{:03d}n002.root",RecoVersion);
     std::string top_dir = "/data/mu2e/mu2etrk/datasets";
-    std::string dsid    = std::format("vst00s001r{:03d}n002",RecoVersion);
-    fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s001r{:03d}n002.{:06d}_000001.root",
+    std::string dsid    = std::format("vst00s000r{:03d}n002",RecoVersion);
+    fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s000r{:03d}n002.{:06d}_000001.root",
                                       top_dir,dsid,RecoVersion,RunNumber);
   }
   
@@ -104,6 +113,14 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
     gInterpreter->Load(daqana_lib.data());
   }
 
+  fTopFolder = (TFolder*) gROOT->GetRootFolder()->FindObject("plot_tc");
+  if (fTopFolder == nullptr) {
+    fTopFolder = gROOT->GetRootFolder()->AddFolder("plot_tc","plot_tc");
+  }
+
+  fBook = new Booking(fTopFolder);
+  
+  //  fFolder = nullptr;
 
   fFile = (TFile*) gROOT->GetListOfFiles()->FindObject(fn.data());
   if (fFile == nullptr) {
@@ -168,7 +185,7 @@ TH1F* PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2, int Panel2, 
 
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
                                         // sometimes fitting needs to be more intelligent...
-  if (PerformFit) h->Fit("gaus","",-50,50);
+  if (PerformFit) h->Fit("gaus","","",-50,50);
   
   return h;
 }
@@ -200,6 +217,10 @@ int PlotTC::plot_plane_dt(int Station, int PerformFit) {
 int PlotTC::station_time_calib(int Station) {
   int rc(0);
 
+  std::string folder_name = std::format("Station_{:02d}",Station);
+  
+  TFolder* fol = fTopFolder->AddFolder(folder_name.data(),folder_name.data());
+
   int   nent[12];
 
   for (int i=0; i<12; i++) {
@@ -209,8 +230,10 @@ int PlotTC::station_time_calib(int Station) {
     
     TrkPanelMap_t::Data_t* tpmd = fTpm->panel_data_by_offline(offline_plane,offline_panel);
     
-    fHist.h_edep[i] = plot_panel_edep(Station,i);
-    nent        [i] = fHist.h_edep[i]->Integral();
+    fHist.h_edep[Station][i] = plot_panel_edep(Station,i);
+    fBook->AddHistogram(fHist.h_edep[Station][i],fol);
+    
+    nent                 [i] = fHist.h_edep[Station][i]->Integral();
 //-----------------------------------------------------------------------------
 // just in case, try to distinguish between panels which have been excluded from the readout
 // and panels which have been read out but had low HV
@@ -227,16 +250,18 @@ int PlotTC::station_time_calib(int Station) {
   for (int i1=0; i1<12; i1++) {
                                         // reset all dt histograms 
     for (int i2=0; i2<12; i2++) {
-      fHist.h_dt[i1][i2] = nullptr;
+      fHist.h_dt[Station][i1][i2] = nullptr;
     }
     
     if (fPanelMask[i1] != 0) continue;
 
     for (int i2=i1+1; i2<12; i2++) {
+      std::cout << std::format("... fill dt histogram for station:{:02d} i1:{:2} i2:{:2}\n",Station,i1,i2);
       if (fPanelMask[i2] != 0) continue;
                                         // do not fit, just fill the histograms
       int perform_fit(0);
-      fHist.h_dt[i1][i2] = plot_panel_dt(Station, i1, Station, i2, perform_fit);
+      fHist.h_dt[Station][i1][i2] = plot_panel_dt(Station, i1, Station, i2, perform_fit);
+      fBook->AddHistogram(fHist.h_dt[Station][i1][i2],fol);
     }
   }
  

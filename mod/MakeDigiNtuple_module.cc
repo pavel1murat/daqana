@@ -10,7 +10,7 @@
 //                  5: print HepTransform's for all panels
 //                  6: print reconstructed segments in the end
 //                 21: print number of CRV things
-//                 31: print segments
+//                 31-40: makeSegments printout
 // ======================================================================
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -996,7 +996,7 @@ int mu2e::MakeDigiNtuple::fillTrk() {
 int mu2e::MakeDigiNtuple::makeSegments() {
   int rc(0);
 
-  if (_debugMode != 0) print_(std::format("{}  START: ntimeclusters:{}\n", __func__,_ntimeclusters));
+  if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  START: ntimeclusters:{}\n", __func__,_ntimeclusters));
 //-----------------------------------------------------------------------------
 // cleanup from the previous event, initially set _nseg to 0
 //-----------------------------------------------------------------------------
@@ -1012,10 +1012,8 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   for (int itc=0; itc<_ntimeclusters; itc++) {
     const mu2e::TimeCluster* tc = &_tcc->at(itc);
     int nsh = tc->nStrawHits();
-    if (_debugMode) {
-      if (_debugBit[3] != 0) {
-        print_(std::format(" -- PM: time cluster:{:2d} segment with {:2d} hits\n",itc, nsh));
-      }
+    if (_debugMode and (_debugBit[31] != 0)) {
+      print_(std::format(" -- PM: time cluster:{:2d} segment with {:2d} hits\n",itc, nsh));
     }
     for (int ih=0; ih<nsh; ih++) {
       StrawHitIndex hit_index   = tc->hits().at(ih);
@@ -1023,7 +1021,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       mu2e::StrawId sid = ch->strawId();
       int panel = sid.panel();
       int plane = sid.plane();
-      if (_debugBit[3] != 0) {
+      if (_debugMode and (_debugBit[31] != 0)) {
         print_(std::format(" {}: hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",
                            __func__,ih,plane,panel,sid.straw()));
       }
@@ -1061,7 +1059,9 @@ int mu2e::MakeDigiNtuple::makeSegments() {
               });
 
     int nhits = ts->nHits();
-    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,nhits));
+    
+    if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,nhits));
+
     if (nhits < 4) {
       ts->fMask |= 0x1 ; // not enough hits
                                                                   continue;
@@ -1144,7 +1144,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
-    if (_debugMode != 0) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,ts->nHits()));
+    if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,ts->nHits()));
     if (ts->nHits() < 4) {
       ts->fMask |= 0x1 ; // not enough hits
       continue;
@@ -1169,7 +1169,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       converged = sfitter.Fit(niter,0,nullptr,&par);
     }
 
-    if (_debugMode) {
+    if (_debugMode and (_debugBit[31] != 0)) {
       std::cout << "rc:" << rc << " converged:" << converged;
     }
   }
@@ -1177,7 +1177,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 // at this point, all track hits should be assigned to segments
 // debug printout
 //-----------------------------------------------------------------------------
-  if (_debugMode and (_debugBit[6] != 0)) {
+  if (_debugMode and (_debugBit[31] != 0)) {
     std::cout << "nseg:" << _nseg << std::endl;
 
     for (int i=0; i<_nseg; i++) {
@@ -1186,7 +1186,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
     }
   }
 
-  if (_debugMode != 0) std::cout << __func__ << ":END rc:" << rc << std::endl;
+  if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("-- END rc:{}\n",rc));
   return 0;
 }
 
@@ -1341,7 +1341,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   
   _event->maxEdep = 0;
 
-  if (_debugMode > 0) {
+  if ((_debugMode > 0) and (_debugBit[11] != 0)) {
     print_(std::format("_nstrawdigis:{}\n",_nstrawdigis));
   }
 
@@ -1359,10 +1359,6 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
     fillSegSh();
   }
   if (_makeTrk) fillTrk();
-
-  if (_debugMode > 0) {
-    print_(std::format("_event->strawdigis->GetEntries():{}\n",_event->nsdtot));
-  }
 
   if (_event->nseg >= _minNSegments) {
     _tree->Fill();

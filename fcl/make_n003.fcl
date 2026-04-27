@@ -107,7 +107,9 @@ physics : {
             tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
 
             debugMode     : 1
-            debugBits: [ "bit21:1" ]
+            debugBits: [
+                        ## "bit21:1"
+                       ]
        }
     }
 
