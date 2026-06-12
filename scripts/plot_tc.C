@@ -107,6 +107,8 @@ PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
     fn                  = std::format("{}/{}/nts.mu2e.trk.vst00s000r{:03d}n002.{:06d}_000001.root",
                                       top_dir,dsid,RecoVersion,RunNumber);
   }
+
+  TH1::AddDirectory(kFALSE);
   
   std::string daqana_lib = Form("%s/lib/libdaqana_obj.so",gSystem->Getenv("SPACK_VIEW"));
   if (not gInterpreter->IsLoaded(daqana_lib.data())) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # will run a mu2e job with daqana/fcl/make_station_hist.fcl for a given run
 # calling example: 
-#               v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005 --slots=11:12 --nfiles=1
+#               v001/daqana/scripts/make_station_hist.py --rn=107976 --idsid=vst --min_edep=0.0005 --slots=1:3,11:12 --nfiles=1
 # parameters:
 # --rn         : run number to process
 # --diag_level : 
@@ -19,6 +19,7 @@ class SubmitJob:
         self.filename   = None;
         self.idsid      = 'vst';
         self.nfiles     = None;
+        self.nev        = None;
         self.min_edep   = None;
         self.run_number = None
         self.slots      = None;  ## a range : s1:s2, with all in between
@@ -40,7 +41,7 @@ class SubmitJob:
 
         try:
             optlist, args = getopt.getopt(sys.argv[1:], '',
-                     ['diag_level=', 'fn=', 'idsid=', 'min_edep=', 'rn=', 'nfiles=', 'slots=' ] )
+                     ['diag_level=', 'fn=', 'idsid=', 'min_edep=', 'rn=', 'nev=', 'nfiles=', 'slots=' ] )
  
         except getopt.GetoptError:
             self.Print(name,0,'%s' % sys.argv)
@@ -61,6 +62,8 @@ class SubmitJob:
                 self.idsid = val
             elif (key == '--min_edep'):
                 self.min_edep = float(val)
+            elif (key == '--nev'):
+                self.nev = int(val)
             elif (key == '--nfiles'):
                 self.nfiles = int(val)
             elif (key == '--slots'):
@@ -94,21 +97,28 @@ class SubmitJob:
         cmd = f'cat {template_fcl} >| {input_fcl}';
         if (self.min_edep):
             cmd += f'; echo "physics.analyzers.StationAna.minEDep : {self.min_edep}" >> {input_fcl}';
-        if (self.slots): 
-            slots  = '[ '
-            nw = len(self.slots.split(':'))
-            if (nw == 1):
-                slots += self.slots
-            else:
-                s1 = int(self.slots.split(':')[0])
-                s2 = int(self.slots.split(':')[1])
-                for s in range(s1,s2+1):
-                    slots += f' {s}'
-                    if (s != s2):
-                        slots += ','
+        if (self.slots):
+#------------------------------------------------------------------------------
+# syntax: --slots=3:5,9:17
+#------------------------------------------------------------------------------
+            slots           = '[ '
+            station_ranges  = self.slots.split(',')
+            nww = len(station_ranges)
+            for iww in range(nww):
+                ww = station_ranges[iww]          # could be either n or n1:n2
+                nw = ww.split(':')
+                if (nw == 1):
+                    slots += ww
+                else:
+                    s1 = int(ww.split(':')[0])
+                    s2 = int(ww.split(':')[1])
+                    for s in range(s1,s2+1):
+                        slots += f' {s}'
+                        if ((iww != nww-1) or (s != s2)) :
+                            slots += ','
 #-----------v-----------^------------------------------------------------------
             slots += ' ]'
-            cmd += f'; echo "physics.analyzers.StationAna.slot    : {slots}"     >> {input_fcl}';
+            cmd += f'; echo "physics.analyzers.StationAna.slot_enabled  : {slots}"     >> {input_fcl}';
 
         print('000:cmd:',cmd);
         
@@ -155,6 +165,9 @@ class SubmitJob:
             cmd = f'mu2e -c {input_fcl} -s {self.filename}';
         else:
             cmd = f'mu2e -c {input_fcl} -S {input_file_list}';
+
+        if (self.nev):
+            cmd += f' -n {self.nev}'
 
         cmd += f' >> {logfile} 2>&1 &'
         os.system(f'echo cmd:"{cmd}"                  >> {logfile}');

@@ -33,10 +33,16 @@ namespace mu2e {
     _shCollTag             (PSet.get<art::InputTag>   ("shCollTag"             )),
     _maxDt                 (PSet.get<float>           ("maxDt"                 )),
     _minEDep               (PSet.get<float>           ("minEDep"               )),
-    _slot                  (PSet.get<std::vector<int>>("slot"                  ))
+    _slot_enabled          (PSet.get<std::vector<int>>("slot_enabled"          ))
   {
-    _initialized = 0;
+    _initialized =  0;
     _last_run    = -1;
+
+    // int ns = _slot_enabled.size();
+    // TLOG(TLVL_INFO) << std::format("nslots:{}",ns);
+    // for (int i=0; i<ns; i++) {
+    //   TLOG(TLVL_INFO) << std::format(":{} _slot_enabled[i]:{}",i,_slot_enabled[i]);
+    // }
   }
 
 //-----------------------------------------------------------------------------
@@ -113,10 +119,11 @@ namespace mu2e {
       }
     }
     
-    int ns = _slot.size();
+    int ns = _slot_enabled.size(); 
                                         // histogram records for ns slots
     for (int is=0; is<ns; is++) {
-      int isl = _slot[is];
+      int isl = _slot_enabled[is];
+      // if (not _slot_enabled[isl])                           continue;
       _hist.slot.push_back(StationHist_t());
       art::TFileDirectory station_dir = tfs->mkdir(Form("slot_%i",isl));
 
@@ -234,11 +241,12 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
     fill_event_histograms(_hist.event[0]    ,&_edata);
 
-    int ns = _slot.size();
-    for (int i=0; i<ns; i++) {
-      int isl = _slot[i];
-                                        // tehre could be two stations out of 18 processed
-      fill_station_histograms(&_hist.slot[i],&_edata.station[isl]);
+    int ns = _slot_enabled.size();
+    for (int is=0; is<ns; is++) {
+      int isl = _slot_enabled[is];
+      // if (not _slot_enabled[isl])                           continue;
+                                        // there could be two stations out of 18 processed
+      fill_station_histograms(&_hist.slot[is],&_edata.station[isl]);
     }
 
     return 0;
@@ -331,7 +339,7 @@ int StationAna::init_event(const art::Event& ArtEvent) {
   _edata.run_number = ArtEvent.run();
   _edata.srn_number = ArtEvent.subRun();
                                         // init panel map
-  int ns = _slot.size();
+  int ns = _slot_enabled.size();
   
   if (_last_run != (int) ArtEvent.run()) {
     ProditionsHandle<TrackerPanelMap> tpm_h;
@@ -339,7 +347,8 @@ int StationAna::init_event(const art::Event& ArtEvent) {
     _last_run    = ArtEvent.run();
 
     for (auto is=0; is<ns; is++) {
-      int isl = _slot[is];
+      int isl = _slot_enabled[is];
+      // if (not _slot_enabled[isl])                           continue;
       for (int pln=2*isl; pln<2*isl+2; pln++) {
         int ipln2 = pln % 2;
         for (int ip=0; ip<6; ip++) {
@@ -363,7 +372,8 @@ int StationAna::init_event(const art::Event& ArtEvent) {
 
   for (auto is=0; is<ns; is++) {
                                         // slots 11 and 12, for example
-    int isl = _slot[is];
+    int isl = _slot_enabled[is];
+    // if (not _slot_enabled[isl])                           continue;
     for (int ip=0; ip<12; ip++) {
       PanelData_t* pd = &_edata.station[isl].panel[ip];
       pd->nsht      = 0;
@@ -399,7 +409,7 @@ void StationAna::analyze(const art::Event& ArtEvent) {
     int is  = sh->strawId().straw();
     int isl = sh->strawId().station();
     
-    const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
+    // const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     // int pcie_addr = tpm->dtc() % 2;              // this is a convention
     // int ipanel    = pcie_addr*6+tpm->link();

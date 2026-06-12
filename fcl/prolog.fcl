@@ -97,11 +97,13 @@ daqana : {
 
         StationAna: { module_type: StationAna
 	    THistModule: { @table::StntupleTHistModule }   ## base class
-            shCollTag    : "makeSH"
-            debugMode    : 0
-            debugBits    : [ "bit0:0", "bit1:0" ]
-            maxDt        : 100                        ## ns
-            minEDep      : 0.0006                     ##
+            shCollTag      : "makeSH"
+            debugMode      : 0
+            debugBits      : [ "bit0:0", "bit1:0" ]
+            maxDt          : 100                        ## ns
+            minEDep        : 0.0005                     ##
+            slot_enabled   : [ 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+                               1, 1, 1, 1, 1, 1, 1, 1 ]  ## 2026-06-02
         }
 
         TrackerDQM : { module_type:TrackerDQM

@@ -44,7 +44,7 @@ services.ProditionsService.trackerStatus.Settings.useDb : false
 source : {
     module_type : RootInput
     fileNames   : @nil
-
+    compactEventRanges : true
     # firstEvent  : 500
     maxEvents   : -1
     #   inputCommands: ["keep *",
@@ -78,8 +78,8 @@ physics : {
 
     p1 : [ ]
 
-    e1 : [ FileCatalog ] ## , defaultOutput ]
-    # e1 : []
+    # e1 : [ FileCatalog ] ## , defaultOutput ]
+    e1 : [ defaultOutput ]
 
     trigger_paths  : [ p1 ]
     end_paths      : [ e1 ]

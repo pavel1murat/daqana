@@ -27,7 +27,7 @@ namespace {
   // const char* HistDir   = "/exp/mu2e/data/projects/tracker/vst/hist" ;
   // const char* HistDir   = "/data/tracker/vst/hist" ;
   // const char*    HistDir   = "./" ;        // local
-  const char*    HistDir   = "/data/mu2e/mu2etrk/hist" ;        // mu2e-dl-01
+  const char*    HistDir   = "/data/mu2e/mu2etrk/hist/station_ana" ;        // mu2e-dl-01
   int            _figure   = 0;
   TCanvas*       _canvas(nullptr);
 
@@ -65,7 +65,8 @@ int plot_edep(int RunNumber, int Slot, const char* Fn = nullptr) {
       
       c->cd(6*pln+panel+1);
       gPad->SetLogy(1);
-      std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/edep",Slot,mnid);
+      //      std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/edep",Slot,mnid);
+      std::string hname = std::format("//StationAna/slot_{:d}/MN{:03d}/edep",Slot,mnid);
       TH1* h1 = (TH1*) f->Get(hname.data());
       if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
       h1->Draw();
@@ -97,7 +98,8 @@ int plot_occupg(int RunNumber, int Slot, int LogY = 0, const char* Fn = nullptr)
       
       c->cd(6*pln+panel+1);
       gPad->SetLogy(LogY);
-      std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occupg",Slot,mnid);
+      // std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occupg",Slot,mnid);
+      std::string hname = std::format("//StationAna/slot_{:d}/MN{:03d}/occupg",Slot,mnid);
       TH1* h1 = (TH1*) f->Get(hname.data());
       if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
       h1->Draw();
@@ -129,7 +131,8 @@ int plot_occup(int RunNumber, int Slot, int LogY = 0, const char* Fn = nullptr) 
       
       c->cd(6*pln+panel+1);
       gPad->SetLogy(LogY);
-      std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occup",Slot,mnid);
+      // std::string hname = std::format("//StationAna/slot_{:02d}/MN{:03d}/occup",Slot,mnid);
+      std::string hname = std::format("//StationAna/slot_{:d}/MN{:03d}/occup",Slot,mnid);
       TH1* h1 = (TH1*) f->Get(hname.data());
       if (MaxY > 0) h1->GetYaxis()->SetRangeUser(0.1,MaxY);
       h1->Draw();

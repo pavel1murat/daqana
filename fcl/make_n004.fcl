@@ -1,6 +1,8 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# n003: tracker(digis+hits+time clusters+segments
+# n004:
+#   tracker: digis+hits+time clusters
+#   CRV    : digis+pulses+coincidence clusters
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
@@ -96,25 +98,26 @@ physics : {
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeCrvD      : 1
+            makeCrvP      : 1
+            makeCrvC      : 1
             makeSD        : 1
             makeSH        : 1
             makeTC        : 1
-            makeSeg       : 1
             saveWaveforms : 1
             
-            tcCollTag     : "TimeCluster"   ## "TZClusterFinder"  ##
+            tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
 
             debugMode     : 1
             debugBits: [
-                        "bit3:1",
-                        "bit4:1"
+                        ## "bit21:1"
                        ]
        }
     }
 
     # p1 : [ EWMProducer, makeSD, makeSH  ]
     # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
-    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster ] ## , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
     # e1 : []

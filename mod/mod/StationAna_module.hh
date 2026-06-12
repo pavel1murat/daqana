@@ -151,7 +151,8 @@ namespace mu2e {
     Hist_t                          _hist;
     int                             _initialized;
     int                             _last_run;
-    std::vector<int>                _slot;
+    // int                             _slot_enabled[18];
+    std::vector<int>                _slot_enabled;
 
     const TrackerPanelMap*          _trkPanelMap;
 //-----------------------------------------------------------------------------

@@ -121,14 +121,14 @@ physics : {
             makeCH    : 1
             makeTC    : 1
             makeTrk   : 1
-            tcCollTag : "TZClusterFinder"
+            tcCollTag : "SimpleTimeCluster" ## "TZClusterFinder"
             ksCollTag : "KKLine"
         }
     }
 
     p0 : [ ]
     p1 : [ EWMProducer, makeSD, makeSH ]
-    p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster ] ## TZClusterFinder ] ##
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
