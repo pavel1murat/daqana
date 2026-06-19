@@ -55,7 +55,12 @@ station:11 panel:11 mnid:MN082 nent:  18300 panel_mask:0x0000
 
 #include "TFolder.h"
 #include "TH1F.h"
-#include "booking.C" // from the same directory
+#include "TROOT.h"
+#include "TTree.h"
+#include "TFile.h"
+#include "TSystem.h"
+#include "TInterpreter.h"
+#include "daqana/ana/booking.hh"
 
 class PlotTC {
 public:
@@ -63,6 +68,7 @@ public:
   struct Hist_t {
     TH1F* h_edep[18][12];
     TH1F* h_dt  [18][12][12]; // dt_ij = t[i]-t[j], i<j, only upper triangle is populated 
+    TH1F* h_dtp [36];         // dtp_ij = t[i]-t[j], (per plane) i<j, only upper triangle is populated 
   } fHist;
   
   TFile* fFile;
@@ -76,6 +82,8 @@ public:
 
   TrkPanelMap_t*  fTpm;
 
+  int             fRefPlane;
+
   PlotTC(int RunNumber, int RecoVersion=0, const char* Fn = "");
   PlotTC(const char* Fn);
   ~PlotTC();
@@ -83,9 +91,11 @@ public:
   TH1F* plot_panel_edep(int Station,int Panel);
                                         // by defalt, fit, however sometimes do not want that
   TH1F* plot_panel_dt  (int Station1, int Panel1, int Station2, int Panel2, int PerformFit = 1);
-  int   plot_plane_dt  (int Station, int PerformFit = 0);
+                                        // Plane1 and Plane2: 0-35
+  TH1F* plot_plane_dt  (int Plane1, int Plane2, int PerformFit = 0);
   
   int   station_time_calib(int Station);
+  int   plane_time_calib  ();
 };
 
 
@@ -96,6 +106,7 @@ public:
 PlotTC::PlotTC(int RunNumber, int RecoVersion, const char* Fn) {
   
   fRunNumber = RunNumber;
+  fRefPlane  = 19;
 
   std::string fn(Fn);
 
@@ -193,21 +204,27 @@ TH1F* PlotTC::plot_panel_dt(int Station1, int Panel1, int Station2, int Panel2, 
 }
 
 //-----------------------------------------------------------------------------
-// for a given 'Station' plots delta_t = T(plane=1)-T(plane=0)
+// for a given 'Station' plot a 1D hist: plane vs  delta_t = T(plane=1)-T(plane=0)
 //-----------------------------------------------------------------------------
-int PlotTC::plot_plane_dt(int Station, int PerformFit) {
-  std::string hname(Form("h_plane_dt_%06i",fRunNumber));
-  
-  std::string var  = Form("tc.timep(1)-tc.timep(0)");
-  std::string sel  = Form("run==%d && tc.nh_panel(%d,1)>1 && tc.nh_panel(%d,0)>1",
-                          fRunNumber,Station,Station);
+TH1F* PlotTC::plot_plane_dt(int Plane1, int Plane2, int PerformFit) {
+  std::string hname(Form("h_plane_dt_%06i_%2i_%2i",fRunNumber,Plane1,Plane2));
 
-  fTree->Draw(Form("%s>>%s(250,-250,250)",var.data(),hname.data()),sel.data());
+  int st1 = Plane1 / 2;
+  int ip1 = Plane1 % 2;  // Z-ordered plane within the station - 0 or 1
+  int st2 = Plane2 / 2;
+  int ip2 = Plane2 % 2;
+  
+  std::string var  = Form("tc.timep(%i,%i)-tc.timep(%i,%i)",st1,ip1,st2,ip2);
+  std::string sel  = Form("run==%d && tc.nhp(%d,%d)>1 && tc.nhp(%d,%d)>1 && tc.edep_max>0.0005",
+                          fRunNumber,st1,ip1,st2,ip2);
+
+  fTree->Draw(Form("%s>>%s(250,-250,250,36,0,36)",var.data(),hname.data()),sel.data());
 
   TH1F* h = (TH1F*) gROOT->FindObject(hname.data());
   if (PerformFit) h->Fit("gaus","","",-50.,50.);
-  return 0;
+  return h;
 }
+
 
 
 //-----------------------------------------------------------------------------
@@ -224,6 +241,8 @@ int PlotTC::station_time_calib(int Station) {
   TFolder* fol = fTopFolder->AddFolder(folder_name.data(),folder_name.data());
 
   int   nent[12];
+  
+  std::cout << std::format("... check integrals of panel eDep histograms: use the ones with the integral > 200\n");
 
   for (int i=0; i<12; i++) {
     fPanelMask[i] = 0;
@@ -265,6 +284,32 @@ int PlotTC::station_time_calib(int Station) {
       fHist.h_dt[Station][i1][i2] = plot_panel_dt(Station, i1, Station, i2, perform_fit);
       fBook->AddHistogram(fHist.h_dt[Station][i1][i2],fol);
     }
+  }
+ 
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+// all numbering : offline
+// 'Station' : offline slot number
+// 'plane'   : 2*Station+i/6
+// 'i'       : offline panel number in a plane
+// choose plane 19 as reference plane
+//-----------------------------------------------------------------------------
+int PlotTC::plane_time_calib() {
+  int rc(0);
+
+  std::string folder_name = std::format("Plane");
+  
+  TFolder* fol = fTopFolder->AddFolder(folder_name.data(),folder_name.data());
+
+  int   nent[12];
+  
+  std::cout << std::format("... check integrals of panel eDep histograms: use the ones with the integral > 200\n");
+
+  for (int plane=0; plane<36; plane++) {
+    fHist.h_dtp[plane] = plot_plane_dt(plane,fRefPlane);
+    fBook->AddHistogram(fHist.h_dtp[plane],fol);
   }
  
   return rc;

@@ -46,13 +46,12 @@ DaqEvent::~DaqEvent() {
 
 //-----------------------------------------------------------------------------
 void DaqEvent::Clear(const char* Opt) {
-  for (int i=0; i<2; i++) {
+  for (int i=0; i<36; i++) {
+    pmp[i] = -1;  // because normal value is non-negative
     for (int link=0; link<6; link++) {
       nsh[i][link] = 0;
     }
   }
-
-  for (int i=0; i<36; i++) pmp[i] = -1;  // because normal value is non-negative
 
   nsdtot  = 0; sd->Clear();
   nshtot  = 0; sh->Clear();

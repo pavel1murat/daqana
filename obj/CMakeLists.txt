@@ -34,6 +34,7 @@ add_library(${lib} SHARED
   fit_dt01_msh.cc
   ${dict}.cxx
 )
+add_library(daqana::obj ALIAS ${lib})
 
 target_link_libraries(${lib}   Offline::Mu2eUtilities ROOT::Core)
 

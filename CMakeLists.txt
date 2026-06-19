@@ -68,6 +68,6 @@ add_custom_target(create_links
 add_subdirectory(mod)
 add_subdirectory(obj)
 add_subdirectory(test)
-#add_subdirectory(ana)
+add_subdirectory(ana)
 
 cet_cmake_config()

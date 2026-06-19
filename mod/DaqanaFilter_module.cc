@@ -253,6 +253,8 @@ namespace mu2e {
     }
 //-----------------------------------------------------------------------------
 // count number of good time clusters
+// good time cluster: a TC with at least one hit above the _minEDep threshold
+// _minEDep threshold is the same for good hits and good hits in time clusters
 //-----------------------------------------------------------------------------
     _ntcg = 0;
     for (int i=0; i<_ntc; i++) {

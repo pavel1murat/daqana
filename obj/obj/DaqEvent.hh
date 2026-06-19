@@ -24,8 +24,8 @@ public:
   int            nsdtot;                // number of straw digis in event
   TClonesArray*  sd;
   int            nshtot;                // total number of straw digis in event
-  int            nsh[36][6];            // per panel, by [dtc_id][link] , dtc_id, NOT pcie_arrd
-  int            pmp[36];               // per plane, by [dtc_id]
+  int            nsh[36][6];            // per panel, by [dtc_id-1][link] , dtc_id, NOT pcie_arrd
+  int            pmp[36];               // per plane, by [dtc_id-1]
   
   TClonesArray*  sh;
   float          maxEdep;               // max hit Edep in the event

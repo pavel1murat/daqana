@@ -69,6 +69,7 @@
 
 // #define TRACEMF_USE_VERBATIM 1
 
+// #include "TRACE/tracemf.h"
 #include "TRACE/tracemf.h"
 #define TRACE_NAME "MakeDigiNtuple"
 
@@ -727,11 +728,12 @@ int mu2e::MakeDigiNtuple::fillSD() {
     nt_sd->tot0         = sd->TOT(mu2e::StrawEnd::cal);
     nt_sd->tot1         = sd->TOT(mu2e::StrawEnd::hv );
     nt_sd->pmp          = sd->PMP();
-    if (_event->pmp[dtc_id] == -1) {
-      _event->pmp[dtc_id] = nt_sd->pmp;
+    // dtc_id runs from 1 to 36
+    if (_event->pmp[dtc_id-1] == -1) {
+      _event->pmp[dtc_id-1] = nt_sd->pmp;
     }
-    else if (_event->pmp[dtc_id] !=  nt_sd->pmp) {
-      TLOG(TLVL_ERROR) << std::format("dtc_id:{} _event->pmp[dtc_id]:{} hit_pmp{}",dtc_id,_event->pmp[dtc_id],nt_sd->pmp);
+    else if (_event->pmp[dtc_id-1] !=  nt_sd->pmp) {
+      TLOG(TLVL_ERROR) << std::format("dtc_id:{} _event->pmp[dtc_id]:{} hit_pmp{}",dtc_id,_event->pmp[dtc_id-1],nt_sd->pmp);
     }
     
     nt_sd->flag         = *((uint8_t*) &sd->digiFlag());
@@ -763,9 +765,9 @@ int mu2e::MakeDigiNtuple::fillSD() {
       double t0_offset  = _event->evn*_ewLength*25;                  // in ns
       double t0         = t0_offset + nt_sd->tdc0*_tdc_bin_ns;
       double t1         = t0_offset + nt_sd->tdc1*_tdc_bin_ns;
-      printf("%8i %5i %8i %8i %12.4lf %12.4lf %6i %6i %6i 0x%04x\n",
+      printf("%8i %5i MN%03i %8i %8i %12.4lf %12.4lf %6i %6i %6i 0x%04x\n",
              _event->evn,
-             (int) nt_sd->sid,
+             (int) nt_sd->sid, nt_sd->mnid, 
              nt_sd->tdc0, nt_sd->tdc1,
              t0, t1,
              nt_sd->tot0, nt_sd->tot1,
@@ -789,8 +791,9 @@ int mu2e::MakeDigiNtuple::fillSH() {
     //    const TrkPanelMap_t* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    int pcie_addr = tpm->dtc() % 2;                      // convention
-    _event->nsh[pcie_addr][tpm->link()] += 1;
+    int dtc_id = tpm->dtc();
+    int pcie_addr = dtc_id % 2;                      // convention
+    _event->nsh[dtc_id-1][tpm->link()] += 1;         // assume DTC_ID runs from 1 to 36 (tracker)
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
     nt_sh->sid         = sh->strawId().asUint16();
@@ -876,6 +879,7 @@ int mu2e::MakeDigiNtuple::fillTC() {
     nt_tc->nsh     = tc->nStrawHits();
     nt_tc->nch     = tc->nhits();
     nt_tc->t0      = tc->t0().t0();
+    nt_tc->ngh     = 0;
     
     LsqSums2 szy;
 
@@ -891,7 +895,7 @@ int mu2e::MakeDigiNtuple::fillTC() {
       
       int plane = hit->strawId().plane();
       int stn   = plane / 2;
-      int pln2  = plane % 2;
+      int pln2  = plane % 2;            // 0 or 1
       int panel = hit->strawId().panel();
       const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(plane,panel);
       int zface = tpm->zface();
@@ -904,6 +908,10 @@ int mu2e::MakeDigiNtuple::fillTC() {
       nt_tc->_edep_panel[stn][loc] += hit->energyDep();
 
       if (hit->energyDep() > nt_tc->edep_max) nt_tc->edep_max = hit->energyDep();
+
+      if (hit->energyDep() > 0.0005) {
+        nt_tc->ngh += 1;
+      }
 
       if (nt_tc->_nhp[stn][pln2] == 0) nt_tc->nplanes++;
       nt_tc->_nhp  [stn][pln2]++;
@@ -1318,16 +1326,15 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   int rc = getData(ArtEvent);
   if (rc < 0) return;
 //-----------------------------------------------------------------------------
-// clear event
+// initialize event to "empty" values
 //-----------------------------------------------------------------------------
   _event->Clear();
-
 //-----------------------------------------------------------------------------
 // fill ntuple
 //-----------------------------------------------------------------------------
-  _event->run    = ArtEvent.run();
-  _event->srn    = ArtEvent.subRun();
-  _event->evn    = ArtEvent.event();
+  _event->run     = ArtEvent.run();
+  _event->srn     = ArtEvent.subRun();
+  _event->evn     = ArtEvent.event();
                                         // defined in getData()
   _event->nsdtot  = _nstrawdigis;
   _event->nshtot  = _nstrawhits;

@@ -22,7 +22,7 @@ public:
 
   int     nplanes;
   int     nfaces ;
-  int     npanels;   // n panels with hits
+  int     npanels;                      // n panels with hits
 
   int     _nhf  [18][4];
   float   _timef[18][4];
@@ -35,6 +35,7 @@ public:
   float   _time_panel[18][12];
   float   _edep_panel[18][12];
   int     max_nh_panel;                 // max number of hits in one of the panels
+  int     ngh;                          // N(hits) with eDep > 0.0005
 
   DaqTimeCluster();
 
@@ -49,7 +50,7 @@ public:
   float time_panel (int stn, int ip) { return _time_panel[stn][ip]; }
   float edep_panel (int stn, int ip) { return _edep_panel[stn][ip]; }
 
-  ClassDefOverride(DaqTimeCluster,1);
+  ClassDefOverride(DaqTimeCluster,2);
 };
 
 #endif
