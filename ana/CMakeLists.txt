@@ -17,13 +17,22 @@ include_directories(
 # link_directories($ENV{ROOTSYS}/lib)
 
 ROOT_GENERATE_DICTIONARY(${dict}
-  plot_n001_sd.hh booking.hh 
+  plot_n001_sd.hh
+  plot_n001_occup.hh
+  plot_n001_noise.hh
+  plot_n001_pin.hh
+  plot_n002_tc.hh
+  booking.hh 
   LINKDEF ana/Linkdef.h)
 
 set_property(SOURCE ${dict}.cxx PROPERTY generated)
 
 add_library(${lib} SHARED
   plot_n001_sd.cc
+  plot_n001_occup.cc
+  plot_n001_noise.cc
+  plot_n001_pin.cc
+  plot_n002_tc.cc
   ${dict}.cxx
 )
 

@@ -1,5 +1,5 @@
-#ifndef __daqana_ana_plot_n001_sd_hh__
-#define __daqana_ana_plot_n001_sd_hh__
+#ifndef __daqana_ana_plot_n001_noise_hh__
+#define __daqana_ana_plot_n001_noise_hh__
 
 #include <format>
 #include <iostream>
@@ -28,7 +28,7 @@
 
 #include "ana/ana/booking.hh"
 
-class plot_n001_sd: public TNamed {
+class plot_n001_noise: public TNamed {
 public :
 
   enum {
@@ -37,52 +37,50 @@ public :
     kNPanelsPerStation = 12,
   };
 
-//-----------------------------------------------------------------------------
-// fit results - data structures
-//-----------------------------------------------------------------------------
-  struct fit_result_t {
-    double p[3];                        // gaussian fit
-    double e[3];
-    double chi2dof;
+  //-----------------------------------------------------------------------------
+  // fit results - data structures
+  //-----------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------
+  // data structures
+  //-----------------------------------------------------------------------------
+
+  struct noise_t {
+    int evmin;
+    int evmax;
+    double sumx;
+    double sumx2;
+    int nevents;
+
+    noise_t(int FirstEvent = 0) {
+      evmin   = FirstEvent;
+      evmax   = 0;
+      nevents = 0;
+      sumx    = 0;
+      sumx2   = 0;
+    }
+
+    double sigm() {
+      double s(0);
+      if (nevents > 0) {
+        s = sumx2/nevents - (sumx/nevents)*(sumx/nevents);
+      }
+      return s;
+    }
+    
   };
 
-//-----------------------------------------------------------------------------
-// data structures
-//-----------------------------------------------------------------------------
-  struct RunData_t {
-    int run_number;
-    int n_pulsed_channels;
-    int pulsed_channel[96];             // only n_pulsed_clannels are used
-  };
-    
-  struct PanelData_t {
-    TrkPanelMap_t::Data_t* tpm;
-                                        // SD index in the event
-    int i21;                            // index of the first hit in channel 21 (assume pulsing channels 5+8*i...)
-  };
-  
-  struct PlaneData_t {
-    PanelData_t panel[6];
-  };
-    
-  struct Data_t {
-    PlaneData_t plane[36];
-  };
+  std::vector<noise_t> dat; // for one panel;
 
+  std::vector<noise_t>*    fDat[500];   // sparse
+
+  std::vector<std::vector<noise_t>*> fListOfDat;    // compact
 //-----------------------------------------------------------------------------
 // histogram structures
 //-----------------------------------------------------------------------------
   struct Hist_t {
-    TH1F*     h_tdc0;
-    TH1F*     h_ch;                       // straw
-    TH1F*     h_ph;                       // pulse height
-    TH1F*     h_bl;                       // pulse height
-    TH1F*     h_plane;
-    TH2F*     h_panel_dt;
-    TH2F*     h_panel_dt_111;             // wrt first hit in panel 111
-    TProfile* h_panel_dt_111_vs_evn[216]; // wrt first hit in panel 111
-    TH1F*     h_dt20[6];
+    TH1D* h_noise[12];
   } fHist;
+  
 //-----------------------------------------------------------------------------
 // other variables
 //-----------------------------------------------------------------------------
@@ -93,7 +91,7 @@ public :
 
   TrkPanelMap_t* fTpm;
 
-  fit_result_t   fFr[36]; 
+  //  fit_result_t   fFr[36]; 
   
   int            fRunNumber;
 
@@ -111,9 +109,9 @@ public :
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
   
-  plot_n001_sd(const char* Name, int RunNumber, const char* Fn = nullptr);
+  plot_n001_noise(const char* Name, int RunNumber, const char* Fn = nullptr);
   
-  virtual ~plot_n001_sd();
+  virtual ~plot_n001_noise();
   
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);

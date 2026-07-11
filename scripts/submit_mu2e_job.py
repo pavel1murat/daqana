@@ -56,7 +56,7 @@ class SubmitJob:
         
         parser = argparse.ArgumentParser()
 
-        parser.add_argument("--calib_version"   , default=None,           help="Path to the configuration file")
+        parser.add_argument("--calib-set"       , default=None,           help="Path to the configuration file")
         parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
         parser.add_argument('-c',"--fcl"        , default=None,           help="Path to the configuration file")
         parser.add_argument('-e',"--first_event", type=int, default=None, help="Path to the configuration file")
@@ -71,7 +71,7 @@ class SubmitJob:
         args = parser.parse_args()
 
         logger.info(f'self.diag_level = {args.diag_level}'   )
-        logger.info(f'self.calib      = {args.calib_version}')
+        logger.info(f'self.calib      = {args.calib_set}'    )
         logger.info(f'self.rn         = {args.run_number}'   )
         logger.info(f'self.fcl        = {args.fcl}'          )
         logger.info(f'self.nfiles     = {args.nfiles}'       )
@@ -119,9 +119,9 @@ class SubmitJob:
 # overrides, calib: 'v1'
 #------------------------------------------------------------------------------
         overrides_cmd = ''
-        if (args.calib_version):
-            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{args.calib}/'
-            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib}/'
+        if (args.calib_set):
+            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{args.calib_set}/'
+            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib_set}/'
 
 #------------------------------------------------------------------------------
 # redefinitions --> appends 
@@ -131,7 +131,7 @@ class SubmitJob:
         os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
 
-#        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_version}n000.%06r_%06s.art\\"'
+#        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_set}n000.%06r_%06s.art\\"'
 #        print(f'0011:x:{x}')
 #        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
 #------------------------------------------------------------------------------

@@ -43,12 +43,11 @@
   //
   x->SaveHist("pulse_injection_120807_120808.hist");
 */
-#include "ana/plot_n001_sd.hh"
-
+#include "ana/plot_n001_noise.hh"
 
 
 //-----------------------------------------------------------------------------
-plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn = 0) : TNamed(Name,Name), fChain(0) {
+plot_n001_noise::plot_n001_noise(const char* Name, int RunNumber, const char* Fn) : TNamed(Name,Name), fChain(0) {
 
   std::string dir("/data/mu2e/mu2etrk/datasets/vst00s000r000n001"); 
   
@@ -73,8 +72,8 @@ plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn = 0) 
 //-----------------------------------------------------------------------------
 // pulsed channels
 //-----------------------------------------------------------------------------
-  RunData_t rd;
-  rd.run_number        = 122629;
+  // RunData_t rd;
+  // rd.run_number        = 122629;
   //  rd.ref_channel       = 13;
 
   fRefChannel          = 21;
@@ -105,70 +104,70 @@ plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn = 0) 
 }
 
 //-----------------------------------------------------------------------------
-plot_n001_sd::~plot_n001_sd() {
+plot_n001_noise::~plot_n001_noise() {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
 
 //-----------------------------------------------------------------------------
-int plot_n001_sd::BookHistograms(Hist_t* Hist, TFolder* Folder) {
+int plot_n001_noise::BookHistograms(Hist_t* Hist, TFolder* Folder) {
 
   std::string prefix = std::format("");
   std::string name, title;
 
-  name  = "h_ch";
-  title = std::format("run:{} : pulsed channel",fRunNumber);
-  fBook->HBook1F(Hist->h_ch,name.data(),title.data(),96,0,96,Folder);
+  // name  = "h_ch";
+  // title = std::format("run:{} : pulsed channel",fRunNumber);
+  // fBook->HBook1F(Hist->h_ch,name.data(),title.data(),96,0,96,Folder);
 
-  name  = "h_ph";
-  title = std::format("run:{} : pulse height (ALL)",fRunNumber);
-  fBook->HBook1F(Hist->h_ph,name.data(),title.data(),200,0,200,Folder);
+  // name  = "h_ph";
+  // title = std::format("run:{} : pulse height (ALL)",fRunNumber);
+  // fBook->HBook1F(Hist->h_ph,name.data(),title.data(),200,0,200,Folder);
 
-  name  = "h_bl";
-  title = std::format("run:{} : baseline (ALL)",fRunNumber);
-  fBook->HBook1F(Hist->h_bl,name.data(),title.data(),500,0,500,Folder);
+  // name  = "h_bl";
+  // title = std::format("run:{} : baseline (ALL)",fRunNumber);
+  // fBook->HBook1F(Hist->h_bl,name.data(),title.data(),500,0,500,Folder);
 
-  name  = "h_tdc0";
-  title = std::format("run:{} : TDC0 (all), us",fRunNumber);
-  fBook->HBook1F(Hist->h_tdc0,name.data(),title.data(),1000,0,100,Folder);
+  // name  = "h_tdc0";
+  // title = std::format("run:{} : TDC0 (all), us",fRunNumber);
+  // fBook->HBook1F(Hist->h_tdc0,name.data(),title.data(),1000,0,100,Folder);
 
-  name  = "h_plane";
-  title = std::format("run:{} : plane number",fRunNumber);
-  fBook->HBook1F(Hist->h_plane,name.data(),title.data(),36,0,36,Folder);
+  // name  = "h_plane";
+  // title = std::format("run:{} : plane number",fRunNumber);
+  // fBook->HBook1F(Hist->h_plane,name.data(),title.data(),36,0,36,Folder);
 
-  for (int i=0; i<6; i++) {
-    name  = std::format("h_dt20_{}_panel_{}",GetName(),i);
-    title = std::format("run:{} : plane dt20 panel:{}",fRunNumber,i);
-    fBook->HBook1F(Hist->h_dt20[i],name.data(),title.data(),36,0,36,Folder);
-  }
+  // for (int i=0; i<6; i++) {
+  //   name  = std::format("h_dt20_{}_panel_{}",GetName(),i);
+  //   title = std::format("run:{} : plane dt20 panel:{}",fRunNumber,i);
+  //   fBook->HBook1F(Hist->h_dt20[i],name.data(),title.data(),36,0,36,Folder);
+  // }
 
-  name  = std::format("h_panel_dt");
-  title = std::format("run:{} {} : panel vs dt=t_i-t(21)",fRunNumber,prefix);
-  fBook->HBook2F(Hist->h_panel_dt,name.data(),title.data(),500,-25,25,216,0,216,Folder);
+  // name  = std::format("h_panel_dt");
+  // title = std::format("run:{} {} : panel vs dt=t_i-t(21)",fRunNumber,prefix);
+  // fBook->HBook2F(Hist->h_panel_dt,name.data(),title.data(),500,-25,25,216,0,216,Folder);
  
-  name  = std::format("h_panel_dt_111");
-  title = std::format("run:{} {} : panel vs dt_111",fRunNumber,prefix);
-  fBook->HBook2F(Hist->h_panel_dt_111,name.data(),title.data(),500,-25,25,216,0,216,Folder);
+  // name  = std::format("h_panel_dt_111");
+  // title = std::format("run:{} {} : panel vs dt_111",fRunNumber,prefix);
+  // fBook->HBook2F(Hist->h_panel_dt_111,name.data(),title.data(),500,-25,25,216,0,216,Folder);
 
-  for (int ip=0; ip<216; ip++) {
-    name  = std::format("h_panel_dt_111_vs_evn_{:03d}",ip);
-    title = std::format("run:{} panel {:03d} dt_111 vs evn",fRunNumber,ip);
-    fBook->HProf(Hist->h_panel_dt_111_vs_evn[ip],name.data(),title.data(),10000,0,1e6,-50,50,Folder);
-  }
+  // for (int ip=0; ip<216; ip++) {
+  //   name  = std::format("h_panel_dt_111_vs_evn_{:03d}",ip);
+  //   title = std::format("run:{} panel {:03d} dt_111 vs evn",fRunNumber,ip);
+  //   fBook->HProf(Hist->h_panel_dt_111_vs_evn[ip],name.data(),title.data(),10000,0,1e6,-50,50,Folder);
+  // }
  
   return 0;
 }
 
 //-----------------------------------------------------------------------------
-Int_t plot_n001_sd::GetEntry(Long64_t entry) {
+Int_t plot_n001_noise::GetEntry(Long64_t entry) {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
 
 //-----------------------------------------------------------------------------
-void plot_n001_sd::Init(TTree *tree) {
+void plot_n001_noise::Init(TTree *tree) {
   
   // #include "daqana/scripts/daqana_nt_init.C"
 
@@ -178,66 +177,26 @@ void plot_n001_sd::Init(TTree *tree) {
 
   fChain->SetBranchAddress("evt",&fEvent);
   // fChain->SetBranchAddress("evt.sd",&fSd);
+
+  for (int i=0; i<500; i++) {
+    fDat[i] = nullptr;
+  }
 }
 
 //-----------------------------------------------------------------------------
-void plot_n001_sd::fill_histograms() {
+void plot_n001_noise::fill_histograms() {
   // filling histograms: plot time differences between
 
   // DaqStrawDigi* sdr = (DaqStrawDigi*) fEvent->sd->UncheckedAt(fHitIndex[fRefPlane][0]);
   // float tr = sdr->tdc0*(5./256.)*1.e-3;
+
   
-  for (int i=0; i<fEvent->nsdtot; i++) {
-    DaqStrawDigi* sdi = (DaqStrawDigi*) fEvent->sd->UncheckedAt(i);
-    // std::cout << std::format("i:{:5d} sd_mnid[i]:{:03d}\n",i,sd->mnid);
 
-    fHist.h_ph->Fill(sdi->ph);
-    fHist.h_bl->Fill(sdi->bl);
-
-    if (sdi->ph < 60) continue;
-    
-    fHist.h_ch->Fill(sdi->straw());
-    fHist.h_plane->Fill(sdi->plane());
-    
-    int pln = sdi->plane();
-    int pnl = sdi->panel();
-    int ich = sdi->straw();
-
-    float ti = sdi->tdc0*5./256*1.e-3;
-    fHist.h_tdc0->Fill(ti);
-
-    int ip = 6*pln+pnl;                 // index of the panel
-    DaqStrawDigi* sdr = fSdr[ip];
-    
-    if ((sdr != nullptr) and (sdi != sdr)) {
-      float tr = sdr->tdc0*(5./256.)*1.e-3;
-      float dt = ti-tr;
-      fHist.h_panel_dt->Fill(dt,ip);
-    }
-
-    if (sdi == sdr) {
-                                        // sdi: first hit in the panel in the reference channel
-                                        // compare it to the one in panel 111
-      DaqStrawDigi* sdr_111 = fSdr[111];
-      if ((sdr_111 != nullptr) and (sdi != sdr_111)) {
-        float tr_111 = sdr_111->tdc0*(5./256.)*1.e-3;
-        float dt_111 = ti-tr_111;
-        fHist.h_panel_dt_111->Fill(dt_111,ip);
-
-        // std::cout << std::format("evn:{:6d} tr_111:{:10.5f} tr_112:{:10.5f}\n",fEvent->evn,tr_111,ti);
-
-        float dt = tr_111-ti;
-        if (dt < 0) dt += 20;
-        fHist.h_panel_dt_111_vs_evn[ip]->Fill(fEvent->evn,dt);
-      }
-    }
-
-  }
 }
 
 
 //-----------------------------------------------------------------------------
-Long64_t plot_n001_sd::LoadTree(Long64_t entry) {
+Long64_t plot_n001_noise::LoadTree(Long64_t entry) {
 // Set the environment to read one entry
    if (!fChain) return -5;
    Long64_t centry = fChain->LoadTree(entry);
@@ -249,7 +208,7 @@ Long64_t plot_n001_sd::LoadTree(Long64_t entry) {
 }
 
 //-----------------------------------------------------------------------------
-void plot_n001_sd::Loop(int NEvents) {
+void plot_n001_noise::Loop(int NEvents) {
 
   ResetHistograms();
 
@@ -262,80 +221,126 @@ void plot_n001_sd::Loop(int NEvents) {
   int nev = NEvents;
   if (NEvents <= 0) nev = nentries;
 
-  fMaxEvent = -1;
+  //
+  std::vector<noise_t>* pdat;
+  noise_t* dr;                          // data record
+
+  int first_event(-1);
+  int index;
   
   for (int jentry=0; jentry<nev; jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
-    nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    if (fEvent->evn > fMaxEvent) {
-      fMaxEvent = fEvent->evn;
+    if (first_event == -1) {
+      first_event = (fEvent->evn/1000)*1000;
+      index = 0;
     }
-
-    // std::cout << std::format("------- run:{:6d} srn:{:6d} evn:{:8d}\n",
-    //                          fEvent->run,fEvent->srn,fEvent->evn);
-
-                                        // fSdr[ip] first ch=21 digi in a panel=ip in this event
-    for (int ip=0; ip<216; ip++) {
-      fSdr[ip] = nullptr;
-    }
-
+    
     for (int i=0; i<fEvent->nsdtot; i++) {
       DaqStrawDigi* sd = (DaqStrawDigi*) fEvent->sd->UncheckedAt(i);
-      // std::cout << std::format("i:{:5d} sd_mnid[i]:{:03d}\n",i,sd->mnid);
-      
-      // TrkPanelMap_t::Data_t* tpmd = fTpm->panel_data_by_mnid(sd->mnid);
-      // if (tpmd == nullptr) {
-      //   std::cout << std::format("event:{:08d} ERROR: for digi #{} : wrong MNID:{}, SKIP\n",
-      //                            fEvent->evn,i,sd->mnid);
-      //   continue;
-      // }
-
-      int pln = sd->plane();
-      int pnl = sd->panel();
-      int ich = sd->straw();
-
-      int ip  = 6*pln+pnl;
-
-      if ((ich == fRefChannel) and (sd->ph > 60)) { 
-        // first good hit, channel=21 for each plane/panel
-        // std::cout << std::format("event:{} plane:{:2d} panel:{} index:{}\n",
-        //                          fEvent->evn,pln,pnl,i);
-        if (fSdr[ip] == nullptr) fSdr[ip] = sd;
+   
+      if (fDat[sd->mnid] == nullptr) {
+        fDat[sd->mnid] = new std::vector<noise_t>();
+        pdat          = fDat[sd->mnid];
+        fListOfDat.push_back(pdat);
+        
+        pdat->push_back(noise_t(first_event));
       }
+      else {
+        pdat          = fDat[sd->mnid];
+      }
+                                        // last element
+      dr = &pdat->back();
+      // one data point - per 1000 events
+      /*
+      current_index = (fEvent->evn-first_event)/1000;
+      
+      if (current_index != index) {
+                                        // and add a new record
+        pdat->push_back(noise_t(current_index));
+        dr = &pdat->back();
+      }
+                                        // accumulating
+      dr->evmax    = fEvent->evn;
+      dr->nevents += 1;
+      dr->sumx    += sd->bl;
+      */
+      // pnos->sumx2   += sd->bl*sd->bl;
     }
-//-----------------------------------------------------------------------------
-// prep done, now fill histograms
-//-----------------------------------------------------------------------------
-    fill_histograms();
   }
+//-----------------------------------------------------------------------------
+// second loop
+//-----------------------------------------------------------------------------
+/*
+  for (int jentry=0; jentry<nev; jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+
+    if (first_event == -1) {
+      first_event = (fEvent->evn/1000)*1000;
+      index = 0;
+    }
+    
+    for (int i=0; i<fEvent->nsdtot; i++) {
+      DaqStrawDigi* sd = (DaqStrawDigi*) fEvent->sd->UncheckedAt(i);
+   
+      if (fDat[sd->mnid] == nullptr) {
+        fDat[sd->mnid] = new std::vector<noise_t>();
+        pdat          = fDat[sd->mnid];
+        fListOfDat.push_back(pdat);
+        
+        pdat->push_back(noise_t(first_event));
+      }
+      else {
+        pdat          = fDat[sd->mnid];
+      }
+                                        // last element
+      dr = &pdat->back();
+      // one data point - per 1000 events
+      if (fEvent->evn-dr->evmin >= 1000) {
+                                        // and add a new record
+        first_event = (fEvent->evn/1000)*1000;
+        pdat->push_back(noise_t(first_event));
+        dr = &pdat->back();
+      }
+                                        // accumulating
+      dr->evmax    = fEvent->evn;
+      dr->nevents += 1;
+      dr->sumx    += sd->bl;
+      // pnos->sumx2   += sd->bl*sd->bl;
+    }
+  }
+*/
 //-----------------------------------------------------------------------------
 // post-loop
 //-----------------------------------------------------------------------------
-  for (int ip=0; ip<216; ip++) {
-    fHist.h_panel_dt_111_vs_evn[ip]->GetXaxis()->SetRangeUser(0,fMaxEvent+100);
+  int npanels = fListOfDat.size();
+  for (int i=0; i<npanels; i++) {
+    std::vector<noise_t>* pdat = fListOfDat[i];
+    int nbins = pdat->size();
+
+    fHist.h_noise[i] = new TH1D(Form("h_%02i",i),Form("h_%02i",i),nbins,0,nbins);
+
+    for (int ib=0; ib<nbins; ib++) {
+      noise_t* dr = &pdat->at(ib);
+      double sigm = dr->sigm();
+      fHist.h_noise[i]->SetBinContent(ib+1,sigm);
+      fHist.h_noise[i]->SetBinError(ib+1,0);
+    }
   }
   
 }
 
 //-----------------------------------------------------------------------------
-int plot_n001_sd::ResetHistograms() {
-  fHist.h_ch->Reset();
-  fHist.h_ph->Reset();
-  fHist.h_plane->Reset();
-  fHist.h_panel_dt->Reset();
-  fHist.h_panel_dt_111->Reset();
-  for (int ip=0; ip<216; ip++) {
-    fHist.h_panel_dt_111_vs_evn[ip]->Reset();
-  }
+int plot_n001_noise::ResetHistograms() {
   return 0;
 }
 
 //-----------------------------------------------------------------------------
 // assume several similar jobs
 //-----------------------------------------------------------------------------
-int plot_n001_sd::SaveHistograms(const char* Filename) {
+int plot_n001_noise::SaveHistograms(const char* Filename) {
   TFile* f = new TFile(Filename,"recreate");
   fBook->SaveFolder(fTopFolder,f);
   f->Close();

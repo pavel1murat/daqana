@@ -123,7 +123,7 @@ physics : {
         SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 600
+            TimeWindow    : 2000
             TimeStep      : 30
         }
     }

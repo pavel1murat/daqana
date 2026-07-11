@@ -20,6 +20,7 @@ DaqEvent::DaqEvent() { // : TObject() {
   seg   = new TClonesArray("DaqSegment"    ,  10);
   segsh = new TClonesArray("DaqTrkStrawHit", 100);
   trksh = new TClonesArray("DaqTrkStrawHit", 100);
+  frag  = new TClonesArray("DaqFragment"   , 100);
 
   Clear();
 }
@@ -41,6 +42,7 @@ DaqEvent::~DaqEvent() {
 
   segsh->Delete(); delete segsh;
   trksh->Delete(); delete trksh;
+  frag->Delete(); delete frag;
 }
 
 
@@ -65,5 +67,6 @@ void DaqEvent::Clear(const char* Opt) {
   ncrvd   = 0; crvd->Clear();
   ncrvp   = 0; crvp->Clear();
   ncrvc   = 0; crvc->Clear();
+  nfrag   = 0; frag->Clear();
 
 }

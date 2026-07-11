@@ -1,4 +1,5 @@
-# -*- mode: tcl -*- 
+# -*- mode: tcl -*-
+BEGIN_PROLOG
 daqana : {
     producers : {}  # empty table
     filters   : {
@@ -68,15 +69,19 @@ daqana : {
             makeCrvD       : 0
             makeCrvP       : 0
             makeCrvC       : 0
-            makeSD         : 1
-            makeSH         : 1
+            makeFragments  : 1      ## always
+            makeSD         : 0
+            makeSH         : 0
             makeCH         : 0
+            makeSeg        : 0
             makeTC         : 0
             makeTrk        : 0
             
             crvdCollTag    : "CrvDigi"
             crvpCollTag    : "CrvRecoPulses"
             crvcCollTag    : "CrvCoincidenceClusterFinder"
+
+            ksCollTag      : ""     ## leave it undefined for the moment
             
             sdCollTag      : "makeSD"
             shCollTag      : "makeSH"
@@ -221,3 +226,4 @@ daqana : {
 	}
     }
 }
+END_PROLOG

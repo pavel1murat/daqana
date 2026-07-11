@@ -20,9 +20,16 @@
 #include "art_root_io/TFileService.h"
 
 #include "art/Framework/Principal/Handle.h"
-// #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
+#include <artdaq-core/Data/Fragment.hh>
+#include <artdaq-core/Data/ContainerFragment.hh>
 
-// #include "Offline/DataProducts/inc/TrkTypes.hh"
+#include "artdaq-core-mu2e/Overlays/FragmentType.hh"
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_EventHeader.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_SubEventHeader.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Subsystem.h"
+
+#include "Offline/DataProducts/inc/TrkTypes.hh"
 #include "Offline/RecoDataProducts/inc/CrvDigi.hh"
 #include "Offline/RecoDataProducts/inc/CrvRecoPulse.hh"
 #include "Offline/RecoDataProducts/inc/CrvCoincidenceCluster.hh"
@@ -31,7 +38,6 @@
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
-// #include "Offline/RecoDataProducts/inc/TrkStrawHitSeed.hh"
 #include "Offline/RecoDataProducts/inc/KalSeed.hh"
 
 
@@ -85,6 +91,14 @@ class mu2e::MakeDigiNtuple : public art::EDAnalyzer {
 
 public:
 
+  enum {
+    e_DEBUG   = 0,
+    e_INFO    = 1,
+    e_WARNING = 2,
+    e_ERROR   = 3,
+    e_SEVERE  = 4,
+  };
+
   struct Config {
     
     Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          )};
@@ -93,20 +107,21 @@ public:
     Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"        )};
     Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"        )};
     Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"      )};
-    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"                ),""};
+    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"                )};  // ,""};
     Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                 )};
     Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                 )};
     Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"           )};
     Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms" )};
-    Atom<int>             makeCrvD      {Name("makeCrvD"      ), Comment("make CRV digis"             ),1};
-    Atom<int>             makeCrvP      {Name("makeCrvP"      ), Comment("make CRV pulses"            ),1};
-    Atom<int>             makeCrvC      {Name("makeCrvC"      ), Comment("make CRV cclusters"         ),1};
-    Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     ),1};
-    Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      ),1};
-    Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      ),1};
-    Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   ),1};
-    Atom<int>             makeSeg       {Name("makeSeg"       ), Comment("make segment branch"        ),1};
-    Atom<int>             makeTrk       {Name("makeTrk"       ), Comment("make track branch"          ),1};
+    Atom<int>             makeCrvD      {Name("makeCrvD"      ), Comment("make CRV digis"             )}; // ,1};
+    Atom<int>             makeCrvP      {Name("makeCrvP"      ), Comment("make CRV pulses"            )}; // ,1};
+    Atom<int>             makeCrvC      {Name("makeCrvC"      ), Comment("make CRV cclusters"         )}; // ,1};
+    Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     )}; // ,1};
+    Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      )}; // ,1};
+    Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      )}; // ,1};
+    Atom<int>             makeFragments {Name("makeFragments" ), Comment("make artdaq branch"         )};       // ,1};
+    Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   )};       // ,1};
+    Atom<int>             makeSeg       {Name("makeSeg"       ), Comment("make segment branch"        )};        // ,1};
+    Atom<int>             makeTrk       {Name("makeTrk"       ), Comment("make track branch"          )};        // ,1};
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
@@ -121,13 +136,17 @@ public:
 
   int      getData(const art::Event& ArtEvent);
   
-  void     print_(const std::string&  Message, const std::source_location& location = std::source_location::current());
+  void         print_(int Level, const std::string&  Message,
+                      const std::source_location& location = std::source_location::current());
+
 
   int      process_adc_waveform(float* Wf, WfParam_t* Wp);
 
   int      calculateMissingTrkParameters();
   
   int      makeSegments();
+
+  int      fillFragments();
 
   int      fillCrvD();
   int      fillCrvP();
@@ -164,6 +183,7 @@ public:
   int                      _makeCrvD;
   int                      _makeCrvP;
   int                      _makeCrvC;
+  int                      _makeFragments;
   int                      _makeSD;
   int                      _makeSH;
   int                      _makeCH;
@@ -230,6 +250,73 @@ public:
   
 }; // MakeDigiNtuple
 
+// 2026-07-05 PM//-----------------------------------------------------------------------------
+// 2026-07-05 PM// Message should be \n terminated , if needed
+// 2026-07-05 PM//-----------------------------------------------------------------------------
+// 2026-07-05 PMvoid mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_location& location) {
+// 2026-07-05 PM  if (_art_event) {
+// 2026-07-05 PM    std::cout << std::format(" event:{}:{}:{}",
+// 2026-07-05 PM                             _art_event->run(),_art_event->subRun(),_art_event->event());
+// 2026-07-05 PM  }
+// 2026-07-05 PM
+// 2026-07-05 PM
+// 2026-07-05 PM  std::vector<std::string> ss = splitString(location.file_name(),"/");
+// 2026-07-05 PM  // int sz = ss.size();
+// 2026-07-05 PM  
+// 2026-07-05 PM  std::cout << " " << ss.back() << ":" << location.line()
+// 2026-07-05 PM    //            << location.function_name()
+// 2026-07-05 PM            << ": " << Message;
+// 2026-07-05 PM}
+// 2026-07-05 PM
+//-----------------------------------------------------------------------------
+std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> result;
+    std::regex re(delimiter);
+    std::sregex_token_iterator it(str.begin(), str.end(), re, -1);
+    std::sregex_token_iterator end;
+    while (it != end) {
+        result.push_back(*it++);
+    }
+    return result;
+}
+
+//-----------------------------------------------------------------------------
+// Level:     0: debug
+//            1: info
+//            2: warning
+//            3: error
+//------------------------------------------------------------------------------
+void mu2e::MakeDigiNtuple::print_(int Level, const std::string& Message, const std::source_location& location) {
+
+  std::string s;
+  if (_art_event) s = std::format("event: {}:{}:{} ",_art_event->run(),_art_event->subRun(),_art_event->event());
+
+  std::vector<std::string> ss = splitString(location.file_name(),"/");
+
+  if (Level == e_DEBUG) {
+                                        // debug
+    MF_LOG_TRACE("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << " : " << Message;
+  } 
+  else if (Level == e_INFO) {
+                                        // info
+    MF_LOG_VERBATIM("MAKE_DIGI_NT")
+      << s << ss.back() << ":" << location.line() 
+      //            << location.function_name()
+      << " : " << Message;
+  }
+  else if (Level == e_WARNING) {                // warning
+    MF_LOG_PRINT("MAKE_DIGI_NT") << "WARNING: " << s << ss.back() << ":" << location.line() << " : " << Message;
+  }
+
+  else if (Level == e_ERROR) {                // 
+    MF_LOG_PROBLEM("MAKE_DIGI_NT") << "ERROR: " << s << ss.back() << ":" << location.line() << " : " << Message;
+  }
+
+  else if (Level == e_SEVERE) {                // 
+    MF_LOG_ABSOLUTE("MAKE_DIGI_NT") << "SEVERE: " << s << ss.back() << ":" << location.line() << " : " << Message;
+  }
+}
+
 // ======================================================================
 
 mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& config) :
@@ -248,6 +335,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _makeCrvD      (config().makeCrvD      ()),
     _makeCrvP      (config().makeCrvP      ()),
     _makeCrvC      (config().makeCrvC      ()),
+    _makeFragments (config().makeFragments ()),
     _makeSD        (config().makeSD        ()),
     _makeSH        (config().makeSH        ()),
     _makeCH        (config().makeCH        ()),
@@ -283,7 +371,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
     
-    print_(std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
+    print_(e_INFO,std::format("...{}: bit={:4d} is set to {}\n",__func__,index,_debugBit[index]));
   }
 
   SegmentHit::SetVDrift (_vDrift );
@@ -293,36 +381,6 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
   SegmentFit::fgDebugMode = _debugBit[4];
 }
 
-
-//-----------------------------------------------------------------------------
-std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
-    std::vector<std::string> result;
-    std::regex re(delimiter);
-    std::sregex_token_iterator it(str.begin(), str.end(), re, -1);
-    std::sregex_token_iterator end;
-    while (it != end) {
-        result.push_back(*it++);
-    }
-    return result;
-}
-
-//-----------------------------------------------------------------------------
-// Message should be \n terminated , if needed
-//-----------------------------------------------------------------------------
-void mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_location& location) {
-  if (_art_event) {
-    std::cout << std::format(" event:{}:{}:{}",
-                             _art_event->run(),_art_event->subRun(),_art_event->event());
-  }
-
-
-  std::vector<std::string> ss = splitString(location.file_name(),"/");
-  // int sz = ss.size();
-  
-  std::cout << " " << ss.back() << ":" << location.line()
-    //            << location.function_name()
-            << ": " << Message;
-}
 
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
@@ -375,7 +433,7 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
       ts->fTrkPanel = (mu2e::Panel*) pnl;
 
       if ((_debugMode != 0) and (_debugBit[5])) {
-        print_(std::format("-- HepTransform for plane:{:2}:{}\n",ipln,ipnl));
+        print_(e_DEBUG,std::format("-- HepTransform for plane:{:2}:{}\n",ipln,ipnl));
         std::cout << ts->fTrkPanel->dsToPanel() << std::endl;
       }
     }
@@ -422,36 +480,42 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
   _sdawfc      = nullptr;
   _shc         = nullptr;
   _chc         = nullptr;
-  
-  bool ok = ArtEvent.getByLabel(_shCollTag,shch);
-  if (ok) { 
-    _shc         = shch.product();
-    _nstrawhits = _shc->size();
-  }
-  else {
-    print_(std::format("ERROR: StrawHitCollection:{:s} is not available. Bail out\n",_shCollTag.encode().data()));
-    return -1;
+
+  bool ok;
+
+  if (_makeSD) {
+    ok = ArtEvent.getByLabel(_sdCollTag,sdch);
+    if (ok) { 
+      _sdc         = sdch.product();
+      _nstrawdigis = _sdc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
+                                 _sdCollTag.encode().data()));
+      return -1;
+    }
+
+    ok =  ArtEvent.getByLabel(_sdCollTag,sdawfch);
+    if (ok) { 
+      _sdawfc = sdawfch.product();
+    }
+    else {
+      print_(e_WARNING,std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
+                                   _sdCollTag.encode().data()));
+      return -1;
+    }
   }
 
-  ok = ArtEvent.getByLabel(_sdCollTag,sdch);
-  if (ok) { 
-    _sdc         = sdch.product();
-    _nstrawdigis = _sdc->size();
-  }
-  else {
-    print_(std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
-                       _sdCollTag.encode().data()));
-    return -1;
-  }
-
-  ok =  ArtEvent.getByLabel(_sdCollTag,sdawfch);
-  if (ok) { 
-    _sdawfc = sdawfch.product();
-  }
-  else {
-    print_(std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
-                       _sdCollTag.encode().data()));
-    return -1;
+  if (_makeSH) {
+    ok = ArtEvent.getByLabel(_shCollTag,shch);
+    if (ok) { 
+      _shc         = shch.product();
+      _nstrawhits = _shc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: StrawHitCollection:{:s} is not available. Bail out\n",_shCollTag.encode().data()));
+      return -1;
+    }
   }
 
   if (_makeTC != 0) {
@@ -462,7 +526,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntimeclusters = _tcc->size();
     }
     else {
-      print_(std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
                        _tcCollTag.encode().data()));
       return -1;
     }
@@ -476,7 +540,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncombohits    = _chc->size();
     }
     else {
-      print_(std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
                        _shCollTag.encode().data()));
       return -1;
     }
@@ -492,7 +556,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntracks = _ksc->size();
     }
     else {
-      print_(std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out\n",
                          _ksCollTag.encode().data()));
       return -1;
     }
@@ -511,7 +575,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvd = _crvdc->size();
     }
     else {
-      print_(std::format("ERROR: CrvDigiCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("ERROR: CrvDigiCollection:{:s} not found.\n",
                          _crvdCollTag.encode().data()));
     }
   }
@@ -524,7 +588,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvp = _crvpc->size();
     }
     else {
-      print_(std::format("ERROR: CrvRecoPulseCollection:{:s} not found\n",
+      print_(e_ERROR,std::format("ERROR: CrvRecoPulseCollection:{:s} not found\n",
                          _crvpCollTag.encode().data()));
     }
   }
@@ -537,7 +601,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvc = _crvcc->size();
     }
     else {
-      print_(std::format("ERROR: CrvCoincidenceClusterCollection:{:s} not found\n",
+      print_(e_ERROR,std::format("ERROR: CrvCoincidenceClusterCollection:{:s} not found\n",
                          _crvcCollTag.encode().data()));
     }
   }
@@ -545,7 +609,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 // bit_21: print CRV inputs:
 //-----------------------------------------------------------------------------
   if ((_debugMode != 0) and (_debugBit[21])) {
-      print_(std::format("bit21: _ncrvd:{} _ncrvp:{} _ncrvc:{}\n",_ncrvd,_ncrvp,_ncrvc));
+    print_(e_DEBUG,std::format("bit21: _ncrvd:{} _ncrvp:{} _ncrvc:{}\n",_ncrvd,_ncrvp,_ncrvc));
   }
 //-----------------------------------------------------------------------------
 // STM
@@ -691,6 +755,147 @@ int mu2e::MakeDigiNtuple::fillCrvC() {
 }
 
 //-----------------------------------------------------------------------------
+// called always
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillFragments() {
+  //  return 0;
+  
+  artdaq::Fragments    fragments;
+  artdaq::FragmentPtrs containerFragments;
+
+  auto fragmentHandles = _art_event->getMany<std::vector<artdaq::Fragment>>();
+  _event->nfrag = 0;
+  
+  if (_debugMode > 0) {
+    std::string msg = std::format("n_fragment_collections):{}",fragmentHandles.size());
+    print_(e_DEBUG,msg);
+  }
+
+  for (auto handle : fragmentHandles) {
+    if (!handle.isValid() || handle->empty())     continue;
+
+    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
+      // not sure what this is....
+      for (const auto& cont : *handle) {
+        artdaq::ContainerFragment contf(cont);
+        for (size_t ii = 0; ii < contf.block_count(); ++ii) {
+          containerFragments.push_back(contf[ii]);
+          fragments.push_back(*containerFragments.back());
+        }
+      }
+    }
+    else {
+      // 
+      int n_fragments = handle->size();
+
+      _event->nfrag += n_fragments;
+      
+      if (_debugMode) {
+        print_(e_DEBUG,std::format("-- next fragment collection with n_fragments:{}",n_fragments));
+      }
+      
+      for (int ifrag=0; ifrag<n_fragments; ifrag++) {
+        const artdaq::Fragment* frag = &handle->at(ifrag);
+
+        if (_debugMode and (_debugBits[0] > 0)) {
+          print_(e_DEBUG,std::format("-- fragment number:{} version:{} timestamp:{} data_size:{} type:{} DTC_SubEventHeader.size:{}",
+                             ifrag,frag->version(),frag->timestamp(),frag->dataSizeBytes(),
+                             frag->typeString(),sizeof(DTCLib::DTC_SubEventHeader)));
+          //          print_fragment(frag);
+        }
+//-----------------------------------------------------------------------------
+// skip CFO fragment (type = 12)
+//-----------------------------------------------------------------------------
+        if (frag->type() == mu2e::FragmentType::CFO)        continue;
+        uint8_t* fdata = (uint8_t*) (frag->dataBegin());
+//-----------------------------------------------------------------------------
+// skip fragments with the payload size less than the DTC header size
+// do it only for the current data format (runs > 107236)
+//-----------------------------------------------------------------------------
+        if (frag->dataSizeBytes() <= sizeof(DTCLib::DTC_SubEventHeader)) {
+          std::string msg = std::format("ERROR: fragment:{} data size:{} < DTC_SubEventHeader.size:{}. SKIP FRAGMENT",
+                                        ifrag,frag->dataSizeBytes(),sizeof(DTCLib::DTC_SubEventHeader));
+          print_(e_DEBUG,msg);
+          continue;
+        }
+        fdata += sizeof(DTCLib::DTC_EventHeader);
+//-----------------------------------------------------------------------------
+// skip non-tracker fragments
+// after a recent format change, a DTC fragment may contain ROC data from different
+// subdetectors, make sure that at least one of them is the tracker ROC
+//-----------------------------------------------------------------------------
+        DTCLib::DTC_SubEventHeader* seh = (DTCLib::DTC_SubEventHeader*) fdata;
+        if ((seh->link0_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link1_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link2_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link3_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link4_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link5_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker)     )
+                                                            continue;
+        // so far - store only tracker fragments
+        DaqFragment* nt_fr    = new ((*_event->frag)[ifrag]) DaqFragment();
+        nt_fr->nbytes         = seh->inclusive_subevent_byte_count;
+        nt_fr->ewtag          = ((uint64_t) seh->event_tag_low) | (((uint64_t) seh->event_tag_high) << 32);
+        nt_fr->nrocs          = seh->num_rocs;
+        nt_fr->event_mode     = seh->event_mode;
+        nt_fr->mac_addr       = seh->dtc_mac;
+        nt_fr->partition      = seh->partition_id;
+        nt_fr->evb_mode       = seh->evb_mode;
+        nt_fr->dtc_id         = seh->source_dtc_id;
+        nt_fr->link_ssid[0]   = seh->link0_subsystem;
+        nt_fr->link_ssid[1]   = seh->link1_subsystem;
+        nt_fr->link_ssid[2]   = seh->link2_subsystem;
+        nt_fr->link_ssid[3]   = seh->link3_subsystem;
+        nt_fr->link_ssid[4]   = seh->link4_subsystem;
+        nt_fr->link_ssid[5]   = seh->link5_subsystem;
+        nt_fr->link_status[0] = seh->link0_status;
+        nt_fr->link_status[1] = seh->link1_status;
+        nt_fr->link_status[2] = seh->link2_status;
+        nt_fr->link_status[3] = seh->link3_status;
+        nt_fr->link_status[4] = seh->link4_status;
+        nt_fr->link_status[5] = seh->link5_status;
+        nt_fr->version        = seh->subevent_format_version;
+        nt_fr->emtdc          = seh->emtdc;
+        nt_fr->latency[0]     = seh->link0_drp_rx_latency;
+        nt_fr->latency[1]     = seh->link1_drp_rx_latency;
+        nt_fr->latency[2]     = seh->link2_drp_rx_latency;
+        nt_fr->latency[3]     = seh->link3_drp_rx_latency;
+        nt_fr->latency[4]     = seh->link4_drp_rx_latency;
+        nt_fr->latency[5]     = seh->link5_drp_rx_latency;
+//-----------------------------------------------------------------------------
+// this is a tracker DTC fragment, loop over the ROCs
+//-----------------------------------------------------------------------------
+        ushort*  buf          = (ushort*) fdata;
+        int      nbytes       = buf[0];
+        uint8_t* roc_data     = fdata+sizeof(*seh);
+        uint8_t* last_address = fdata+nbytes;
+        for (int lnk=0; lnk<6; lnk++) {
+          RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
+          RocData_t* nt_rd   = &nt_fr->roc[lnk];
+          nt_rd->nbytes      = rdh->byteCount;
+          nt_rd->ewtag       = ((uint64_t) rdh->eventTag[0]) | (((uint64_t) rdh->eventTag[1]) << 16) | (((uint64_t) rdh->eventTag) << 32);
+          nt_rd->packet_type = rdh->packetType;
+          nt_rd->link        = rdh->linkID;
+          nt_rd->err         = rdh->DtcErrors;
+          nt_rd->valid       = rdh->valid;
+          nt_rd->npackets    = rdh->packetCount;
+          nt_rd->ssid        = rdh->subsystemID;
+          nt_rd->status      = rdh->status;
+          nt_rd->version     = rdh->version;
+          nt_rd->dtc_id      = rdh->dtcID;
+          nt_rd->onspill     = rdh->onSpill;
+          nt_rd->subrun      = rdh->subrun;
+          nt_rd->event_mode  = rdh->eventMode;
+          roc_data           = roc_data+rdh->byteCount;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
 
   for (int i=0; i<_nstrawdigis; i++) {
@@ -718,8 +923,6 @@ int mu2e::MakeDigiNtuple::fillSD() {
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     int dtc_id    = tpm->dtc();
-    // int pcie_addr = dtc_id % 2;                   // convention
-    // int link      = tpm->link();
 
     nt_sd->mnid         = tpm->mnid();
     
@@ -733,7 +936,7 @@ int mu2e::MakeDigiNtuple::fillSD() {
       _event->pmp[dtc_id-1] = nt_sd->pmp;
     }
     else if (_event->pmp[dtc_id-1] !=  nt_sd->pmp) {
-      TLOG(TLVL_ERROR) << std::format("dtc_id:{} _event->pmp[dtc_id]:{} hit_pmp{}",dtc_id,_event->pmp[dtc_id-1],nt_sd->pmp);
+      print_(e_ERROR,std::format("dtc_id:{} _event->pmp[dtc_id]:{} hit_pmp{}",dtc_id,_event->pmp[dtc_id-1],nt_sd->pmp));
     }
     
     nt_sd->flag         = *((uint8_t*) &sd->digiFlag());
@@ -792,7 +995,7 @@ int mu2e::MakeDigiNtuple::fillSH() {
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
     int dtc_id = tpm->dtc();
-    int pcie_addr = dtc_id % 2;                      // convention
+    //    int pcie_addr = dtc_id % 2;                      // convention
     _event->nsh[dtc_id-1][tpm->link()] += 1;         // assume DTC_ID runs from 1 to 36 (tracker)
    
     DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
@@ -1004,7 +1207,9 @@ int mu2e::MakeDigiNtuple::fillTrk() {
 int mu2e::MakeDigiNtuple::makeSegments() {
   int rc(0);
 
-  if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  START: ntimeclusters:{}\n", __func__,_ntimeclusters));
+  if ((_debugMode != 0) and (_debugBit[31] != 0)) {
+    print_(e_DEBUG,std::format("{}  START: ntimeclusters:{}\n", __func__,_ntimeclusters));
+  }
 //-----------------------------------------------------------------------------
 // cleanup from the previous event, initially set _nseg to 0
 //-----------------------------------------------------------------------------
@@ -1021,7 +1226,7 @@ int mu2e::MakeDigiNtuple::makeSegments() {
     const mu2e::TimeCluster* tc = &_tcc->at(itc);
     int nsh = tc->nStrawHits();
     if (_debugMode and (_debugBit[31] != 0)) {
-      print_(std::format(" -- PM: time cluster:{:2d} segment with {:2d} hits\n",itc, nsh));
+      print_(e_DEBUG,std::format(" -- PM: time cluster:{:2d} segment with {:2d} hits\n",itc, nsh));
     }
     for (int ih=0; ih<nsh; ih++) {
       StrawHitIndex hit_index   = tc->hits().at(ih);
@@ -1030,8 +1235,8 @@ int mu2e::MakeDigiNtuple::makeSegments() {
       int panel = sid.panel();
       int plane = sid.plane();
       if (_debugMode and (_debugBit[31] != 0)) {
-        print_(std::format(" {}: hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",
-                           __func__,ih,plane,panel,sid.straw()));
+        print_(e_DEBUG,std::format("hit number:{:3d} plane:{} panel:{} straw:{:2d}\n",
+                                   ih,plane,panel,sid.straw()));
       }
 //-----------------------------------------------------------------------------
 // cosmic track: assume one segment per panel, in principle, there could be more than one
@@ -1068,7 +1273,9 @@ int mu2e::MakeDigiNtuple::makeSegments() {
 
     int nhits = ts->nHits();
     
-    if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,nhits));
+    if ((_debugMode != 0) and (_debugBit[31] != 0)) {
+      print_(e_DEBUG,std::format("{}  iseg:{} nhits:{}\n",__func__,i,nhits));
+    }
 
     if (nhits < 4) {
       ts->fMask |= 0x1 ; // not enough hits
@@ -1152,7 +1359,9 @@ int mu2e::MakeDigiNtuple::makeSegments() {
   int niter(4);
   for (int i=0; i<_nseg; i++) {
     TrkSegment* ts = _ptseg[i];
-    if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("{}  iseg:{} nhits:{}\n",__func__,i,ts->nHits()));
+    if ((_debugMode != 0) and (_debugBit[31] != 0)) {
+      print_(e_DEBUG,std::format("{}  iseg:{} nhits:{}\n",__func__,i,ts->nHits()));
+    }
     if (ts->nHits() < 4) {
       ts->fMask |= 0x1 ; // not enough hits
       continue;
@@ -1194,10 +1403,11 @@ int mu2e::MakeDigiNtuple::makeSegments() {
     }
   }
 
-  if ((_debugMode != 0) and (_debugBit[31] != 0)) print_(std::format("-- END rc:{}\n",rc));
+  if ((_debugMode != 0) and (_debugBit[31] != 0)) {
+    print_(e_DEBUG,std::format("-- END rc:{}\n",rc));
+  }
   return 0;
 }
-
 
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSegSh() {
@@ -1258,7 +1468,7 @@ int mu2e::MakeDigiNtuple::fillSeg() {
       nt_ts->dzdyt   = 1.e6;
     }
     if (_debugMode and (_debugBit[31] != 0)) {
-      print_(std::format(" iseg:{} dz/dy(seg):{:12.5f} dz/dy(trk):{:12.5f}\n",iseg,nt_ts->dzdy,nt_ts->dzdyt));
+      print_(e_DEBUG,std::format(" iseg:{} dz/dy(seg):{:12.5f} dz/dy(trk):{:12.5f}\n",iseg,nt_ts->dzdy,nt_ts->dzdyt));
     }
 //-----------------------------------------------------------------------------
 // fill segment straw hit branch
@@ -1320,7 +1530,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   }
 
   if (_debugMode > 0) {
-    print_(std::format("-- START event:{}:{}:{}\n",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
+    print_(e_DEBUG,std::format("-- START event:{}:{}:{}\n",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
   }
 
   int rc = getData(ArtEvent);
@@ -1345,33 +1555,36 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->ncrvd   = _ncrvd;
   _event->ncrvp   = _ncrvp;
   _event->ncrvc   = _ncrvc;
+  //  _event->nfrag   = _nfrag;
   
   _event->maxEdep = 0;
 
   if ((_debugMode > 0) and (_debugBit[11] != 0)) {
-    print_(std::format("_nstrawdigis:{}\n",_nstrawdigis));
+    print_(e_DEBUG,std::format("_nstrawdigis:{}\n",_nstrawdigis));
   }
 
-  if (_makeSD ) fillSD ();
-  if (_makeSH ) fillSH ();
-  if (_makeCH ) fillCH ();
-  if (_makeTC ) fillTC ();
+  if (_makeFragments) fillFragments();
+  
+  if (_makeSD       ) fillSD ();
+  if (_makeSH       ) fillSH ();
+  if (_makeCH       ) fillCH ();
+  if (_makeTC       ) fillTC ();
 
-  if (_makeCrvD) fillCrvD ();
-  if (_makeCrvP) fillCrvP ();
-  if (_makeCrvC) fillCrvC ();
+  if (_makeCrvD     ) fillCrvD ();
+  if (_makeCrvP     ) fillCrvP ();
+  if (_makeCrvC     ) fillCrvC ();
 
   if (_makeSeg) {
     fillSeg  ();
     fillSegSh();
   }
-  if (_makeTrk) fillTrk();
+  if (_makeTrk      ) fillTrk();
 
   if (_event->nseg >= _minNSegments) {
     _tree->Fill();
   }
 
-  if (_debugMode > 0) print_("-- END\n");
+  if (_debugMode > 0) print_(e_DEBUG,"-- END\n");
 }
 
 

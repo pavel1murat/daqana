@@ -1,5 +1,5 @@
-#ifndef __daqana_ana_plot_n001_sd_hh__
-#define __daqana_ana_plot_n001_sd_hh__
+#ifndef __daqana_ana_plot_n002_tc_hh__
+#define __daqana_ana_plot_n002_tc_hh__
 
 #include <format>
 #include <iostream>
@@ -28,7 +28,7 @@
 
 #include "ana/ana/booking.hh"
 
-class plot_n001_sd: public TNamed {
+class plot_n002_tc: public TNamed {
 public :
 
   enum {
@@ -49,71 +49,69 @@ public :
 //-----------------------------------------------------------------------------
 // data structures
 //-----------------------------------------------------------------------------
+  struct Index_t {
+    int sel;
+    int slot;                           // 0-17
+    int plane;                          // offline
+    int panel;                          // offline
+    int pnl12;                          // panel index within the station (0-11)
+    int mnid;
+    int ch;
+  };
+  
   struct RunData_t {
     int run_number;
     int n_pulsed_channels;
     int pulsed_channel[96];             // only n_pulsed_clannels are used
   };
     
-  struct PanelData_t {
-    TrkPanelMap_t::Data_t* tpm;
-                                        // SD index in the event
-    int i21;                            // index of the first hit in channel 21 (assume pulsing channels 5+8*i...)
-  };
-  
-  struct PlaneData_t {
-    PanelData_t panel[6];
-  };
-    
-  struct Data_t {
-    PlaneData_t plane[36];
-  };
-
 //-----------------------------------------------------------------------------
 // histogram structures
 //-----------------------------------------------------------------------------
+ 
+  struct TimeClusterHist_t {
+    TH1F* h_t0;
+  };
+  
   struct Hist_t {
-    TH1F*     h_tdc0;
-    TH1F*     h_ch;                       // straw
-    TH1F*     h_ph;                       // pulse height
-    TH1F*     h_bl;                       // pulse height
-    TH1F*     h_plane;
-    TH2F*     h_panel_dt;
-    TH2F*     h_panel_dt_111;             // wrt first hit in panel 111
-    TProfile* h_panel_dt_111_vs_evn[216]; // wrt first hit in panel 111
-    TH1F*     h_dt20[6];
-  } fHist;
+    TH1F*              h_dt05[36][36];
+    TimeClusterHist_t* tc[100];
+  };
+
 //-----------------------------------------------------------------------------
 // other variables
 //-----------------------------------------------------------------------------
   TFolder*       fTopFolder;
   TFolder*       fRunFolder;
+
+  Hist_t*        fHist;
   
   Booking*       fBook;
 
   TrkPanelMap_t* fTpm;
 
-  fit_result_t   fFr[36]; 
-  
   int            fRunNumber;
 
-  int            fRefChannel; // 21
-  int            fMaxEvent;   // for X-axis truncation
+  int            fMaxEvent;             // for X-axis truncation
+  int            fNEvents;
   
-  DaqStrawDigi*  fSdr[216];
-  
-  TTree          *fChain;   //!pointer to the analyzed TTree or TChain
-  Int_t           fCurrent; //!current Tree number in a TChain
+  TTree          *fChain;               //! pointer to the analyzed TTree or TChain
+  Int_t           fCurrent;             //!current Tree number in a TChain
 
                                         // will the same directory work ?
-  DaqEvent*       fEvent; // #include "daqana_nt_format.hh"
-  TClonesArray*   fSd;
+  DaqEvent*       fEvent;               // #include "daqana_nt_format.hh"
+  TClonesArray*   fSh;
+  TClonesArray*   fTc;
+
+  float           t05 [36];
+  int             n05 [36];
+  float           dt05[36][36];
+//-----------------------------------------------------------------------------
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
+  plot_n002_tc(int RunNumber, const char* Fn = nullptr);
   
-  plot_n001_sd(const char* Name, int RunNumber, const char* Fn = nullptr);
-  
-  virtual ~plot_n001_sd();
+  virtual ~plot_n002_tc();
   
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
@@ -121,9 +119,16 @@ public :
 
   void             Loop          (int NEvents = -1);
 
-  int              BookHistograms (Hist_t* Hist, TFolder* Folder);
+  int              BookTimeClusterHistograms(TimeClusterHist_t* Hist, Index_t* Index, TFolder* Folder);
+  int              BookSelHistograms        (Hist_t*        Hist, Index_t* Index, TFolder* Folder);
+  int              BookHistograms           (TFolder* Folder);
+
+  int              FillTimeClusterHistograms(TimeClusterHist_t* Hist, DaqTimeCluster* Tc);
+  int              FillHistograms       ();
+
   int              ResetHistograms();
   int              SaveHistograms (const char* Filename);
-  void             fill_histograms();
+  
+  int              PrintHistograms   (int ISet);
 };
 #endif

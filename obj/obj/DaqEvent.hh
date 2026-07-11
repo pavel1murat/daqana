@@ -11,9 +11,10 @@
 #include "daqana/obj/DaqStrawDigi.hh"
 #include "daqana/obj/DaqStrawHit.hh"
 #include "daqana/obj/DaqComboHit.hh"
+#include "daqana/obj/DaqFragment.hh"
+#include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/DaqTimeCluster.hh"
 #include "daqana/obj/DaqTrack.hh"
-#include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/DaqTrkStrawHit.hh"
 
 class DaqEvent { // : public TObject {
@@ -53,6 +54,9 @@ public:
 
   int            ncrvc;                 // number of crv digis
   TClonesArray*  crvc;
+
+  int            nfrag;                 // number of ARTDAQ fragments (so far, only TRK)
+  TClonesArray*  frag;
 
   // int            nstmdigis;          // number of stm digis
   // TClonesArray*  stmdigis;

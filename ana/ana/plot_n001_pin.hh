@@ -1,5 +1,5 @@
-#ifndef __daqana_ana_plot_n001_sd_hh__
-#define __daqana_ana_plot_n001_sd_hh__
+#ifndef __daqana_ana_plot_n001_pin_hh__
+#define __daqana_ana_plot_n001_pin_hh__
 
 #include <format>
 #include <iostream>
@@ -15,6 +15,7 @@
 
 // Header file for the classes stored in the TTree if any.
 #include "daqana/obj/DaqEvent.hh"
+#include "daqana/obj/RunInfoDb.hh"
 
 // #include "TObject.h"
 // #include "daqana/obj/DaqStrawDigi.hh"
@@ -28,7 +29,7 @@
 
 #include "ana/ana/booking.hh"
 
-class plot_n001_sd: public TNamed {
+class plot_n001_pin: public TNamed {
 public :
 
   enum {
@@ -72,16 +73,20 @@ public :
 //-----------------------------------------------------------------------------
 // histogram structures
 //-----------------------------------------------------------------------------
-  struct Hist_t {
+  struct ChannelHist_t {
     TH1F*     h_tdc0;
-    TH1F*     h_ch;                       // straw
+    TH1F*     h_bl;                       // straw
     TH1F*     h_ph;                       // pulse height
-    TH1F*     h_bl;                       // pulse height
-    TH1F*     h_plane;
-    TH2F*     h_panel_dt;
-    TH2F*     h_panel_dt_111;             // wrt first hit in panel 111
-    TProfile* h_panel_dt_111_vs_evn[216]; // wrt first hit in panel 111
-    TH1F*     h_dt20[6];
+    TH1F*     h_dt01;                     // T(CAL)-T(HV) or TDC0-TDC1
+  };
+  
+  struct PanelHist_t {
+    TH1F*         h_ch;
+    ChannelHist_t channel[96];
+  };
+
+  struct Hist_t {
+    PanelHist_t  panel[216];
   } fHist;
 //-----------------------------------------------------------------------------
 // other variables
@@ -97,10 +102,10 @@ public :
   
   int            fRunNumber;
 
+  RunInfoDb::Data_t fRunInfo;
+
   int            fRefChannel; // 21
   int            fMaxEvent;   // for X-axis truncation
-  
-  DaqStrawDigi*  fSdr[216];
   
   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
@@ -111,19 +116,24 @@ public :
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
   
-  plot_n001_sd(const char* Name, int RunNumber, const char* Fn = nullptr);
+  plot_n001_pin(const char* Name, int RunNumber, const char* Fn = nullptr);
   
-  virtual ~plot_n001_sd();
+  virtual ~plot_n001_pin();
   
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
   virtual void     Init(TTree *tree);
 
-  void             Loop          (int NEvents = -1);
+  void             Loop          (int NEvents = -1); // 
 
-  int              BookHistograms (Hist_t* Hist, TFolder* Folder);
+  int              BookHistograms        (Hist_t*        Hist, TFolder* Folder);
+  int              BookPanelHistograms   (PanelHist_t*   Hist, TrkPanelMap_t::Data_t* Tpmd, TFolder* Folder);
+  int              BookChannelHistograms (ChannelHist_t* Hist, TrkPanelMap_t::Data_t* Tpmd, int Ich, TFolder* Folder);
+  
+  int              FillChannelHistograms(ChannelHist_t* Hist, DaqStrawDigi* Sd);
+  int              FillPanelHistograms  (PanelHist_t*   Hist, DaqStrawDigi* Sd);
+  int              FillHistograms ();
   int              ResetHistograms();
   int              SaveHistograms (const char* Filename);
-  void             fill_histograms();
 };
 #endif

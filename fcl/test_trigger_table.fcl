@@ -1,0 +1,111 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# make digi ntuple with: a) straw hits and b) time clusters  (NO DIGIS)
+#
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+# calibration_set_v1 already has TrkDelayPanel calibrated with time clusters
+#-----------------------------------------------------------------------------
+BEGIN_PROLOG
+TRIGGER_PATHS : [ p1 ]
+END_PROLOG
+
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "common/prolog.fcl"
+#include "common/trigger_tables.fcl"
+#------------------------------------------------------------------------------
+# prologs end here
+#------------------------------------------------------------------------------
+#include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "daqana/fcl/calibration_set_v0.fcl"
+
+services.TimeTracker : {}
+
+services.message.destinations.log.categories.MAKE_SD: {
+    # reportEvery :  1
+    limit       : 1000   # -1
+}
+
+process_name : DaqanaFilter
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+
+    # firstEvent  : 500
+    maxEvents   : -1
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "trk_fragment_ana.art"
+        SelectEvents  : [ p1 ]
+        outputCommands: [
+                         "keep *_*_*_*",
+                         "drop *_*_*_DaqanaFilter"
+                        ]
+    }
+}
+
+physics : {
+    producers : {
+        @table::tt_tracker_mc2_v004.physics.producers
+    }
+
+    filters : {
+        @table::tt_tracker_mc2_v004.physics.filters
+        @table::daqana.filters
+    }
+    
+    analyzers : {
+        @table::tt_tracker_mc2_v004.physics.analyzers
+        @table::Stntuple.analyzers
+        
+        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeSD    : 0
+            makeSH    : 1
+            makeTC    : 1
+            makeTrk   : 0
+            tcCollTag : "SimpleTimeCluster"  ## "TZClusterFinder"  ## 
+        }
+    }
+
+    # path_p1 : [ EWMProducer, makeSD, makeSH ]
+    # path_p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
+    path_p1 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster , TCFilter ] ## , DaqanaFilter ] ## TZClusterFinder ]
+
+    path_e0 : []
+    # path_e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
+    path_e1 : [ StntupleEventDump ] ##, defaultOutput ]
+
+    trigger_paths  : [ path_p1 ]   ##
+    end_paths      : [ path_e1 ]
+}
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+physics.filters.DaqanaFilter.tcCollTag        : "SimpleTimeCluster"
+physics.filters.DaqanaFilter.minNTimeClusters : 1
+physics.filters.DaqanaFilter.minEDep          : 0.0005  ## 0.5 keV (gas amplification included)
+physics.filters.DaqanaFilter.fillHistograms   : true
+
+physics.filters.TCFilter.minNPlanes   : 1
+physics.filters.TCFilter.minEDep      : 0.0005
+physics.filters.TCFilter.minNGoodHits : 2
+physics.filters.TCFilter.debugLevel   : 1
+
+physics.analyzers.StntupleEventDump.SelectEvents : [ path_p1 ]
+
+services.TFileService.fileName                : "hst.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
+outputs.defaultOutput.fileName                : "raw.mu2e.trk.vst00s001r000n000.%06r_%06s.root"

@@ -1,5 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
-// fit histograms produced by daqana/mod/MakeStationHist_module.cc
+// fit dt01 histograms produced by daqana/mod/MakeStationHist_module.cc
+// 
 // tested fitting the cosmic data (the second function)
 //-----------------------------------------------------------------------------
 #define __CLING__ 1
@@ -13,6 +14,16 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TH2.h"
+
+struct fit_result_t {
+  int    ich;                           // defined on input
+  double p[3];
+  double e[3];
+  double chi2dof;
+  float  n0;
+  float  ntot;
+  float  ineff;
+};
 
 //-----------------------------------------------------------------------------
 // initialize the panel map for a given run
@@ -35,21 +46,68 @@ int init_trk_panel_map() {
 }
 
 //-----------------------------------------------------------------------------
+int fit_histogram(TH1F* Hist, fit_result_t* Frr) {
+  int rc(0);
+    
+  Frr->chi2dof = -1;
+        
+  for (int ip=0; ip<3; ip++) {
+    Frr->p[ip] = -999;
+    Frr->e[ip] = -999;
+  }          
+
+  Hist->Draw();
+
+  int nx   = Hist->GetNbinsX();
+  int nent = Hist->GetEntries();
+  if (nent < 100) {
+    return -1;
+  }
+//-----------------------------------------------------------------------------
+// find bin with max content and fit +/- 5 ns from it
+//-----------------------------------------------------------------------------
+  double nmax = -1.;
+  float  tmax = -1e6;
+  for (int ix=0; ix<nx; ix++) {
+    double y = h->GetBinContent(ix+1);
+    // std::cout << "ix:" << ix << " y:" << y << std::endl;
+    if (y > nmax) {
+      nmax = y;
+      tmax = Hist->GetBinCenter(ix+1);
+    }
+  }
+
+  
+  // std::cout << "tmax:" << tmax << " nmax:" << nmax << std::endl;
+
+  if (nmax > 0) {
+    TFitResultPtr tfr = Hist->Fit("gaus","sq","",tmax-10,tmax+10);
+
+    if ((! tfr->IsValid()) or tfr->IsEmpty()) {
+      printf("# FIT ERROR: channel: %2i\n",Frr->ich);
+      rc = -2;
+      return rc;
+    }
+    
+    Frr->chi2dof = tfr->Chi2()/tfr->Ndf();
+    double sf     = sqrt(Frr->chi2dof);
+          
+    for (int ip=0; ip<3; ip++) {
+      Frr->p[ip] = tfr->Parameter(ip);
+      Frr->e[ip] = tfr->Error(ip)*sf;
+    }
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
 // FirstChannel: first pulsed channel, they go by 8
 // 'msh' : histograms produced by make_station_hist job (StationAna module)
 // printout for calibration: straw_id, delay_hv, delay_cal, thr_hv, thr_cal, gain
 // thr_hv, thr_cal, gain are not used by the reconstruction
+// pin: pulse injection
 //-----------------------------------------------------------------------------
 int fit_dt01_msh(int FirstRun, int Panel1=0, int Panel2=12, int PrintLevel=1) {
-
-  struct fit_result_t {
-    double p[3];
-    double e[3];
-    double chi2dof;
-    float  n0;
-    float  ntot;
-    float  ineff;
-  };
 
   fit_result_t fr[2][6][96]; 
 
@@ -83,59 +141,94 @@ int fit_dt01_msh(int FirstRun, int Panel1=0, int Panel2=12, int PrintLevel=1) {
 // first channel is the same as ir
 //-----------------------------------------------------------------------------
       for (int ich=ir; ich<96; ich+=8) {
-      // for (int ich=8; ich<9; ich++) {
-      
-        TH1F* h = (TH1F*) f->Get(Form("//StationAna/pnlset_00/%s/str_%02i/ch_%02i_dtchg",pnl_name[ipnl],ich,ich));
-        int nx = h->GetNbinsX();
-//-----------------------------------------------------------------------------
-// find bin with max content and fit +/- 5 ns from it
-//-----------------------------------------------------------------------------
-        double nmax = -1.;
-        float  tmax = -1e6;
-        for (int ix=0; ix<nx; ix++) {
-          double y = h->GetBinContent(ix+1);
-          // std::cout << "ix:" << ix << " y:" << y << std::endl;
-          if (y > nmax) {
-            nmax = y;
-            tmax = h->GetBinCenter(ix+1);
-          }
-        }
-
-      // std::cout << "tmax:" << tmax << " nmax:" << nmax << std::endl;
-
         fit_result_t* frr = &fr[pcie_addr][link][ich];
-      
-        frr->chi2dof = -1;
-        
-        for (int ip=0; ip<3; ip++) {
-          frr->p[ip] = -999;
-          frr->e[ip] = -999;
-        }          
+        frr->ich = ich;
+ 
+        TH1F* h = (TH1F*) f->Get(Form("//StationAna/pnlset_00/%s/str_%02i/ch_%02i_dtchg",pnl_name[ipnl],ich,ich));
 
-        h->Draw();
-
-        if (nmax > 0) {
-          TFitResultPtr tfr = h->Fit("gaus","sq","",tmax-5,tmax+5);
-
-          if ((! tfr->IsValid()) or tfr->IsEmpty()) {
-            printf("# FIT ERROR: channel: %2i\n",ich);
-            continue;
-          }
-
-          frr->chi2dof = tfr->Chi2()/tfr->Ndf();
-          double sf     = sqrt(frr->chi2dof);
-          
-          for (int ip=0; ip<3; ip++) {
-            frr->p[ip] = tfr->Parameter(ip);
-            frr->e[ip] = tfr->Error(ip)*sf;
-          }
-        }
+        int rc = fit_histogram(h,frr);
+        if (rc < 0) continue;
         
         TH1F* h_nhitsg = (TH1F*) f->Get(Form("//StationAna/pnlset_00/%s/str_%02i/ch_%02i_nhitsg",pnl_name[ipnl],ich,ich));
         frr->n0   = h_nhitsg->GetBinContent(1);
         frr->ntot = h_nhitsg->GetEntries();
         frr->ineff = 0;
         if (frr->ntot > 0) frr->ineff = frr->n0/frr->ntot;
+      }
+    }
+  }
+//-----------------------------------------------------------------------------
+// print fit resutls
+//-----------------------------------------------------------------------------
+  for (int pcie=0; pcie<2; pcie++) {
+    for (int link=0; link<6; link++) {
+      for (int ich=0; ich<96; ich++) {
+        fit_result_t* frr = &fr[pcie][link][ich];
+        if (PrintLevel == 1) {
+          printf("%5s   %i    %i   %2i",pnl_name[6*pcie+link], pcie, link, ich);
+          printf(" %11.4f %11.4f %11.4f %11.4f %11.4f %5.0f %5.0f %10.4f\n",
+                 frr->p[1],frr->e[1], frr->p[2], frr->e[2], frr->chi2dof, frr->n0, frr->ntot, frr->ineff);
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// pin: pulse injection
+//-----------------------------------------------------------------------------
+int fit_dt01_pin(int Station, int Panel, int PrintLevel=1) {
+
+  fit_result_t fr[216][96]; 
+
+  const char* pnl_name[12] = { "MN261", "MN248", "MN224", "MN262", "MN273", "MN276",
+                               "MN253", "MN101", "MN219", "MN213", "MN235", "MN247"
+  };
+
+  const char* hist_dir = "./pasha";
+
+  char fn[200];
+
+  int run1(122655), run2(122662);
+
+  RunInfoDb::Data_t* rid;  
+
+  for (int ir=0; ir<8; ir++) {
+    
+    sprintf(fn,"%s/pin_%06d_%06d.hist",hist_dir,run1,run2);
+
+    std::cout << "001: ir:" << ir << " fn=" << fn << std::endl;
+    
+    TFile* f = TFile::Open(fn);
+
+    if (PrintLevel == 0) {
+    }
+    else if (PrintLevel == 1) {
+      printf("name idtc ilink ic       mean        emean        sig        esig      chi2dof  n0   ntot   ineff\n");
+      printf("-------------------------------------------------------------------------------------------------------\n");
+    }
+
+    int pnl1(Station*12+Panel), pnl2(Station*12+Panel+1);
+    if (Panel == -1) pnl2 = Station*12+11;
+    
+    //   for (int ipnl=0; ipnl<12; ipnl++) {
+    for (int ipnl=pnl1; ipnl<pnl2; ipnl++) {
+//-----------------------------------------------------------------------------
+// first channel is the same as iri
+//-----------------------------------------------------------------------------
+      int nch = rid->n_pulsed_channels;
+      for (int i=0; i<nch; i++) {
+        int ich = rid->channel[i];
+                                        // for each run process its channels
+        fit_result_t* frr = &fr[ipnl][ich];
+        frr->ich = ich;
+ 
+        TH1F* h = (TH1F*) f->Get(Form("//pin/%06d/pnl_%03d/ch_%02d/dt01",run_number,panel,ich));
+
+        int rc = fit_histogram(h,frr);
       }
     }
   }
@@ -214,64 +307,15 @@ int fit_dt01_cosmics(int RunNumber, int Panel1=0, int Panel2=12, int FirstChanne
     for (int ich=FirstChannel; ich<LastChannel+1; ich++) {
                                         // initialize to undefined (bad)
       fit_result_t* frr = &fr[ich];
+      frr->ich = ich'
 
-      frr->chi2dof = -1;
-        
-      for (int ip=0; ip<3; ip++) {
-        frr->p[ip] = 0;
-        frr->e[ip] = 0;
-      }          
-
-      // for (int ich=8; ich<9; ich++) {
-      
       TH1F* h = (TH1F*) f->Get(Form("//StationAna/pnlset_00/%s/str_%02i/ch_%02i_dtchg",pnl_name[ipnl],ich,ich));
-      int  nx = h->GetNbinsX();
-      long int nent = h->GetEntries();
-      // std::cout << "ich:" << ich << " nent:" << nent << std::endl;
-      if (nent > 100) {
 //-----------------------------------------------------------------------------
-// find bin with max content and fit +/- 5 ns from it
+// fit histogram
 //-----------------------------------------------------------------------------
-        double nmax = -1.;
-        float  tmax = -1e6;
-        for (int ix=0; ix<nx; ix++) {
-          double y = h->GetBinContent(ix+1);
-          // std::cout << "ix:" << ix << " y:" << y << std::endl;
-          if (y > nmax) {
-            nmax = y;
-            tmax = h->GetBinCenter(ix+1);
-          }
-        }
-
-      // std::cout << "tmax:" << tmax << " nmax:" << nmax << std::endl;
-
-        h->Draw();
-
-        if (nmax > 0) {
-          TFitResultPtr tfr = h->Fit("gaus","sq","",tmax-10,tmax+10);
-
-          if ((! tfr->IsValid()) or tfr->IsEmpty()) {
-            // printf("# FIT ERROR: channel: %2i\n",ich);
-            frr->chi2dof = -1.;
-      
-            for (int ip=0; ip<3; ip++) {
-              frr->p[ip] = -999.;
-              frr->e[ip] = -999.;
-            }
-            // continue;
-          }
-
-          frr->chi2dof = tfr->Chi2()/tfr->Ndf();
-          double sf     = sqrt(frr->chi2dof);
-      
-          for (int ip=0; ip<3; ip++) {
-            frr->p[ip] = tfr->Parameter(ip);
-            frr->e[ip] = tfr->Error(ip)*sf;
-          }
-        }
-      }
+      int rc = fit_histogram(h,frr);
 //-----------------------------------------------------------------------------
-// print fit results, chid is the 'compact' channel index 
+// print fit results, chid is the 'compact' channel index used in calib DB
 //-----------------------------------------------------------------------------
       // mu2e::StrawId sid(plane,panel,ich);
 
