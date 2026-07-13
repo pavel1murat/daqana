@@ -15,7 +15,7 @@
 
 // Header file for the classes stored in the TTree if any.
 #include "daqana/obj/DaqEvent.hh"
-#include "daqana/obj/RunInfoDb.hh"
+#include "daqana/obj/RunDb.hh"
 
 // #include "TObject.h"
 // #include "daqana/obj/DaqStrawDigi.hh"
@@ -102,7 +102,7 @@ public :
   
   int            fRunNumber;
 
-  RunInfoDb::Data_t fRunInfo;
+  RunDb::Data_t  fRunData;
 
   int            fRefChannel; // 21
   int            fMaxEvent;   // for X-axis truncation
@@ -116,7 +116,7 @@ public :
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
   
-  plot_n001_pin(const char* Name, int RunNumber, const char* Fn = nullptr);
+  plot_n001_pin(int RunNumber, const char* Fn = nullptr);
   
   virtual ~plot_n001_pin();
   

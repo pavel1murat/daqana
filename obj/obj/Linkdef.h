@@ -26,7 +26,7 @@
 
 #pragma link C++  class  TrkSegment;
 #pragma link C++  class  TrkPanelMap_t;
-#pragma link C++  class  RunInfoDb;
+#pragma link C++  class  RunDb;
 #pragma link C++  class  DaqFragment;
 #pragma link C++  class  RocData_t;
 

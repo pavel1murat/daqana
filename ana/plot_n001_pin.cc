@@ -51,7 +51,9 @@
 #include "ana/plot_n001_pin.hh"
 
 //-----------------------------------------------------------------------------
-plot_n001_pin::plot_n001_pin(const char* Name, int RunNumber, const char* Fn) : TNamed(Name,Name), fChain(0) {
+plot_n001_pin::plot_n001_pin(int RunNumber, const char* Fn) :
+  TNamed(Form("run_%06d",RunNumber),Form("run_%06d",RunNumber)), fChain(0) {
+  
   std::string dsid("vst00s000r000n001");
   std::string dir ("/data/mu2e/mu2etrk/datasets");
   
@@ -76,10 +78,10 @@ plot_n001_pin::plot_n001_pin(const char* Name, int RunNumber, const char* Fn) : 
 //-----------------------------------------------------------------------------
 // pulsed channels
 //-----------------------------------------------------------------------------
-  fTopFolder = (TFolder*) gROOT->GetRootFolder()->FindObject(Name);
-  
+  fTopFolder = (TFolder*) gROOT->GetRootFolder()->FindObject("plot_n001_pin");
+
   if (fTopFolder == nullptr) {
-    fTopFolder = gROOT->GetRootFolder()->AddFolder(Name,Name);
+    fTopFolder = gROOT->GetRootFolder()->AddFolder("plot_n001_pin","plot_n001_pin");
   }
 
   std::string rns = std::to_string(fRunNumber);
@@ -92,9 +94,7 @@ plot_n001_pin::plot_n001_pin(const char* Name, int RunNumber, const char* Fn) : 
 
   fTpm       = TrkPanelMap_t::Instance(RunNumber);
 
-  RunInfoDb::Instance()->GetRunInfo(RunNumber,&fRunInfo);
-
-  fRefChannel      = fRunInfo.ref_channel;    // ok for 122655
+  //  fRefChannel      = fRunInfo.ref_channel;    // ok for 122655
 
   fBook      = new Booking(fRunFolder);
 
@@ -170,9 +170,9 @@ int plot_n001_pin::BookHistograms(Hist_t* Hist, TFolder* Folder) {
                                         // use offline panel/plane numbering
   for (int i=0; i<216; i++) {
     int plane = i / 6;
-    int panel = i % 6;
-                                        // use only powered on panels
-    if (fRunInfo.plane_flag[plane] == 0) continue;
+    int panel = i % 6;                  // offline panel number
+                                        // use all /*only powered on*/ panels
+    // if (fRunInfo.plane_flag[plane] == 0) continue;
 
     TrkPanelMap_t::Data_t* tpmd = fTpm->panel_data_by_offline(plane,panel);
         
@@ -205,6 +205,9 @@ void plot_n001_pin::Init(TTree *tree) {
   // fChain->SetBranchAddress("evt.sd",&fSd);
 }
 
+//-----------------------------------------------------------------------------
+// dt01 : (TDC(cal)-TDC(hv))*5./256
+// this is the sign convention of the TrkPreampStraw calibration numbers
 //-----------------------------------------------------------------------------
 int plot_n001_pin::FillChannelHistograms(ChannelHist_t* Hist, DaqStrawDigi* Sd) {
   int rc(0);

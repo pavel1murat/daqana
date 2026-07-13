@@ -3,29 +3,29 @@
 // as the DB-based approach is implemented
 // in essence, it is a table prototype
 ///////////////////////////////////////////////////////////////////////////////
-#ifndef __daqana_obj_RunInfoDb_hh__
-#define __daqana_obj_RunInfoDb_hh__
+#ifndef __daqana_obj_RunDb_hh__
+#define __daqana_obj_RunDb_hh__
 
-class RunInfoDb {
+class RunDb {
 public:
   struct Data_t {
     int  run_number;                    // 
     int  run_type;                      //
     int  ref_channel;                   // for pulse injection runs
-    int  pulsed_channels[12];
+    int  pulsed_channel[12];
     int  plane_flag[36];
   };
 
-  static RunInfoDb* fgInstance;
+  static RunDb* fgInstance;
 
 private:
-  RunInfoDb();
-  ~RunInfoDb();
+  RunDb();
+  ~RunDb();
 
 public:
-  static RunInfoDb* Instance();
+  static RunDb* Instance();
 
-  int GetRunInfo(int RunNumber, RunInfoDb::Data_t* RunInfo);
+  int GetRunInfo(int RunNumber, RunDb::Data_t* RunInfo);
 
 };
 

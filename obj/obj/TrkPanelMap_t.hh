@@ -23,9 +23,9 @@ public:
   Data_t   _data[500];
 
   int      fRunNumber;
-  Data_t* _panel_data_by_mnid   [500];    // [mnid]
-  Data_t* _panel_data_by_online [36][6];  // [dtc_id][link]
-  Data_t* _panel_data_by_offline[36][6];  // [geo_plane][geo_panel]
+  Data_t* _panel_data_by_mnid   [500];     // [mnid]
+  Data_t* _panel_data_by_online [100][6];  // [dtc_id][link] - assume max DTC ID < 100
+  Data_t* _panel_data_by_offline[36 ][6];  // [geo_plane][geo_panel]
 
 private:
   TrkPanelMap_t(int RunNumber);

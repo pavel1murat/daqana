@@ -283,49 +283,52 @@ int plot_n002_tc::SaveHistograms(const char* Filename) {
 //-----------------------------------------------------------------------------
 int plot_n002_tc::PrintHistograms(int ISet) {
 
- //  gROOT->SetBatch(kTRUE);   // no GUI windows
+  gROOT->SetBatch(kTRUE);   // no GUI windows
 
- //  std::string fn = std::format("run_{:6d}_set_{:02}_occup.pdf",fRunNumber,ISet);
+  std::string fn = std::format("run_{:6d}_n002_tc.pdf",fRunNumber);
   
- //  gStyle->SetStatW(0.30);   // wider (NDC)
+  gStyle->SetStatW(0.30);   // wider (NDC)
 
- // for (int is=0; is<18; is++) {
- //    TCanvas c(Form("c_%02i",is),Form("c_%02i",is),1600,1800);
- //    c.Divide(3,4);
- //    for (int ip=0; ip<12; ip++) {
- //      TH1F* h = fHist[ISet]->slot[is]->panel[ip]->h_occup;
- //      c.cd(ip+1);
- //      float hmax = (int(fMaxEvent/1.e6)+1)*1e6;
- //      // normalization to the rate :
+  for (int ic=0; ic<3; ic++) {
+    TCanvas c(Form("c_%02i",ic),Form("c_%02i",ic),1600,1800);
+    c.Divide(3,4);
+    for (int ip=0; ip<12; ip++) {
+      int plane = ic*12+ip;
+      if (plane == 0) continue;
+      TH1F* h = fHist->h_dt05[plane][plane-1];
+      h->GetXaxis()->SetRangeUser(-100,100);
+      c.cd(ip+1);
+      // float hmax = (int(fMaxEvent/1.e6)+1)*1e6;
+      //      // normalization to the rate :
 
- //      float input_rate = 1.e4;   // 10 kHz
- //      float scale = input_rate/(fNEvents+1.e-12);
- //      h->Scale(scale);
- //      h->SetMaximum(hmax);
- //      gPad->SetLogy(kTRUE);
- //      h->Draw("hist");
- //      // make statbox transparent
- //      gPad->Update();           // create stats box
+      //      float input_rate = 1.e4;   // 10 kHz
+      //      float scale = input_rate/(fNEvents+1.e-12);
+      //      h->Scale(scale);
+      //      h->SetMaximum(hmax);
+      //      gPad->SetLogy(kTRUE);
+      h->Fit("gaus","","",-100,100);
+      // make statbox transparent
+      gPad->Update();           // create stats box
 
- //      auto st = (TPaveStats*)h->FindObject("stats");
- //      if (st) {
- //        st->SetFillStyle(0);    // transparent
- //        st->SetBorderSize(1);   // optional
- //      }
- //      gPad->Modified();
- //      gPad->Update();
- //    }
+      auto st = (TPaveStats*)h->FindObject("stats");
+      if (st) {
+        st->SetFillStyle(0);    // transparent
+        st->SetBorderSize(1);   // optional
+      }
+      gPad->Modified();
+      gPad->Update();
+    }
 
- //    if (is == 0) {
- //      c.Print(Form("%s(",fn.data()));     // or .pdf, .root, ...
- //    }
- //    else if (is == 17) {
- //      c.Print(Form("%s)",fn.data()));     // or .pdf, .root, ...
- //    }
- //    else {
- //      c.Print(fn.data());     // or .pdf, .root, ...
- //    }
- //  }
+    if (ic == 0) {
+      c.Print(Form("%s(",fn.data()));     // or .pdf, .root, ...
+    }
+    else if (ic == 2) {
+      c.Print(Form("%s)",fn.data()));     // or .pdf, .root, ...
+    }
+    else {
+      c.Print(fn.data());     // or .pdf, .root, ...
+    }
+  }
 
   return 0;
 }
