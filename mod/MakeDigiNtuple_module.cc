@@ -139,7 +139,6 @@ public:
   void         print_(int Level, const std::string&  Message,
                       const std::source_location& location = std::source_location::current());
 
-
   int      process_adc_waveform(float* Wf, WfParam_t* Wp);
 
   int      calculateMissingTrkParameters();
@@ -169,7 +168,7 @@ public:
   virtual  void endJob  ();
 
   int                      _debugMode;
-  std::vector<std::string> _debugBits;
+  std::vector<std::string> _sDebugBits;
   int                      _debugBit[100];
   art::InputTag            _crvdCollTag;        // CRV digi collection tag
   art::InputTag            _crvpCollTag;        // CRV reco pulse collection tag
@@ -250,36 +249,7 @@ public:
   
 }; // MakeDigiNtuple
 
-// 2026-07-05 PM//-----------------------------------------------------------------------------
-// 2026-07-05 PM// Message should be \n terminated , if needed
-// 2026-07-05 PM//-----------------------------------------------------------------------------
-// 2026-07-05 PMvoid mu2e::MakeDigiNtuple::print_(const std::string& Message, const std::source_location& location) {
-// 2026-07-05 PM  if (_art_event) {
-// 2026-07-05 PM    std::cout << std::format(" event:{}:{}:{}",
-// 2026-07-05 PM                             _art_event->run(),_art_event->subRun(),_art_event->event());
-// 2026-07-05 PM  }
-// 2026-07-05 PM
-// 2026-07-05 PM
-// 2026-07-05 PM  std::vector<std::string> ss = splitString(location.file_name(),"/");
-// 2026-07-05 PM  // int sz = ss.size();
-// 2026-07-05 PM  
-// 2026-07-05 PM  std::cout << " " << ss.back() << ":" << location.line()
-// 2026-07-05 PM    //            << location.function_name()
-// 2026-07-05 PM            << ": " << Message;
-// 2026-07-05 PM}
-// 2026-07-05 PM
 //-----------------------------------------------------------------------------
-std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
-    std::vector<std::string> result;
-    std::regex re(delimiter);
-    std::sregex_token_iterator it(str.begin(), str.end(), re, -1);
-    std::sregex_token_iterator end;
-    while (it != end) {
-        result.push_back(*it++);
-    }
-    return result;
-}
-
 //-----------------------------------------------------------------------------
 // Level:     0: debug
 //            1: info
@@ -288,21 +258,30 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
 //------------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::print_(int Level, const std::string& Message, const std::source_location& location) {
 
+  struct split {
+    std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
+      std::vector<std::string> result;
+      std::regex re(delimiter);
+      std::sregex_token_iterator it(str.begin(), str.end(), re, -1);
+      std::sregex_token_iterator end;
+      while (it != end) {
+        result.push_back(*it++);
+      }
+      return result;
+    }
+  } xx;
+  
   std::string s;
   if (_art_event) s = std::format("event: {}:{}:{} ",_art_event->run(),_art_event->subRun(),_art_event->event());
 
-  std::vector<std::string> ss = splitString(location.file_name(),"/");
+  std::vector<std::string> ss   = xx.splitString(location.file_name()    ,"/");
+  std::vector<std::string> func = xx.splitString(location.function_name(),":");
 
   if (Level == e_DEBUG) {
-                                        // debug
-    MF_LOG_TRACE("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << " : " << Message;
+    MF_LOG_VERBATIM("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
   } 
   else if (Level == e_INFO) {
-                                        // info
-    MF_LOG_VERBATIM("MAKE_DIGI_NT")
-      << s << ss.back() << ":" << location.line() 
-      //            << location.function_name()
-      << " : " << Message;
+    MF_LOG_PRINT("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
   }
   else if (Level == e_WARNING) {                // warning
     MF_LOG_PRINT("MAKE_DIGI_NT") << "WARNING: " << s << ss.back() << ":" << location.line() << " : " << Message;
@@ -322,7 +301,7 @@ void mu2e::MakeDigiNtuple::print_(int Level, const std::string& Message, const s
 mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& config) :
     art::EDAnalyzer{config},
     _debugMode     (config().debugMode     ()),
-    _debugBits     (config().debugBits     ()),
+    _sDebugBits    (config().debugBits     ()),
     _crvdCollTag   (config().crvdCollTag   ()),
     _crvpCollTag   (config().crvpCollTag   ()),
     _crvcCollTag   (config().crvcCollTag   ()),
@@ -364,10 +343,10 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
 
   const char* key;
                                         // a flag is an integer!
-  int nbits = _debugBits.size();
+  int nbits = _sDebugBits.size();
   for (int i=0; i<nbits; i++) {
     int index(0), value(0);
-    key               = _debugBits[i].data();
+    key               = _sDebugBits[i].data();
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
     
@@ -758,8 +737,8 @@ int mu2e::MakeDigiNtuple::fillCrvC() {
 // called always
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillFragments() {
-  //  return 0;
-  
+  int rc(0);
+  print_(e_DEBUG,"--START:");
   artdaq::Fragments    fragments;
   artdaq::FragmentPtrs containerFragments;
 
@@ -797,7 +776,7 @@ int mu2e::MakeDigiNtuple::fillFragments() {
       for (int ifrag=0; ifrag<n_fragments; ifrag++) {
         const artdaq::Fragment* frag = &handle->at(ifrag);
 
-        if (_debugMode and (_debugBits[0] > 0)) {
+        if (_debugMode and (_debugBit[0] > 0)) {
           print_(e_DEBUG,std::format("-- fragment number:{} version:{} timestamp:{} data_size:{} type:{} DTC_SubEventHeader.size:{}",
                              ifrag,frag->version(),frag->timestamp(),frag->dataSizeBytes(),
                              frag->typeString(),sizeof(DTCLib::DTC_SubEventHeader)));
@@ -832,8 +811,8 @@ int mu2e::MakeDigiNtuple::fillFragments() {
             (seh->link4_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
             (seh->link5_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker)     )
                                                             continue;
-        // so far - store only tracker fragments
-        DaqFragment* nt_fr    = new ((*_event->frag)[ifrag]) DaqFragment();
+        // so far store only tracker fragments
+        DaqFragment* nt_fr    = _event->NewFragment(ifrag);
         nt_fr->nbytes         = seh->inclusive_subevent_byte_count;
         nt_fr->ewtag          = ((uint64_t) seh->event_tag_low) | (((uint64_t) seh->event_tag_high) << 32);
         nt_fr->nrocs          = seh->num_rocs;
@@ -871,9 +850,9 @@ int mu2e::MakeDigiNtuple::fillFragments() {
         uint8_t* last_address = fdata+nbytes;
         for (int lnk=0; lnk<6; lnk++) {
           RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
-          RocData_t* nt_rd   = &nt_fr->roc[lnk];
-          nt_rd->nbytes      = rdh->byteCount;
-          nt_rd->ewtag       = ((uint64_t) rdh->eventTag[0]) | (((uint64_t) rdh->eventTag[1]) << 16) | (((uint64_t) rdh->eventTag) << 32);
+          DaqRocData* nt_rd   = &nt_fr->roc[lnk];
+          nt_rd->nbytes       = rdh->byteCount;
+          nt_rd->ewtag        = ((uint64_t) rdh->eventTag[0]) | (((uint64_t) rdh->eventTag[1]) << 16) | (((uint64_t) rdh->eventTag) << 32);
           nt_rd->packet_type = rdh->packetType;
           nt_rd->link        = rdh->linkID;
           nt_rd->err         = rdh->DtcErrors;
@@ -891,7 +870,8 @@ int mu2e::MakeDigiNtuple::fillFragments() {
       }
     }
   }
-  return 0;
+  print_(e_DEBUG,std::format("--END: rc:{}",rc));
+  return rc;
 }
 
 

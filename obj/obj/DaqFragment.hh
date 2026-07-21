@@ -6,7 +6,7 @@
 
 #include "TObject.h"
                                         // for ntuple
-struct RocData_t {
+struct DaqRocData : public TObject {
   uint32_t  nbytes;                     // forgot if that includes the ROC header
   uint64_t  ewtag;
   uint16_t  packet_type;
@@ -21,6 +21,12 @@ struct RocData_t {
   uint16_t  onspill;
   uint16_t  subrun;
   uint16_t  event_mode;
+
+  DaqRocData();
+
+  virtual ~DaqRocData();
+  
+  ClassDefOverride(DaqRocData,1);
 };
 
 
@@ -41,13 +47,13 @@ public:
   uint8_t   emtdc;
   uint16_t  latency[6];
   
-  RocData_t roc[6];
+  DaqRocData roc[6];
 
   DaqFragment();
 
   virtual ~DaqFragment();
 
-  //  ClassDefOverride(DaqFragment,1);
+  ClassDefOverride(DaqFragment,1);
 };
 
 #endif

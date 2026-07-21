@@ -1,0 +1,68 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# look at the fragments, mostly - print
+# Usage: mu2e -c daqana/fcl/fragment_ana.fcl -s <input art file> [-n 10]
+# 
+# hopefully, prolog variables below are not used
+#-----------------------------------------------------------------------------
+#include "Offline/fcl/minimalMessageService.fcl"
+#include "Offline/fcl/standardServices.fcl"
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+process_name : FragmentAna
+
+services : @local::Services.SimAndReco
+
+services.scheduler.wantSummary        : true
+services.DbService                    : @local::DbEmpty
+services.SeedService.baseSeed         : 8
+services.SeedService.maxUniqueEngines : 100
+
+services.message.destinations.log.categories.FRAGMENT_ANA: {
+    reportEvery : 1
+    limit       : -1
+}
+services.message.destinations.log.threshold : "INFO"
+
+source : {
+    module_type : RootInput
+    fileNames   : @nil
+    compactEventRanges : true
+    # firstEvent  : 500
+    maxEvents   : -1
+    #   inputCommands: ["keep *",
+    #                   "drop *Mu2eEventHeader*_*_*_*"]
+}
+
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "dummy.art"
+
+#        outputCommands: [
+#                         "drop *_*_*_*",
+#                         "keep *_*_*_*"
+#                        ]
+    }
+}
+
+physics : {
+    producers : { }
+    filters   : { }
+    analyzers : {
+        FragmentAna : { @table::daqana.analyzers.FragmentAna
+            debugMode        : 1
+            debugBits        : [ "bit0:1" ]
+            analyzeFragments : 0
+        }
+    }
+
+    path_p1 : [ ]
+    path_e1 : [ FragmentAna ]  ## , defaultOutput ]
+
+    trigger_paths  : [ path_p1 ]
+    end_paths      : [ path_e1 ]
+}

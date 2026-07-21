@@ -379,7 +379,7 @@ void plot_n001_occup::Loop(int NEvents) {
   fNEvents  = nev;
   fMaxEvent = -1;
 
-  int current_event = -1;
+  //  int current_event = -1;
   for (int jentry=0; jentry<nev; jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
@@ -526,7 +526,7 @@ int plot_n001_occup::PrintNoisyChannels(float Percentage) {
         int panel = iy % 6;
         TrkPanelMap_t::Data_t* tpmd = fTpm->panel_data_by_offline(plane,panel);
         
-        std::cout << std::format("ix:{:3} iy:{:3} plane:{:02d} panel:{} channel:{:02d} DTC:{} link:{} MN{:03d} nxy:{:8} percent:{:8.4f}\n",
+        std::cout << std::format("ix:{:3} iy:{:3} plane:{:02d} panel:{} channel:{:02d} dtc_id:{:02d} link:{} MN{:03d} nxy:{:8} percent:{:8.4f}\n",
                                  ix,iy,plane,panel,ix,tpmd->dtc_id,tpmd->link,tpmd->mnid,nxy,float(nxy)/qtot);
       }
     }
@@ -534,3 +534,107 @@ int plot_n001_occup::PrintNoisyChannels(float Percentage) {
 
   return 0;
 }
+
+//-----------------------------------------------------------------------------
+int plot_n001_occup::PrintDt05Histograms() {
+
+  gROOT->SetBatch(kTRUE);   // no GUI windows
+
+  std::string fn = std::format("run_{:6d}_n002_tc.pdf",fRunNumber);
+  
+  gStyle->SetStatW(0.30);   // wider (NDC)
+
+  for (int ic=0; ic<3; ic++) {
+    TCanvas c(Form("c_%02i",ic),Form("c_%02i",ic),1600,1800);
+    c.Divide(4,3);
+    for (int ip=0; ip<12; ip++) {
+      int plane = ic*12+ip;
+      if (plane == 0) continue;
+      TH1F* h = fHist[0]->h_dt05[plane][plane-1];
+      h->GetXaxis()->SetRangeUser(-100,100);
+      c.cd(ip+1);
+      // float hmax = (int(fMaxEvent/1.e6)+1)*1e6;
+      //      // normalization to the rate :
+
+      //      float input_rate = 1.e4;   // 10 kHz
+      //      float scale = input_rate/(fNEvents+1.e-12);
+      //      h->Scale(scale);
+      //      h->SetMaximum(hmax);
+      //      gPad->SetLogy(kTRUE);
+      h->Fit("gaus","","",-100,100);
+      // make statbox transparent
+      gPad->Update();           // create stats box
+
+      auto st = (TPaveStats*)h->FindObject("stats");
+      if (st) {
+        st->SetFillStyle(0);    // transparent
+        st->SetBorderSize(1);   // optional
+      }
+      gPad->Modified();
+      gPad->Update();
+    }
+
+    if (ic == 0) {
+      c.Print(Form("%s(",fn.data()));     // or .pdf, .root, ...
+    }
+    else if (ic == 2) {
+      c.Print(Form("%s)",fn.data()));     // or .pdf, .root, ...
+    }
+    else {
+      c.Print(fn.data());     // or .pdf, .root, ...
+    }
+  }
+
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// one occupancy canvas per station
+//-----------------------------------------------------------------------------
+int plot_n001_occup::PlotOccupMap(int ISet, int Print) {
+
+  // gROOT->SetBatch(kTRUE);   // no GUI windows
+
+  std::string fn = std::format("run_{:6d}_set_{:02}_occup_map.pdf",fRunNumber,ISet);
+  
+  gStyle->SetStatW(0.30);   // wider (NDC)
+
+  TCanvas* c = new TCanvas(Form("c_occup_map"),Form("c_occup_map"),1600,900);
+
+  TH2F* h2 = new TH2F("h_occup_map","occup map: slot vs panel",12,0,12,18,0,18);
+
+  for (int is=0; is<18; is++) {
+    for (int ip=0; ip<12; ip++) {
+      TH1F* h = fHist[ISet]->slot[is]->panel[ip]->h_occup;
+      int nent = h->GetEntries();
+      h2->SetBinContent(ip+1,is+1,nent);
+    }
+  }
+  h2->Draw();
+                                        // make statbox transparent
+  gPad->Update();                       // create statbox
+
+  auto sbox = (TPaveStats*) h2->FindObject("stats");
+  if (sbox) {
+    sbox->SetFillStyle(0);    // transparent
+    sbox->SetBorderSize(1);   // optional
+  }
+  gPad->Modified();
+  gPad->Update();
+
+  if (Print != 0) {
+    // if (is == 0) {
+    //   c.Print(Form("%s(",fn.data()));     // or .pdf, .root, ...
+    // }
+    // else if (is == 17) {
+    //   c.Print(Form("%s)",fn.data()));     // or .pdf, .root, ...
+    // }
+    // else {
+    c->Print(fn.data());     // or .pdf, .root, ...
+    //    }
+  }
+
+  return 0;
+}
+

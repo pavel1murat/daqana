@@ -166,6 +166,8 @@ public :
   int              SaveHistograms (const char* Filename);
   
   int              PrintHistograms   (int ISet);
+  int              PrintDt05Histograms();
   int              PrintNoisyChannels(float Percentage = 0.01);
+  int              PlotOccupMap      (int ISet, int Print);
 };
 #endif

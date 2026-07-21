@@ -73,6 +73,11 @@ public:
     return digi;
   }
   
+  DaqFragment* NewFragment(int I) {
+    DaqFragment* df = new ((*frag)[I]) DaqFragment();
+    return df;
+  }
+  
   /* virtual */ void     Clear(const char* Opt = "") ; //  override ;
   
   DaqEvent();

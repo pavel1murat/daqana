@@ -45,6 +45,24 @@ cet_build_plugin(TrkFragmentAna art::module LIBRARIES REG
   ROOT::Gui
 )
 
+cet_build_plugin(FragmentAna art::module LIBRARIES REG
+  Stntuple_mod
+  #   Stntuple_gui
+  Stntuple_print
+  Stntuple_geom
+  Stntuple_obj
+  Stntuple_base
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art_root_io::TFileService_service
+  artdaq-core-mu2e::Data
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::Core
+  ROOT::RIO
+  ROOT::Gui
+)
+
 cet_build_plugin(FileCatalog art::module LIBRARIES REG
   Stntuple_mod
   #   Stntuple_gui

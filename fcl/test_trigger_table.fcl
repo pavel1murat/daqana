@@ -17,6 +17,7 @@ END_PROLOG
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
 #include "common/prolog.fcl"
+#                                         use exactly the same calibrations as the trigger
 #include "common/trigger_tables.fcl"
 #------------------------------------------------------------------------------
 # prologs end here
@@ -27,7 +28,7 @@ END_PROLOG
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 services : { @table::art_services }
-# // #include "daqana/fcl/calibration_set_v1.fcl"
+#include "daqana/fcl/calibration_set_v1.fcl"
 
 services.TimeTracker : {}
 
@@ -100,6 +101,7 @@ physics : {
 
     # path_p1 : [ EWMProducer, makeSD, makeSH ]
     # path_p2 : [ EWMProducer, makeSD, makeSH, TZClusterFinder ] ## SimpleTimeCluster ]
+    # path_p1 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster ] ## , DaqanaFilter ] ## TZClusterFinder ]
     path_p1 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster, TCFilter ] ## , DaqanaFilter ] ## TZClusterFinder ]
 
     path_e0 : []
@@ -112,7 +114,10 @@ physics : {
 #------------------------------------------------------------------------------
 # 
 #------------------------------------------------------------------------------
-physics.producers.SimpleTimeCluster.TimeWindow : 100
+physics.producers.SimpleTimeCluster.TimeWindow    : 100
+physics.producers.SimpleTimeCluster.TimeStep      : 100
+physics.producers.SimpleTimeCluster.minNStrawHits : 4
+physics.producers.SimpleTimeCluster.minNPanels    : 1
 
 physics.filters.DaqanaFilter.tcCollTag        : "SimpleTimeCluster"
 physics.filters.DaqanaFilter.minNTimeClusters : 1

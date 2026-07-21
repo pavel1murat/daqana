@@ -5,11 +5,10 @@ services.DbService : {
     version  : v0                          ## ignored
     dbName   : "mu2e_conditions_prd"       ## ignored
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v0.txt",
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-#                 "daqana/calibrations/TrkPanelMap.txt"            , ## use local copy
-                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is evolving
-                 "daqana/calibrations/TrkDelayPanel.txt"    ]       ## everything needed
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
+                 "daqana/calibrations/TrkDelayPanel.txt"    ]       ## all zeroes
                 
     verbose  : 100
 }

@@ -60,6 +60,12 @@ daqana : {
             activeLinks         : [ 0 ]
 	}
 
+	FragmentAna : { module_type:FragmentAna
+            analyzeFragments       : 0           ## set to 0 to print only
+	    debugMode              : 1           ## 
+            debugBits              : [ "bit0:1" ]
+	}
+        
         FileCatalog: { module_type: FileCatalog
 	    THistModule: { @table::StntupleTHistModule }   ## base class
             debugMode    : 0
@@ -69,7 +75,7 @@ daqana : {
             makeCrvD       : 0
             makeCrvP       : 0
             makeCrvC       : 0
-            makeFragments  : 1      ## always
+            makeFragments  : 0      ## always
             makeSD         : 0
             makeSH         : 0
             makeCH         : 0
