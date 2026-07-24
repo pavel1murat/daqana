@@ -56,8 +56,10 @@ class SubmitJob:
         
         parser = argparse.ArgumentParser()
 
-        parser.add_argument("--calib-set"       , default=None,           help="Path to the configuration file")
+        parser.add_argument("--calib-ver"       , default=None,           help="calibration version, defaults to 0")
+        parser.add_argument("--calib-run"       , default=None,           help="use calibrations keyed on a given run")
         parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
+        parser.add_argument("--dry-run"         , action='store_true',    help="dry run, if specified")
         parser.add_argument('-c',"--fcl"        , default=None,           help="Path to the configuration file")
         parser.add_argument('-e',"--first_event", type=int, default=None, help="Path to the configuration file")
         parser.add_argument('--idsid'           , default=None,           help="input dataset ID")
@@ -71,7 +73,8 @@ class SubmitJob:
         args = parser.parse_args()
 
         logger.info(f'self.diag_level = {args.diag_level}'   )
-        logger.info(f'self.calib      = {args.calib_set}'    )
+        logger.info(f'self.calib_ver  = {args.calib_ver}'    )
+        logger.info(f'self.calib_run  = {args.calib_run}'    )
         logger.info(f'self.rn         = {args.run_number}'   )
         logger.info(f'self.fcl        = {args.fcl}'          )
         logger.info(f'self.nfiles     = {args.nfiles}'       )
@@ -119,10 +122,18 @@ class SubmitJob:
 # overrides, calib: 'v1'
 #------------------------------------------------------------------------------
         overrides_cmd = ''
-        if (args.calib_set):
-            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{args.calib_set}/'
-            overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib_set}/'
+        if (args.calib_ver):
+            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{args.calib_ver}/'
+            # overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib_set}/'
 
+        if (args.calib_run):
+            subdir = args.calib_run[0:3]+'000'
+            if (overrides_cmd != ''):
+                overrides_cmd  += f' | sed s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!'
+            else:
+                overrides_cmd  = f' | sed s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!'
+
+        print(f'cmd:{overrides_cmd}')
 #------------------------------------------------------------------------------
 # redefinitions --> appends 
 #------------------------------------------------------------------------------
@@ -131,6 +142,8 @@ class SubmitJob:
         os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
 
+        if (args.dry_run):
+            return
 #        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_set}n000.%06r_%06s.art\\"'
 #        print(f'0011:x:{x}')
 #        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')

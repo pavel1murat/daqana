@@ -109,7 +109,7 @@ public :
 //-----------------------------------------------------------------------------
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
-  plot_n002_tc(int RunNumber, const char* Fn = nullptr);
+  plot_n002_tc(int RunNumber, const char* Fn = nullptr, const char* Label = "002");
   
   virtual ~plot_n002_tc();
   

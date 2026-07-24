@@ -141,7 +141,8 @@ public :
 //-----------------------------------------------------------------------------
                                         // for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
-  plot_n001_occup(int RunNumber, const char* Fn = nullptr);
+  
+  plot_n001_occup(int RunNumber, const char* Fn = nullptr, const char* Label="n001");
   
   virtual ~plot_n001_occup();
   

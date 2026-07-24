@@ -14,11 +14,12 @@
 #define TRACE_NAME "plot_n001_occup"
 
 //-----------------------------------------------------------------------------
-plot_n001_occup::plot_n001_occup(int RunNumber, const char* Fn) :
-  TNamed(Form("run_%06d_n001_occup",RunNumber),Form("run_%06d_n001_occup",RunNumber)),
+plot_n001_occup::plot_n001_occup(int RunNumber, const char* Fn, const char* Label) :
+  
+  TNamed(Form("run_%06d_%s_occup",RunNumber,Label),Form("run_%06d_%s_occup",RunNumber,Label)),
   fChain(0) {
 
-  std::string dir("/data/mu2e/mu2etrk/datasets/vst00s000r000n001"); 
+  std::string dir = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000{}",Label); 
   
   TFile *f(nullptr);
   if (Fn != nullptr) {
@@ -28,7 +29,7 @@ plot_n001_occup::plot_n001_occup(int RunNumber, const char* Fn) :
     }
   }
   else {
-    std::string fn = std::format("{}/nts.mu2e.trk.vst00s000r000n001.{:06d}_000001.root",dir,RunNumber);
+    std::string fn = std::format("{}/nts.mu2e.trk.vst00s000r000{}.{:06d}_000001.root",dir,Label,RunNumber);
     f = (TFile*)gROOT->GetListOfFiles()->FindObject(fn.data());
     if (!f || !f->IsOpen()) {
       f = new TFile(fn.data());

@@ -1,0 +1,28 @@
+# -*- mode:tcl -*-
+# services.DbService : @local::DbEmpty
+services.DbService : {
+    purpose  : EMPTY
+    version  : v0                          ## ignored
+    dbName   : "mu2e_conditions_prd"       ## ignored
+    
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
+                 "daqana/calibrations/TrkDelayRStraw.txt"   ,
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
+                 "daqana/rundb/123000/123680/TrkDelayPanel_123680_v1.txt"    ]       ## all zeroes
+                
+    verbose  : 100
+}
+
+services.ProditionsService.alignedTracker.useDb         : false
+services.ProditionsService.alignedTrackerSim.useDb      : false
+services.ProditionsService.strawElectronics.useDb       : true        ## default false
+services.ProditionsService.strawElectronics.verbose     : 10
+services.ProditionsService.fullReadoutStraw.useDb       : false
+services.ProditionsService.strawDrift.useDb             : false
+services.ProditionsService.strawPhysics.useDb           : false
+services.ProditionsService.strawResponse.useDb          : false
+services.ProditionsService.trackerStatus.Settings.useDb : false
+services.ProditionsService.trackerPanelMap.useDb        : true
+
+## :: #include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
+## services.ProditionsService.trackerPanelMap              : @local::trackerPanelMap

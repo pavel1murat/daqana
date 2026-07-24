@@ -30,7 +30,7 @@ services.message.destinations.log.threshold : "INFO"
 source : {
     module_type : RootInput
     fileNames   : @nil
-    compactEventRanges : true
+    # compactEventRanges : true
     # firstEvent  : 500
     maxEvents   : -1
     #   inputCommands: ["keep *",
