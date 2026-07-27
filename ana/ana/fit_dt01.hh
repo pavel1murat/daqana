@@ -35,13 +35,17 @@ public:
     float  ineff;
   };
 
+  int fRunNumber;
+
   fit_result_t fFr[216][96]; // fit results 
 
   int fit_histogram(TH1F* Hist, fit_result_t* Frr);
   int fit_msh      (int FirstRun, int Panel1=0, int Panel2=12, int PrintLevel=1);
   int fit_pin      (const char* Fn, int* RunNumber, int SlotLo, int SlotHi, int Panel, int PrintLevel=1);
-  int fit_cosmics  (int RunNumber, int Panel1=0, int Panel2=12, int FirstChannel=0, int LastChannel=95, int PrintLevel=0);
-  int write_TrkPreampStraw(const char* Fn = "TrkPreampStraw.txt.new");
+  int fit_cosmics  (int  RunNumber, int Slot, int Panel, int Channel, const char* Fn = nullptr, int PrintLevel=1);
+
+  // need run number to determine whether the calibrations have to be corrected for the signal proparation
+  int write_TrkPreampStraw(int RunNumber, const char* Fn = "TrkPreampStraw.txt.new");
 };
 
 #endif

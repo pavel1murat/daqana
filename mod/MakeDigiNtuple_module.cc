@@ -78,7 +78,7 @@
 // #include "TRACE/tracemf.h"
 #include "TRACE/tracemf.h"
 #define TRACE_NAME "MakeDigiNtuple"
-
+#define LOG_STREAM "MakeDigiNtuple"
 
 namespace mu2e {
   class MakeDigiNtuple;
@@ -125,9 +125,10 @@ public:
     Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
     Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
     Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
-    Atom<int>             minNSegments  {Name("minNSegments"  ), Comment("min N(segments)"                     )};
-    Atom<float>           vDrift        {Name("vDrift"        ), Comment("vDrift, um/ns")               };
-    Atom<float>           tOffset       {Name("tOffset"       ), Comment("T0 offset, ns")               };
+    Atom<float>           minSDPHToSave {Name("minSDPHToSave" ), Comment("min PH of the SD to save")   };
+    Atom<int>             minNSegments  {Name("minNSegments"  ), Comment("min N(segments)")            };
+    Atom<float>           vDrift        {Name("vDrift"        ), Comment("vDrift, um/ns")              };
+    Atom<float>           tOffset       {Name("tOffset"       ), Comment("T0 offset, ns")              };
   };
 
   // --- C'tor/d'tor:
@@ -191,8 +192,9 @@ public:
   int                      _makeTrk;
   int                      _ewLength;           // it is up to the user to make sure it is set correctly
   int                      _nSamplesBL;
-  int                      _minPulseHeight;
   int                      _minNSegments;
+  float                    _minPulseHeight;
+  float                    _minSDPHToSave;
   float                    _vDrift;
   float                    _tOffset;
     
@@ -250,7 +252,6 @@ public:
 }; // MakeDigiNtuple
 
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 // Level:     0: debug
 //            1: info
 //            2: warning
@@ -278,21 +279,21 @@ void mu2e::MakeDigiNtuple::print_(int Level, const std::string& Message, const s
   std::vector<std::string> func = xx.splitString(location.function_name(),":");
 
   if (Level == e_DEBUG) {
-    MF_LOG_VERBATIM("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
+    MF_LOG_VERBATIM(LOG_STREAM) << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
   } 
   else if (Level == e_INFO) {
-    MF_LOG_PRINT("MAKE_DIGI_NT") << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
+    MF_LOG_PRINT(LOG_STREAM) << s << ss.back() << ":" << location.line() << ":" << func.back() << " : " << Message;
   }
   else if (Level == e_WARNING) {                // warning
-    MF_LOG_PRINT("MAKE_DIGI_NT") << "WARNING: " << s << ss.back() << ":" << location.line() << " : " << Message;
+    MF_LOG_PRINT(LOG_STREAM) << "WARNING: " << s << ss.back() << ":" << location.line() << " : " << Message;
   }
 
   else if (Level == e_ERROR) {                // 
-    MF_LOG_PROBLEM("MAKE_DIGI_NT") << "ERROR: " << s << ss.back() << ":" << location.line() << " : " << Message;
+    MF_LOG_PROBLEM(LOG_STREAM) << "ERROR: " << s << ss.back() << ":" << location.line() << " : " << Message;
   }
 
   else if (Level == e_SEVERE) {                // 
-    MF_LOG_ABSOLUTE("MAKE_DIGI_NT") << "SEVERE: " << s << ss.back() << ":" << location.line() << " : " << Message;
+    MF_LOG_ABSOLUTE(LOG_STREAM) << "SEVERE: " << s << ss.back() << ":" << location.line() << " : " << Message;
   }
 }
 
@@ -324,6 +325,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _ewLength      (config().ewLength      ()),
     _nSamplesBL    (config().nSamplesBL    ()),
     _minPulseHeight(config().minPulseHeight()),
+    _minSDPHToSave (config().minSDPHToSave ()),
     _minNSegments  (config().minNSegments  ()),
     _vDrift        (config().vDrift        ()),
     _tOffset       (config().tOffset       ()),
@@ -847,7 +849,7 @@ int mu2e::MakeDigiNtuple::fillFragments() {
         ushort*  buf          = (ushort*) fdata;
         int      nbytes       = buf[0];
         uint8_t* roc_data     = fdata+sizeof(*seh);
-        uint8_t* last_address = fdata+nbytes;
+        // uint8_t* last_address = fdata+nbytes;
         for (int lnk=0; lnk<6; lnk++) {
           RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
           DaqRocData* nt_rd   = &nt_fr->roc[lnk];
@@ -878,21 +880,32 @@ int mu2e::MakeDigiNtuple::fillFragments() {
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSD() {
 
+  int idigi=0;
   for (int i=0; i<_nstrawdigis; i++) {
     const mu2e::StrawDigi*            sd    = &_sdc->at(i);
     const mu2e::StrawDigiADCWaveform* sdawf = &_sdawfc->at(i);
     int ns = sdawf->samples().size();
                                         // one-time initializatiion
     if (_n_adc_samples == -1) _n_adc_samples = ns;
+//-----------------------------------------------------------------------------
+// process the waveform and store the waveform parameters
+//-----------------------------------------------------------------------------
+    float wf[100];
+    for (int is=0; is<ns; is++) {
+      wf[is] = sdawf->samples()[is];
+    }
 
-    // DaqStrawDigi* nt_sd = (DaqStrawDigi*) _event->sd->ConstructedAt(i);
-    DaqStrawDigi* nt_sd = _event->NewSD(i);
+    WfParam_t wp;
+    process_adc_waveform(wf,&wp);
+//-----------------------------------------------------------------------------
+// for calibrations, write out a special small size ntuple with the cut on the SD pulse height
+// by default, _minSdPulseHeight is -1.
+//-----------------------------------------------------------------------------
+    if (wp.ph < _minSDPHToSave)                             continue;
+    DaqStrawDigi* nt_sd = _event->NewSD(idigi);
+    idigi++;
+    
     nt_sd->InitSD(ns);
-                                        // this is inlined implementation of Init()
-    // if (nt_sd->_ns < 0) {
-    //   nt_sd->_ns = ns;
-    //   nt_sd->adc.resize(ns);
-    // }
     
     nt_sd->sid          = sd->strawId().asUint16();
  
@@ -926,16 +939,6 @@ int mu2e::MakeDigiNtuple::fillSD() {
     for (int is=0; is<ns; is++) {
       nt_sd->adc[is] = sdawf->samples()[is];
     }
-//-----------------------------------------------------------------------------
-// process the waveform and store the waveform parameters
-//-----------------------------------------------------------------------------
-    float wf[100];
-    for (int is=0; is<ns; is++) {
-      wf[is] = sdawf->samples()[is];
-    }
-
-    WfParam_t wp;
-    process_adc_waveform(wf,&wp);
     
     nt_sd->fs = wp.fs;
     nt_sd->bl = wp.bl;
@@ -957,6 +960,7 @@ int mu2e::MakeDigiNtuple::fillSD() {
              nt_sd->pmp, nt_sd->flag);
     }
   }
+  _nstrawdigis = idigi;
   return 0;
 }
 
@@ -1034,6 +1038,7 @@ int mu2e::MakeDigiNtuple::fillCH() {
     nt_ch->uy          = ch->uDir().y();
     nt_ch->ures        = ch->uRes();
     nt_ch->vres        = ch->vRes();
+    nt_ch->edep        = ch->energyDep();
 
     if (_debugMode  > 0) {
       if (_debugBit[1] != 0) {

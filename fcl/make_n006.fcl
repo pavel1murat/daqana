@@ -90,8 +90,8 @@ physics : {
         TimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 400
-            TimeStep      : 30
+            TimeWindow    : 160 ## assume running with correct calibrations ## 400
+            TimeStep      : 50
         }
     }
     
@@ -104,7 +104,7 @@ physics : {
             makeCrvC      : 1
             makeFragments : 0
             makeSD        : 0
-            makeSH        : 1
+            makeCH        : 1
             makeTC        : 1
             saveWaveforms : 0
             

@@ -15,7 +15,7 @@ END_PROLOG
 #include "daqana/fcl/prolog.fcl"
 #include "Stntuple/fcl/stntuple_templates.fcl"
 
-process_name : CosmicReco
+process_name : MakeR003
 #------------------------------------------------------------------------------
 # services section
 #------------------------------------------------------------------------------
@@ -28,8 +28,13 @@ services.TFileService.fileName        : "/dev/null" ## "/data/tracker/vst/mu2etr
 # update DB section
 #------------------------------------------------------------------------------
 #! #include "daqana/fcl/calibration_set_v5.fcl"
-#include "daqana/fcl/calibration_set_v1.fcl"
+#include "daqana/fcl/calibration_set_v0.fcl"
+
 services.ProditionsService.strawResponse.truncateLongitudinal : false
+
+services.ProditionsService.crvPhotonYield.useDb               : false
+services.ProditionsService.crvStatus.useDb                    : false
+services.ProditionsService.crvCalib.useDb                     : false
 
 source : {
     module_type : RootInput
@@ -58,6 +63,9 @@ outputs:  {
                            "keep *_SimpleTimeCluster_*_*",
                            "keep *_LineFinder_*_*",
                            "keep *_TriggerResults_*_*",
+                           "keep *_CrvDigis_*_*",
+                           "keep *_CrvRecoPulses_*_*",
+                           "keep *_CrvCoincidenceClusters_*_*",
                            @sequence::Reconstruction.GeneralProducts,
                            @sequence::Reconstruction.HighRecoProducts
                           ]
@@ -71,6 +79,13 @@ outputs.defaultOutput.fileName :   "rec.mu2e.trk.vst00s000r003n000.%06r_%06s.art
 
 physics : {
     producers : {
+        CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
+            diagLevel     : 1 ## 10
+            # useSubsystem0 : false
+        }
+
+        @table::CrvRecoPackage.producers
+        
         makeSD: { @table::DAQ.producers.makeSD
             saveWaveforms : true ## needed by makeSH
         }
@@ -116,6 +131,8 @@ physics : {
             minNStrawHits : 6
             TimeWindow    : 160
             TimeStep      : 50
+            minEDep       : 0.0005
+            minNGoodHits  : 2
         }
 
         KKLine  : { @table::Reconstruction.producers.KKLine   }
@@ -144,8 +161,9 @@ physics : {
     p2 : [ EWMProducer, makeSD, makeSH                  ]
     p3 : [ EWMProducer, makeSD, makeSH, TimeCluster     ]
 
-    p4 : [EWMProducer, makeSD, makeSH,
-          TimeCluster, LineFinder, KKLine     ## = Reconstruction.LineReco
+    p4 : [EWMProducer, makeSD, makeSH
+          , TimeCluster, LineFinder, KKLine     ## = Reconstruction.LineReco
+          , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder
          ]
     e1 : [ defaultOutput ]
 
@@ -153,7 +171,7 @@ physics : {
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+#
 #------------------------------------------------------------------------------
 #include "daqana/fcl/kkline.fcl"
 

@@ -14,7 +14,9 @@ END_PROLOG
 # #include "daqana/fcl/calibration_set_v9.fcl"
 # #include "daqana/fcl/calibration_set_v3.fcl"
 
-#include "daqana/fcl/calibration_set_v1.fcl"
+## #include "daqana/fcl/calibration_set_v0.fcl"
+
+#include "daqana/rundb/123000/123680/calibration_set_123680_v1.fcl"
 
 process_name : Display
 
@@ -98,11 +100,12 @@ physics : {
             doRefine                   : 1        ## 0
         }
         
-        SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+        # SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+        TimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 800
-            TimeStep      : 30
+            TimeWindow    : 160
+            TimeStep      : 50
         }
     }
     filters    : {
@@ -119,11 +122,11 @@ physics : {
 	   @sequence::CaloCluster.Reco,
 	   @sequence::TrkHitReco.PrepareHits   ## [ PBTFSD, makeSH, makePH, FlagBkgHits ] 
                                                ##  see Offline/TrkHitReco/prolog.fcl
-           , TZClusterFinder
+           , TimeCluster ## TZClusterFinder
 	  ]
     p2 : [ EventIDFilter ]
 
-    p3: [ EWMProducer, makeSD, makeSH, flagPH, TZClusterFinder ]
+    p3: [ EWMProducer, makeSD, makeSH, flagPH, TimeCluster ] ## TZClusterFinder ]
 
     e1 : [ MuHitDisplay ]
 

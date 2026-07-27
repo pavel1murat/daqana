@@ -25,6 +25,7 @@
 // #include "daqana/obj/DaqTrkStrawHit.hh"
 // #include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/TrkPanelMap_t.hh"
+#include "daqana/obj/RunDb.hh"
 
 #include "ana/ana/booking.hh"
 
@@ -59,11 +60,7 @@ public :
     int ch;
   };
   
-  struct RunData_t {
-    int run_number;
-    int n_pulsed_channels;
-    int pulsed_channel[96];             // only n_pulsed_clannels are used
-  };
+  RunDb::Data_t     fRunInfo;
     
   struct PanelData_t {
     TrkPanelMap_t::Data_t* tpm;
@@ -84,11 +81,11 @@ public :
 //-----------------------------------------------------------------------------
   struct ChannelHist_t {
     TH1F*     h_tdc0;
-    TH1F*     h_dt10;
-    TH1F*     h_ph;                       // pulse height
-    TH1F*     h_bl;                       // pulse height
-    TH1F*     h_fs;                       // pulse height
-    TH1F*     h_edep;                     // 
+    TH1F*     h_dt01;                   // calib const convention: CAL-HV
+    TH1F*     h_ph;                     // pulse height
+    TH1F*     h_bl;                     // baseline
+    TH1F*     h_fs;                     // first sample
+    TH1F*     h_edep;                   // energy dep
   };
   
   struct PanelHist_t {

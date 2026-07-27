@@ -1,8 +1,6 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# n004:
-#   tracker: digis+hits+time clusters
-#   CRV    : digis+pulses+coincidence clusters
+# run interactively, stop after each event to display waveforms
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
@@ -26,14 +24,16 @@ END_PROLOG
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
-
-
 services.message.destinations.log.categories.MAKE_SD: {
     # reportEvery :  1
-    limit       : 1000   # -1
+    limit       : -1 ## 1000   # -1
+}
+services.message.destinations.log.categories.DaqanaFilter: {
+    # reportEvery :  1
+    limit       : -1 ## 1000   # -1
 }
 
-process_name : MakeDaqNtuple
+process_name : MakeDaqanaHist
 
 source : {
     module_type : RootInput
@@ -48,7 +48,7 @@ source : {
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
-        fileName      :   "make_n003.art"
+        fileName      :   "trk_fragment_ana.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -62,7 +62,7 @@ physics : {
     producers : {
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 1 ## 10
+            diagLevel     : 10
             # useSubsystem0 : false
         }
 
@@ -76,9 +76,9 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            debugMode        : 0 ## 1
+            debugMode        : 0 ## 10
             debugBits        : ["bit0:1"]
-            saveWaveforms    : true
+            saveWaveforms    : true       ## needed by makeSH
             geography        : [  ]
             # dtcHeaderPresent : false
             keyOnMnid        : true ## true    ## default:false
@@ -89,54 +89,50 @@ physics : {
         TimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 400
-            TimeStep      : 30
+            TimeWindow    : 160 ## assume correct calibrations
+            TimeStep      : 50
+            minNGoodHits  : 0
         }
     }
     
-    filters   : {                       }
+    filters   : {
+         TCFilter: { module_type: "TimeClusterFilter"
+             ComboHitCollection: "makeSH"
+             minEDep: 5.0000002e-4
+             minNGoodHits: 2
+             minNPlanes: 1
+             minNStrawHits: 4
+             requireCaloCluster: false
+             timeClusterCollection: "TimeCluster"
+         }
+
+        DaqanaFilter : { @table::daqana.filters.DaqanaFilter
+            chCollTag        : "makeSH"
+            tcCollTag        : "TimeCluster" ## "TZClusterFinder"
+            debugMode        : false
+            debugBits        : [ "bit0:0" ]
+            maxDt            : 40
+            minEDep          : 0.5e-3
+            minNGoodCh       : 2
+            minNTimeClusters : 0
+            fillHistograms   : true
+        }
+    }
     
     analyzers : {
-        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeCrvD      : 1
-            makeCrvP      : 1
-            makeCrvC      : 1
-            makeFragments : 0
-            makeSD        : 1
-            makeSH        : 1
-            makeTC        : 0
-            saveWaveforms : 0
-            
-            tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
-
-            debugMode     : 1
-            debugBits: [
-                        ## "bit21:1"
-                       ]
-       }
     }
 
-    # p1 : [ EWMProducer, makeSD, makeSH  ]
-    # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
-    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    ## p1 : [ EWMProducer, makeSD, makeSH  ]
+    ## p2 : [ EWMProducer, makeSD, makeSH, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, DaqanaFilter ] ## , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
+    e1 : [ ]
     # e1 : []
 
     trigger_paths  : [ p2 ]
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+# 
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n004.%06r_%06s.root"
-
-services.ProditionsService.crvPhotonYield.useDb : false
-services.ProditionsService.crvStatus.useDb : false
-services.ProditionsService.crvCalib.useDb : false
-
-services.scheduler.wantSummary                   : true
-
-services.message.destinations.log.categories.ArtReport.reportEvery : 1
-services.message.destinations.log.categories.ArtReport.limit : 1000
-services.message.destinations.log.categories.ArtReport.timespan : 300
+services.TFileService.fileName   :   "hst.mu2e.trk.vst00s000r000n004.%06r_%06s.root"

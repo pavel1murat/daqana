@@ -12,15 +12,21 @@ daqana : {
         }
         
         DaqanaFilter: { module_type: DaqanaFilter
-            chCollTag        : "makeSH"
-            tcCollTag        : "TZClusterFinder"
-            debugMode        : false
-            debugBits        : [ "bit0:0" ]
-            maxDt            : 40
-            minEDep          : 0.5e-3
-            minNGoodCh       : 0
-            minNTimeClusters : 0
-            fillHistograms   : false
+            chCollTag         : "makeSH"
+            tcCollTag         : "SimpleTimeCluster"            ## "TZClusterFinder"
+            #            crvdCollTag    : "CrvDigi"            ## not used yet
+            #            crvpCollTag    : "CrvRecoPulses"      ## not used yet
+            crvcCollTag       : "CrvCoincidenceClusterFinder"
+            debugMode         : false
+            debugBits         : [ "bit0:0" ]
+            requireCrvc       : false
+            maxDt             : 40.             ## ns
+            maxTcCrvcDt       : 2000.           ## ns
+            minEDep           : 0.5e-3
+            minNGoodCh        : 2
+            minNTimeClusters  : 0
+            minNTcCrvcMatches : 0
+            fillHistograms    : false
         }
     }
     analyzers : {
@@ -101,6 +107,7 @@ daqana : {
             debugBits      : [ "bit0:0", "bit1:0" ]
             nSamplesBL     : 6
             minPulseHeight : 5.
+            minSDPHToSave  : -1.
             minNSegments   : 0
             vDrift         : 61.3e-3  ## mm/ns
             tOffset        : 0.       ## by default, no drift offsets

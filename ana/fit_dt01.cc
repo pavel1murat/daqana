@@ -21,6 +21,8 @@
 #include "TH1.h"
 #include "TH2.h"
 
+#include "daqana/obj/RunDb.hh"
+
 #include "ana/fit_dt01.hh"
 
 //-----------------------------------------------------------------------------
@@ -169,8 +171,8 @@ int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, in
   const char* hist_dir = "/data/mu2e/mu2etrk/hist/plot_n001_pin";
 
   char fn[200];
-
-  //  sprintf(fn,"%s/hst.mu2e.trk.plot_n001_pin.%06d_%06d.hist",hist_dir,RunNumber[0],RunNumber[7]);
+  
+  sprintf(fn,"%s/hst.mu2e.trk.plot_n001_pin.%06d_%06d.hist",hist_dir,RunNumber[0],RunNumber[7]);
   TFile* f = TFile::Open(Fn);
 
   RunDb::Data_t rdt;  
@@ -200,13 +202,13 @@ int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, in
  
           TH1F* h = (TH1F*) f->Get(Form("//plot_n001_pin/%06d/pnl_%03d/ch_%02d/dt01",rn,panel_index,ich));
 
-          int rc = fit_histogram(h,frr);
+          /*int rc = */ fit_histogram(h,frr);
         }
       }
     }
   }
 //-----------------------------------------------------------------------------
-// print fit resutls
+// print fit results
 //-----------------------------------------------------------------------------
   if (PrintLevel == 1) {
     printf("pnl216 slot plane panel MnID ich       mean        emean        sig        esig      chi2dof  n0   ntot   ineff\n");
@@ -214,10 +216,10 @@ int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, in
   }
 
   for (int slot=SlotLo; slot<SlotHi+1; slot++) {
-    for (int pnl=0; pnl<12; pnl++) {
-      int panel_index = 12*slot+pnl;
-      int plane = slot*2 + pnl/6;
-      int panel = pnl % 6;
+    for (int pnl12=0; pnl12<12; pnl12++) {
+      int panel_index = 12*slot+pnl12;
+      int plane = slot*2 + pnl12/6;
+      int panel = pnl12 % 6;
       
       TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_offline(plane,panel);
       int mnid  = tpmd->mnid;
@@ -239,34 +241,25 @@ int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, in
 //-----------------------------------------------------------------------------
 // for cosmic run, process all channels
 //-----------------------------------------------------------------------------
-int fit_dt01::fit_cosmics(int RunNumber, int Panel1=0, int Panel2=12, int FirstChannel=0, int LastChannel=95, int PrintLevel=0) {
+int fit_dt01::fit_cosmics(int RunNumber, int Slot, int Panel, int Channel, const char* Fn, int PrintLevel) {
+  // int RunNumber, int Panel1=0, int Panel2=12, int FirstChannel=0, int LastChannel=95, int PrintLevel=0) {
                                         // initialize panel map
 
   //   init_trk_panel_map();
  
-  char fn[200];
+  // char fn[200];
 
-  const char* hist_dir = "/data/tracker/vst/hist";
-  sprintf(fn,"%s/hst.mu2e.vst00s000r000n000.make_station_hist.%06d_000001.root",hist_dir,RunNumber);
+  const char* hist_dir = "/data/mu2e/mu2etrk/hist/plot_occup";
+  
+  std::string fn;
+  if (Fn == nullptr) fn = std::format("{}/hst.mu2e.vst00s000r000n007.plot_n007_occup.{:6d}_000001.root",hist_dir,RunNumber);
+  else               fn = std::format("{}",Fn);
 
-  TFile* f = TFile::Open(fn);
-
-  // struct fit_result_t {
-  //   double p[3];
-  //   double e[3];
-  //   double chi2dof;
-  //  };
-
-  fit_result_t fr[96]; 
-
-  const char* pnl_name[12] = { "MN261", "MN248", "MN224", "MN262", "MN273", "MN276",
-                               "MN253", "MN101", "MN219", "MN213", "MN235", "MN247"
-  };
-
-  const int mnid[12] = { 261, 248, 224, 262, 273, 276,
-                         253, 101, 219, 213, 235, 247
-  };
-
+  TFile* f = TFile::Open(fn.data());
+  RunDb::Data_t rdt;
+  
+  RunDb::Instance()->GetRunInfo(RunNumber,&rdt);
+  
   if (PrintLevel == 0) {
     printf("ipnl  name idtc ilink ic       mean        emean        sig        esig      chi2dof\n");
     printf("------------------------------------------------------------------------------------\n");
@@ -281,38 +274,76 @@ int fit_dt01::fit_cosmics(int RunNumber, int Panel1=0, int Panel2=12, int FirstC
   }
 
   TrkPanelMap_t* tpm = TrkPanelMap_t::Instance(RunNumber);
-  for (int ipnl=Panel1; ipnl<Panel2; ipnl++) {
-    
-    TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_mnid(mnid[ipnl]);
-                                                          
-    // int station = tpmd->station;
-    int plane   = tpmd->plane;
-    int panel   = tpmd->panel;
 
+  int slot_lo(Slot), slot_hi(Slot);
+  if (Slot == -1) {
+    slot_lo = 0; slot_hi=17;
+  }
+
+  int panel_lo(Panel), panel_hi(Panel);
+  if (Panel < 0) {
+    panel_lo =  0;
+    panel_hi = 11;
+  }
+
+  int ch_lo(Channel), ch_hi(Channel);
+  if (Channel < 0) {
+    ch_lo =  0;
+    ch_hi = 95;
+  }
+
+  for (int slot=slot_lo; slot<slot_hi+1; slot++) {
+    for (int pnl12=panel_lo; pnl12<panel_hi+1; pnl12++) {
+
+      int panel = pnl12 % 6;
+      int plane = 2*slot+(pnl12 / 6);
+      
+      // TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_offline(plane,panel);
+                                                          
     // printf("mnid:%i station:%i plane:%i panel:%i\n",mnid[ipnl],station,plane,panel);
     
-    for (int ich=FirstChannel; ich<LastChannel+1; ich++) {
-                                        // initialize to undefined (bad)
-      fit_result_t* frr = &fr[ich];
-      frr->ich = ich;
-
-      TH1F* h = (TH1F*) f->Get(Form("//StationAna/pnlset_00/%s/str_%02i/ch_%02i_dtchg",pnl_name[ipnl],ich,ich));
+      for (int ich=ch_lo; ich<ch_hi+1; ich++) {
+        // n007 : histograms in hist_00 have PH>50 cut
+        std::string hist_name = std::format("//n007_occup/{:06d}/hist_00/slot_{:02d}/pnl_{:03d}/ch_{:02d}/dt01",
+                                            RunNumber,slot,pnl12,ich);
+        std::string clone_name = std::format("h_clone_{}",hist_name);
+        TH1F* h_clone = (TH1F*) f->Get(hist_name.data())->Clone(clone_name.data());
+        h_clone->Rebin(5);
 //-----------------------------------------------------------------------------
 // fit histogram
 //-----------------------------------------------------------------------------
-      int rc = fit_histogram(h,frr);
-//-----------------------------------------------------------------------------
-// print fit results, chid is the 'compact' channel index used in calib DB
-//-----------------------------------------------------------------------------
-      // mu2e::StrawId sid(plane,panel,ich);
-
-      int chid = ich+96*(panel+plane*6);
-
-      if (PrintLevel == 1) {
-        printf("%5i,%8.3f,%8.3f,%8.3f,%8.3f,%10.3f\n",chid /*sid.asUint16()*/, frr->p[1], 0., 12., 12., 70000.);
+        int panel_index   = 12*slot+pnl12;
+        fit_result_t* frr = &fFr[panel_index][ich];
+        frr->ich          = ich;
+        int rc            = fit_histogram(h_clone,frr);
+        // delete h_clone;
       }
-      else if (PrintLevel == 2) {
-        printf("%5i,%8.3f,%8.3f,%8.3f,%8.3f,%10.3f\n",chid, frr->p[1], frr->e[1], frr->p[2], frr->e[2], frr->chi2dof);
+    }
+  }
+//-----------------------------------------------------------------------------
+// print fit results
+//-----------------------------------------------------------------------------
+  if (PrintLevel == 1) {
+    printf("pnl216 slot plane panel MnID ich       mean        emean        sig        esig      chi2dof  n0   ntot   ineff\n");
+    printf("-------------------------------------------------------------------------------------------------------\n");
+  }
+
+  for (int slot=slot_lo; slot<slot_hi+1; slot++) {
+    for (int pnl12=panel_lo; pnl12<panel_hi+1; pnl12++) {
+      int panel_index = 12*slot+pnl12;
+      int plane       = slot*2 + pnl12/6;
+      int panel       = pnl12 % 6;
+      
+      TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_offline(plane,panel);
+      int mnid  = tpmd->mnid;
+      
+      for (int ich=ch_lo; ich<ch_hi+1; ich++) {
+        fit_result_t* frr = &fFr[panel_index][ich];
+        if (PrintLevel == 1) {
+          printf("%4i   %4i %5i %5i MN%03d %3i",panel_index,slot,plane,panel,mnid,ich);
+          printf(" %11.4f %11.4f %11.4f %11.4f %11.4f %5.0f %5.0f %10.4f\n",
+                 frr->p[1],frr->e[1], frr->p[2], frr->e[2], frr->chi2dof, frr->n0, frr->ntot, frr->ineff);
+        }
       }
     }
   }
@@ -322,7 +353,9 @@ int fit_dt01::fit_cosmics(int RunNumber, int Panel1=0, int Panel2=12, int FirstC
 
 
 //-----------------------------------------------------------------------------
-int fit_dt01::write_TrkPreampStraw(const char* Fn) {
+// to be with the pulse injection
+//-----------------------------------------------------------------------------
+int fit_dt01::write_TrkPreampStraw(int RunNumber, const char* Fn) {
   int rc(0);
   
   // as printed from Mu2e offline
@@ -343,11 +376,18 @@ int fit_dt01::write_TrkPreampStraw(const char* Fn) {
   
   std::ofstream file(Fn);   // creates/truncates file
 
+  RunDb::Data_t     fRunInfo;
+  RunDb::Instance()->GetRunInfo(RunNumber,&fRunInfo);
+
   for (int pnl=0; pnl<216; pnl++) {
     for (int ich=0; ich<96; ich++) {
       fit_result_t* frr = &fFr[pnl][ich];
       double dt01(0);
-      if (frr->chi2dof > 0) dt01 = frr->p[1]+straw_length[ich]/v;
+      if (frr->chi2dof > 0) dt01 = frr->p[1];
+      if (fRunInfo.run_type == RunDb::e_PULSE_INJECTION) {
+        // calibration based on pulse injection: correct deltaT for the signal propagation
+        dt01 += straw_length[ich]/v;
+      }
       int icch = 96*pnl+ich;
       file << std::format("{:5},  {:11.4f},   0,   12.0,   0,  12.0, 1528000.0\n",icch,dt01);
     }

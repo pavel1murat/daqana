@@ -1,0 +1,15 @@
+[["runinfo"]]
+run_number   = 123660
+run_type     = 2             # "cosmics"
+event_mode   = 1             # ran in onspill mode, 1=onspill
+cfo_rate     = 4000.0        # CFO HB rate, Hz
+ew_length    = 100.0e-6      # event window, sec
+trigger_rate = 325.0         # rate to disk, Hz
+
+[["runinfo"]]
+run_number   = 123680
+run_type     = 2             # "cosmics"
+event_mode   = 0             # off-spill
+cfo_rate     = 4000.0        # CFO HB rate, Hz
+ew_length    = 250.0e-6      # event window, sec
+trigger_rate = 745.0         # rate to disk, Hz

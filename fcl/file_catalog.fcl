@@ -78,8 +78,7 @@ physics : {
 
     p1 : [ ]
 
-    # e1 : [ FileCatalog ] ## , defaultOutput ]
-    e1 : [ defaultOutput ]
+    e1 : [ FileCatalog ] ## , defaultOutput ]
 
     trigger_paths  : [ p1 ]
     end_paths      : [ e1 ]

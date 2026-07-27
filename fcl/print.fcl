@@ -15,33 +15,34 @@ services.SeedService.baseSeed         : 8
 services.SeedService.maxUniqueEngines : 100
 
 physics :{
-  analyzers: {
+    analyzers: {
 
-    printModule : { module_type : PrintModule
-#      genParticlePrinter           : { verbose : 1              }
-#      caloRecoDigiPrinter          : { verbose : 1              }
-#      caloClusterPrinter           : { verbose : 1 eCut :  10.0 }
-#      crvRecoPulsePrinter          : { verbose : 1              }
-#      crvCoincidenceClusterPrinter : { verbose : 1              }
-#      helixSeedPrinter             : { verbose : 1              }
-#      kalRepPrinter                : { verbose : 1              }
-      kalSeedPrinter               : { verbose : 3              }      # this one ahs many print levels
-#      physicalVolumePrinter        : { verbose : 1              }
-      ProtonBunchTimePrinter       : { verbose : 1              }
-#      primaryParticlePrinter       : { verbose : 1              }
-#      ProtonBunchTimeMCPrinter     : { verbose : 1              }
-#      ProtonBunchIntensityPrinter  : { verbose : 1              }
-#      simParticlePrinter           : { verbose : 1 pCut    : -1 }      # 10.0      
-#      stepPointMCPrinter           : { verbose : 1 pCut    : -1 }      # 10.0
-#      strawDigiADCWaveformPrinter  : { verbose : 1              }
-#      strawDigiPrinter             : { verbose : 1              }
-#      strawGasStepPrinter          : { verbose : 1              }
-      strawHitPrinter              : { verbose : 1              }
-      comboHitPrinter              : { verbose : 1              }
-      timeClusterPrinter           : { verbose : 1              }
-#      trackSummaryPrinter          : { verbose : 3              }
-#      triggerResultsPrinter        : { verbose : 1              }
-    } 
+        printModule : { module_type : PrintModule
+            #      genParticlePrinter           : { verbose : 1              }
+            #      caloRecoDigiPrinter          : { verbose : 1              }
+            #      caloClusterPrinter           : { verbose : 1 eCut :  10.0 }
+            crvRecoPulsePrinter          : { verbose : 1              }
+            crvCoincidenceClusterPrinter : { verbose : 1              }
+            #      helixSeedPrinter             : { verbose : 1              }
+            #      kalRepPrinter                : { verbose : 1              }
+            kalSeedPrinter               : { verbose : 3              }      # this one ahs many print levels
+            #      physicalVolumePrinter        : { verbose : 1              }
+            ProtonBunchTimePrinter       : { verbose : 1              }
+            #      primaryParticlePrinter       : { verbose : 1              }
+            #      ProtonBunchTimeMCPrinter     : { verbose : 1              }
+            #      ProtonBunchIntensityPrinter  : { verbose : 1              }
+            #      simParticlePrinter           : { verbose : 1 pCut    : -1 }      # 10.0      
+            #      stepPointMCPrinter           : { verbose : 1 pCut    : -1 }      # 10.0
+            #      strawDigiADCWaveformPrinter  : { verbose : 1              }
+            #      strawDigiPrinter             : { verbose : 1              }
+            #      strawGasStepPrinter          : { verbose : 1              }
+            
+            # strawHitPrinter              : { verbose : 1              }
+            # comboHitPrinter              : { verbose : 1              }
+            timeClusterPrinter           : { verbose : 1              }
+            trackSummaryPrinter          : { verbose : 3              }
+            #      triggerResultsPrinter        : { verbose : 1              }
+        } 
   }  # analyzers
 
   ana       : [ printModule, printProductList ]

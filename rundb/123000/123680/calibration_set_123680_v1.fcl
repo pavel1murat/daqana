@@ -5,7 +5,7 @@ services.DbService : {
     version  : v0                          ## ignored
     dbName   : "mu2e_conditions_prd"       ## ignored
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v1.txt",       ## from run 123680 (plot_n001_occup)
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
                  "daqana/rundb/123000/123680/TrkDelayPanel_123680_v1.txt"    ]       ## all zeroes

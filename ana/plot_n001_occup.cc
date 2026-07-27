@@ -1,4 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
+// 
 /////////////////////////////////////////////////////////////////////////////////
 /*
   .L v001/daqana/scripts/plot_n002_hist_001.C
@@ -16,8 +17,7 @@
 //-----------------------------------------------------------------------------
 plot_n001_occup::plot_n001_occup(int RunNumber, const char* Fn, const char* Label) :
   
-  TNamed(Form("run_%06d_%s_occup",RunNumber,Label),Form("run_%06d_%s_occup",RunNumber,Label)),
-  fChain(0) {
+  TNamed(Form("%s_occup",Label),Form("%s_occup",Label)), fChain(0) {
 
   std::string dir = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000{}",Label); 
   
@@ -41,11 +41,8 @@ plot_n001_occup::plot_n001_occup(int RunNumber, const char* Fn, const char* Labe
 //-----------------------------------------------------------------------------
 // pulsed channels
 //-----------------------------------------------------------------------------
-  // RunData_t rd;
-  // rd.run_number        = 122629;
-  //  rd.ref_channel       = 13;
+  RunDb::Instance()->GetRunInfo(RunNumber,&fRunInfo);
 
-  //  fRefChannel          = 21;
   const char* name = GetName();
 
   fTopFolder = (TFolder*) gROOT->GetRootFolder()->FindObject(name);
@@ -103,9 +100,9 @@ int plot_n001_occup::BookChannelHistograms(ChannelHist_t* Hist, Index_t* Index, 
   title = std::format("{} : tdc0, us",prefix);
   fBook->HBook1F(Hist->h_tdc0,name.data(),title.data(),1500,0,150,Folder);
 
-  name  = "dt10";
-  title = std::format("{} : dt10=tdc1-tdc0, ns",prefix);
-  fBook->HBook1F(Hist->h_dt10,name.data(),title.data(),1000,-50,50,Folder);
+  name  = "dt01";
+  title = std::format("{} : dt01=tdc(CAL)-tdc(HV), ns",prefix);
+  fBook->HBook1F(Hist->h_dt01,name.data(),title.data(),1000,-50,50,Folder);
 
   name  = "edep";
   title = std::format("{} : edep, keV",prefix);
@@ -270,15 +267,17 @@ int plot_n001_occup::FillChannelHistograms(ChannelHist_t* Hist, Index_t* Index, 
   Hist->h_bl->Fill(Sd->bl);
   Hist->h_fs->Fill(Sd->fs);
 
-  float tdc0_ns = Sd->tdc0*5./256;
-  float tdc1_ns = Sd->tdc1*5./256;
-  float dt10    = tdc1_ns-tdc0_ns;
+  float tdc0_ns = Sd->tdc0*5./256;      // CAL
+  float tdc1_ns = Sd->tdc1*5./256;      // HV
+  float dt01    = tdc0_ns-tdc1_ns;
   float tdc0_us = tdc0_ns/1000.;
   
   Hist->h_tdc0->Fill(tdc0_us);
-  Hist->h_dt10->Fill(dt10);
+  Hist->h_dt01->Fill(dt01);
 
-  Hist->h_edep->Fill(Sh->edep);
+  if (Sh) {
+    Hist->h_edep->Fill(Sh->edep);
+  }
                                         // no edep for the moment
   return 0;
 }
@@ -286,14 +285,20 @@ int plot_n001_occup::FillChannelHistograms(ChannelHist_t* Hist, Index_t* Index, 
 //-----------------------------------------------------------------------------
 int plot_n001_occup::FillPanelHistograms(PanelHist_t* Hist, Index_t* Index, DaqStrawDigi* Sd, DaqStrawHit* Sh) {
   Hist->h_occup->Fill(Index->ch);
-  Hist->h_edep->Fill(Sh->edep);
+  if (Sh) {
+    Hist->h_edep->Fill(Sh->edep);
+  }
   return 0;
 }
 
 //-----------------------------------------------------------------------------
+// there are ntuples w/o straw hits (n007)
+//-----------------------------------------------------------------------------
 int plot_n001_occup::FillSlotHistograms(SlotHist_t* Hist, Index_t* Index, DaqStrawDigi* Sd, DaqStrawHit* Sh) {
-  
-  Hist->h_edep->Fill(Sh->edep);
+
+  if (Sh) {
+    Hist->h_edep->Fill(Sh->edep);
+  }
   return 0;
 }
 
@@ -305,10 +310,13 @@ int plot_n001_occup::FillHistograms() {
   // float tr = sdr->tdc0*(5./256.)*1.e-3;
 
   Index_t index;
-  
-  for (int i=0; i<fEvent->nsdtot; i++) {
+
+  int nsd = fEvent->sd->GetEntriesFast();
+  for (int i=0; i<nsd; i++) {
     DaqStrawDigi* sd = (DaqStrawDigi*) fEvent->sd->UncheckedAt(i);
-    DaqStrawHit*  sh = (DaqStrawHit* ) fEvent->sh->UncheckedAt(i);
+    
+    DaqStrawHit*  sh(nullptr);
+    if (fEvent->nshtot > 0) sh = (DaqStrawHit* ) fEvent->sh->UncheckedAt(i);
     // std::cout << std::format("i:{:5d} sd_mnid[i]:{:03d}\n",i,sd->mnid);
 
     index.plane = sd->plane();
@@ -333,7 +341,7 @@ int plot_n001_occup::FillHistograms() {
 
     // there is one-to-one correspondence between hits and digis
 
-    if (sh->edep > 0.0005) {
+    if (sh and (sh->edep > 0.0005)) {
       fHist[1]->h_occup->Fill(offline_panel);
       fHist[1]->h_occup_2d->Fill(index.ch,offline_panel);
 
@@ -392,36 +400,37 @@ void plot_n001_occup::Loop(int NEvents) {
 //-----------------------------------------------------------------------------
 //  calculate ave
 //-----------------------------------------------------------------------------
-    // and reinitializa
+    // and reinitialize
     for (int i=0; i<36; i++) {
       t05[i] = 0.;
       n05[i] = 0;
     }
-    
-    // the number of straw hits is the same as teh number of straw digis
-    for (int i=0; i<fEvent->nsdtot; i++) {
-      DaqStrawHit*  sh = (DaqStrawHit* ) fEvent->sh->UncheckedAt(i);
-      if (sh->edep > 0.0005) {
-        int ip = sh->plane();
-        t05[ip] += sh->time;
-        n05[ip] += 1;
+    if (fEvent->nshtot > 0) {
+      // if straw hits are present at all, the number of straw hits is the same
+      // as the number of straw digis
+      for (int i=0; i<fEvent->nsdtot; i++) {
+        DaqStrawHit*  sh = (DaqStrawHit* ) fEvent->sh->UncheckedAt(i);
+        if (sh->edep > 0.0005) {
+          int ip = sh->plane();
+          t05[ip] += sh->time;
+          n05[ip] += 1;
+        }
       }
-    }
-    // average times
-    for (int i=0; i<36; i++) {
-      t05[i] = t05[i]/(n05[i]+1.e-12);
-    }
+      // average times
+      for (int i=0; i<36; i++) {
+        t05[i] = t05[i]/(n05[i]+1.e-12);
+      }
     
-    // and calculate their residuals
-    for (int i=0; i<35; i++) {
-      for (int j=i+1; j<36; j++) {
-        if ((n05[i] > 1) and (n05[j] > 1)) {
-          dt05[j][i] = t05[j]-t05[i];
-          fHist[0]->h_dt05[j][i]->Fill(dt05[j][i]);
+      // and calculate their residuals
+      for (int i=0; i<35; i++) {
+        for (int j=i+1; j<36; j++) {
+          if ((n05[i] > 1) and (n05[j] > 1)) {
+            dt05[j][i] = t05[j]-t05[i];
+            fHist[0]->h_dt05[j][i]->Fill(dt05[j][i]);
+          }
         }
       }
     }
-
 //-----------------------------------------------------------------------------
 // prep done, now fill non-residual histograms
 //-----------------------------------------------------------------------------
@@ -466,23 +475,27 @@ int plot_n001_occup::PrintHistograms(int ISet) {
   
   gStyle->SetStatW(0.30);   // wider (NDC)
 
- for (int is=0; is<18; is++) {
+  float hmax = (int(fMaxEvent/1.e4)+1)*1.e2;
+  
+  for (int is=0; is<18; is++) {
     TCanvas c(Form("c_%02i",is),Form("c_%02i",is),1600,1800);
     c.Divide(3,4);
     for (int ip=0; ip<12; ip++) {
       TH1F* h = fHist[ISet]->slot[is]->panel[ip]->h_occup;
       c.cd(ip+1);
-      float hmax = (int(fMaxEvent/1.e6)+1)*1e6;
-      // normalization to the rate :
+     
+      // normalization to the rate in Hz:
 
-      float input_rate = 1.e4;   // 10 kHz
-      float scale = input_rate/(fNEvents+1.e-12);
-      h->Scale(scale);
+      float total_time = fMaxEvent*fRunInfo.ew_length;    // assume no prescale
+      float rejf       = fRunInfo.cfo_rate/fRunInfo.trigger_rate;
+      float eff_time   = total_time/rejf;
+      h->Scale(1./eff_time);
       h->SetMaximum(hmax);
+      h->SetMinimum(0.5);
       gPad->SetLogy(kTRUE);
       h->Draw("hist");
       // make statbox transparent
-      gPad->Update();           // create stats box
+      gPad->Update();           // create statbox
 
       auto st = (TPaveStats*)h->FindObject("stats");
       if (st) {
