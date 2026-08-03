@@ -140,6 +140,43 @@ cet_build_plugin(DaqanaFilter art::module LIBRARIES REG
   ROOT::Gui
 )
 
+cet_build_plugin(MixFragments art::module LIBRARIES REG
+  # daqana::mod
+  daqana_obj
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art::Framework_IO_ProductMix
+  art_root_io::art_root_io
+  art_root_io::TFileService_service
+  artdaq-core-mu2e::Data
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::RIO
+  ROOT::Gui
+  ROOT::Geom
+  ROOT::Matrix
+  ROOT::GenVector
+  ROOT::Core
+)
+
+cet_build_plugin(FragmentNormalizeEB art::module LIBRARIES REG
+  # daqana::mod
+  daqana_obj
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art::Framework_IO_ProductMix
+  art_root_io::art_root_io
+  art_root_io::TFileService_service
+  artdaq-core-mu2e::Data
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::RIO
+  ROOT::Gui
+  ROOT::Geom
+  ROOT::Matrix
+  ROOT::GenVector
+  ROOT::Core
+)
 
 cet_add_compiler_flags(-g -O0)
 

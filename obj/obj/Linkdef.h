@@ -9,6 +9,10 @@
 #
 #pragma link C++  class  DaqEvent;
 
+#pragma link C++  class  DaqCaloDigi;
+#pragma link C++  class  DaqCaloHit;
+#pragma link C++  class  DaqCaloCluster;
+
 #pragma link C++  class  DaqCrvDigi;
 #pragma link C++  class  DaqCrvRecoPulse;
 #pragma link C++  class  DaqCrvCoincidenceCluster;

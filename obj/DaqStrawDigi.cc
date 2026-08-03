@@ -6,8 +6,7 @@ ClassImp(DaqStrawDigi)
 
 //-----------------------------------------------------------------------------
 DaqStrawDigi::DaqStrawDigi() : TObject() {
-  _ns = -1;
-  
+  _ns  = -1;
   sid  = -1;
   mnid = -1;
 }
@@ -20,7 +19,7 @@ DaqStrawDigi::~DaqStrawDigi() {
 //-----------------------------------------------------------------------------
 int DaqStrawDigi::InitSD(int Ns) {
   int rc(0);
-  if (_ns < 0) {
+  if (_ns != Ns) {
     _ns = Ns;
     adc.resize(Ns);
   }

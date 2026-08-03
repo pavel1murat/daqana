@@ -4,6 +4,10 @@
 #include "TClonesArray.h"
 #include "TObject.h"
 
+#include "daqana/obj/DaqCaloDigi.hh"
+#include "daqana/obj/DaqCaloHit.hh"
+#include "daqana/obj/DaqCaloCluster.hh"
+
 #include "daqana/obj/DaqCrvDigi.hh"
 #include "daqana/obj/DaqCrvRecoPulse.hh"
 #include "daqana/obj/DaqCrvCoincidenceCluster.hh"
@@ -21,7 +25,8 @@ class DaqEvent { // : public TObject {
 public:
   int            run;
   int            srn;                   // subrun number
-  int            evn;                   // event number
+  int            evn;                   // event number within the subrun
+  long           ewtag;                 // event window tag
   int            nsdtot;                // number of straw digis in event
   TClonesArray*  sd;
   int            nshtot;                // total number of straw digis in event
@@ -43,8 +48,17 @@ public:
   int            nsegsh;                // N(segment straw hits)
   TClonesArray*  segsh;                 // straw hits associated with segments
 
-  // int            ncalodigis;         // number of calo digis
-  // TClonesArray*  calodigis;
+  int            ncald;                 // number of calo digis
+  TClonesArray*  cald;
+
+  int            ncalh;                 // number of calo hits (normally, 2 digis per hit)
+  TClonesArray*  calh;
+
+  int            ncalc;                 // number of calo clusters
+  TClonesArray*  calc;
+
+  float          edisk[2];
+  float          ecal;
 
   int            ncrvd;                 // number of crv digis
   TClonesArray*  crvd;

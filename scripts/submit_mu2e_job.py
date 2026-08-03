@@ -58,6 +58,7 @@ class SubmitJob:
 
         parser.add_argument("--calib-ver"       , default=None,           help="calibration version, defaults to 0")
         parser.add_argument("--calib-run"       , default=None,           help="use calibrations keyed on a given run")
+        parser.add_argument("-D", "--data-dir"  , default=None,           help="input data directory")
         parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
         parser.add_argument("--dry-run"         , action='store_true',    help="dry run, if specified")
         parser.add_argument('-c',"--fcl"        , default=None,           help="Path to the configuration file")
@@ -72,12 +73,13 @@ class SubmitJob:
 
         args = parser.parse_args()
 
-        logger.info(f'self.diag_level = {args.diag_level}'   )
-        logger.info(f'self.calib_ver  = {args.calib_ver}'    )
-        logger.info(f'self.calib_run  = {args.calib_run}'    )
-        logger.info(f'self.rn         = {args.run_number}'   )
-        logger.info(f'self.fcl        = {args.fcl}'          )
-        logger.info(f'self.nfiles     = {args.nfiles}'       )
+        logger.info(f'args.diag_level = {args.diag_level}'   )
+        logger.info(f'args.calib_ver  = {args.calib_ver}'    )
+        logger.info(f'args.calib_run  = {args.calib_run}'    )
+        logger.info(f'args.rn         = {args.run_number}'   )
+        logger.info(f'args.fcl        = {args.fcl}'          )
+        logger.info(f'args.nfiles     = {args.nfiles}'       )
+        logger.info(f'args.data_dir   = {args.data_dir}'     )
 
 #        if (self.fProject == None) :
 #            self.Print(name,0,'Error: Project not defined - exiting !')
@@ -153,7 +155,14 @@ class SubmitJob:
         input_file_list=None
         if (not args.source):
             input_file_list=f'/tmp/submit_mu2e_job_input.{args.run_number}.txt.{os.getpid()}'
-            cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
+
+            print(f'args.data_dir:{args.data_dir}')
+            
+            if (args.data_dir):
+                cmd  = f"ls -al {args.data_dir}/* | awk '{{print $9}}'"   ## list all raw files
+            else:
+                cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
+                
             cmd += f' | grep {args.run_number} | sort';          ## grep the run number
             if (args.nfiles):
                 cmd += f' | head -n {args.nfiles}'

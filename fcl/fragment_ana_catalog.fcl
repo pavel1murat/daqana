@@ -40,7 +40,7 @@ source : {
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
-        fileName      :   "dummy.art"
+        fileName      :   "raw.mu2e.cosmics.kpp_calo.%06r_%06s.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -55,13 +55,13 @@ physics : {
     analyzers : {
         FragmentAna : { @table::daqana.analyzers.FragmentAna
             debugMode        : 1
-            debugBits        : [ "bit0:1", "bit1:1"]
+            debugBits        : [ "bit3:1" ]
             analyzeFragments : 0
         }
     }
 
     path_p1 : [ ]
-    path_e1 : [ FragmentAna ]  ## , defaultOutput ]
+    path_e1 : [ FragmentAna, defaultOutput ]
 
     trigger_paths  : [ path_p1 ]
     end_paths      : [ path_e1 ]

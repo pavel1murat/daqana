@@ -8,6 +8,10 @@
 //-----------------------------------------------------------------------------
 DaqEvent::DaqEvent() { // : TObject() {
 
+  cald  = new TClonesArray("DaqCaloDigi"             ,100);
+  calh  = new TClonesArray("DaqCaloHit"              ,100);
+  calc  = new TClonesArray("DaqCaloCluster"          ,100);
+
   crvd  = new TClonesArray("DaqCrvDigi"              ,100);
   crvp  = new TClonesArray("DaqCrvRecoPulse"         ,100);
   crvc  = new TClonesArray("DaqCrvCoincidenceCluster",100);
@@ -27,6 +31,10 @@ DaqEvent::DaqEvent() { // : TObject() {
 
 //-----------------------------------------------------------------------------
 DaqEvent::~DaqEvent() {
+
+  cald->Delete(); delete cald;
+  calh->Delete(); delete calh;
+  calc->Delete(); delete calc;
 
   crvd->Delete(); delete crvd;
   crvp->Delete(); delete crvp;
@@ -54,6 +62,24 @@ void DaqEvent::Clear(const char* Opt) {
       nsh[i][link] = 0;
     }
   }
+
+//-----------------------------------------------------------------------------
+// DaqCaloDigi has a std::vector inside, make sure we're not leaking memory
+//-----------------------------------------------------------------------------
+  int nd = cald->GetEntriesFast();
+  
+  for (int i=0; i<nd; i++) {
+    DaqCaloDigi* dcd = (DaqCaloDigi*) cald->UncheckedAt(i);
+    dcd->wf.clear();
+  }
+  
+  ncald   = 0; cald->Clear();
+  ncalh   = 0; calh->Clear();
+  ncalc   = 0; calc->Clear();
+
+  ecal    = 0;
+  edisk[0]= 0;
+  edisk[1]= 0;
 
   nsdtot  = 0; sd->Clear();
   nshtot  = 0; sh->Clear();

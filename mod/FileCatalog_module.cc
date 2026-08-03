@@ -134,6 +134,11 @@ namespace mu2e {
 void FileCatalog::analyze(const art::Event& ArtEvent) {
 
   if (_debugMode > 0) printf(" Event : %06i:%08i:%08i\n", ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event());
+  
+  // also need to print the event window tag
+  // retrieve that from the very first fragment ?
+
+  
 
 }
 

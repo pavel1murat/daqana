@@ -1,14 +1,10 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# n004:
-#   tracker: hits+time clusters
-#   CRV    : digis+pulses+coincidence clusters
-#   CALO   : digis
+# run interactively, stop after each event to display waveforms
 #
 # Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
-# intentionally use v0 calibrations
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
 #   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
@@ -28,8 +24,6 @@ END_PROLOG
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
-
-
 services.message.destinations.log.categories.MAKE_SD: {
     # reportEvery :  1
     limit       : 1000   # -1
@@ -50,7 +44,7 @@ source : {
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
-        fileName      :   "make_n003.art"
+        fileName      :   "trk_fragment_ana.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -64,7 +58,7 @@ physics : {
     producers : {
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 1 ## 10
+            diagLevel     : 10
             # useSubsystem0 : false
         }
 
@@ -78,7 +72,7 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            debugMode        : 0 ## 1
+            debugMode        : 0 ## 10
             debugBits        : ["bit0:1"]
             saveWaveforms    : true
             geography        : [  ]
@@ -87,86 +81,46 @@ physics : {
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
-        
-        TimeCluster : { @table::CosmicReco.SimpleTimeCluster
-            minNStrawHits : 4
-            minNPanels    : 1
-            TimeWindow    : 160 ## assume running with correct calibrations ## 400
-            TimeStep      : 50
-        }
-        
-        CaloDigiMaker : { module_type:  CaloDigisFromDTCEvents
+
+        CaloDigisFromDTCEvents: { module_type:  CaloDigisFromDTCEvents
             dataType     : 0
-            diagLevel    : 0
+            diagLevel    : 1000
             useOfflineID : true
-        }
-
-        CaloRecoDigiMaker : { @table::CaloReco.CaloRecoDigiMaker
-        }
-
-        CaloHitMaker      : { @table::CaloReco.CaloHitMaker
-        }
-        
-        CaloProtoClusterMaker : { @table::CaloCluster.CaloProtoClusterMaker
-        }
-
-        CaloClusterMaker : { @table::CaloCluster.CaloProtoClusterMaker
         }
     }
     
-    filters   : {                       }
+    filters   : {
+        EventIDFilter : { module_type: EventIDFilter
+            idsToMatch: [ "123680:1-204:*",
+                          "123680:205:1-2040079","123680:205:2040081-100000000",
+                          "123680:206-869:*",
+                          "123680:870:1-8698085","123680:870:8698087-100000000",
+                          "123680:871-10000:*"
+                         ]
+        }
+    }
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeCalD      : 1
-            makeCalH      : 1
-            makeCalC      : 1
-            
-            makeCrvD      : 1
-            makeCrvP      : 1
-            makeCrvC      : 1
-            
-            makeFragments : 0
-            
-            makeSD        : 0
-            makeCH        : 1
-            makeTC        : 1
-            saveWaveforms : 0
-            
-            tcCollTag     : "TimeCluster"   ## "TZClusterFinder"  ##
-
-            debugMode     : 1
-            debugBits: [
-                        ## "bit21:1"
-                       ]
-       }
+            makeSD        : 1
+            makeSH        : 1
+            makeTC        : 0
+            saveWaveforms : 1
+        }
     }
 
-    # p1 : [ EWMProducer, makeSD, makeSH  ]
-    # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
-    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster                ## tracker
-           , CaloDigiMaker, CaloRecoDigiMaker, CaloHitMaker        ## calorimeter
-           , CaloProtoClusterMaker, CaloClusterMaker
-           , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder   ## CRV
-          ]
+    p1 : [ EWMProducer, makeSD, makeSH  ]
+    p2 : [ EWMProducer, makeSD, makeSH, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p3 : [ EventIDFilter, CaloDigisFromDTCEvents ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
+
+    e1 : [ ] ## MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
-    trigger_paths  : [ p2 ]
+    trigger_paths  : [ p3 ]
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n006.%06r_%06s.root"
-
-services.ProditionsService.crvPhotonYield.useDb : false
-services.ProditionsService.crvStatus.useDb      : false
-services.ProditionsService.crvCalib.useDb       : false
-
-services.scheduler.wantSummary                  : true
-
-services.message.destinations.log.categories.ArtReport.reportEvery : 1
-services.message.destinations.log.categories.ArtReport.limit       : 1000
-services.message.destinations.log.categories.ArtReport.timespan    : 300
+services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"

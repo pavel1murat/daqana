@@ -1,7 +1,15 @@
 # -*- mode: tcl -*-
 BEGIN_PROLOG
 daqana : {
-    producers : {}  # empty table
+    producers : {
+        FragmentNormalizedEB : { module_type: FragmentNormalizedEB
+            moduleLabel: "daq"
+            instances: [ "DTCEVT", "CFO" ]
+            allowMissing: true
+            verbose: true
+        }
+    }
+    
     filters   : {
         TCLineFilter: { module_type: TCLineFilter
             chCollTag      : "makeSH"
@@ -78,10 +86,13 @@ daqana : {
         }
 
         MakeDigiNtuple: { module_type: MakeDigiNtuple
+            makeCalD       : 0
+            makeCalH       : 0      ## calo hits
+            makeCalC       : 0      ## calo hits
             makeCrvD       : 0
             makeCrvP       : 0
             makeCrvC       : 0
-            makeFragments  : 0      ## always
+            makeFragments  : 0      ## so far, a problem
             makeSD         : 0
             makeSH         : 0
             makeCH         : 0
@@ -89,6 +100,9 @@ daqana : {
             makeTC         : 0
             makeTrk        : 0
             
+            caldCollTag    : "CaloDigiMaker"
+            calhCollTag    : "CaloHitMaker"
+            calcCollTag    : "CaloClusterMaker"
             crvdCollTag    : "CrvDigi"
             crvpCollTag    : "CrvRecoPulses"
             crvcCollTag    : "CrvCoincidenceClusterFinder"

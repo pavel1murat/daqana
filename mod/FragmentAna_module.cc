@@ -3,9 +3,10 @@
 // PM
 // FragmentAna:  DTC fragment-level analysis of the raw data - mostly printouts
 // _debugMode > 0 : enables diagnostic printouts
-// _debugBit[0]: print raw fragments
-// _debugBit[1]: tracker digis
-// _debugBit[2]: tracker waveforms
+// _debugBit[0]: print start / end
+// _debugBit[1]: print fragments
+// _debugBit[2]: 
+// _debugBit[3]: one line EWT
 // ======================================================================
 #include <string>
 
@@ -74,6 +75,31 @@ public:
     e_SEVERE  = 4,
   };
 
+  struct CfoFragment_t {
+    uint64_t ewTag           : 48;
+    uint8_t  reserved1       : 8;
+    uint8_t  version         : 8;
+
+    uint32_t timeStamp;
+    uint32_t reserved2;
+
+    uint64_t eventMode       : 48;
+    uint8_t  eventDuration   :  8;
+
+    uint8_t  drMarkerNEst    :  8;
+    uint64_t reserved3       : 48;
+
+    uint8_t  drMarkerNp1Est  :  8;
+    uint64_t reserved4       : 48;
+
+    uint8_t  drMarkerNMeas   :  8;
+    uint32_t reserved5       : 24;
+    uint32_t tdcMarkerN      : 32;
+
+    uint8_t  drMarkerNp1Meas :  8;
+    uint64_t reserved6       : 56;
+  };
+
   struct Config {
     fhicl::Atom<int>             debugMode       {fhicl::Name("debugMode"       ), fhicl::Comment("2026-04-25 PM:")};
     fhicl::Sequence<std::string> debugBits       {fhicl::Name("debugBits"       ), fhicl::Comment("debug bits"    )};
@@ -84,12 +110,14 @@ public:
   explicit FragmentAna(const art::EDAnalyzer::Table<Config>& config);
   virtual ~FragmentAna() {}
 
-  void         print_(int Level, const std::string&  Message,
+  void         print_(int                         Level,
+                      const std::string&          Message,
                       const std::source_location& location = std::source_location::current());
 
-  void         print_fragment(const artdaq::Fragment* Frag);
-
-    // --- overloaded functions of the art producer
+  void         print_fragment  (const artdaq::Fragment* Frag);
+  int          analyze_dtc_fragment(const artdaq::Fragment* Frag);
+  
+  // overloaded functions of the art producer
   virtual void analyze (const art::Event& ArtEvent) override;
   virtual void beginRun(const art::Run&   ArtRun  ) override;
 
@@ -100,11 +128,14 @@ private:
   int                      _debugMode ;
   std::vector<std::string> _debugBits;
   int                      _debugBit[kNDebugBits];
-  int       _analyzeFragments;
-                                        // the rest
-  int       nADCPackets_{-1};           // N(ADC packets per hit)
-  int       nSamples_   {-1};           // N(ADC samples per hit)
-  int       np_per_hit_ {-1};           // N(data packets per hits)
+  bool                     _anyBitOn;
+  
+  int                      _analyzeFragments;
+  std::vector<uint64_t>    _fragment_ewts;
+                                                       // the rest
+  int                      nADCPackets_{-1};           // N(ADC packets per hit)
+  int                      nSamples_   {-1};           // N(ADC samples per hit)
+  int                      _np_per_hit {-1};           // N(data packets per hits)
 
   const art::Event*                 _event;
   int                               _last_run;
@@ -126,14 +157,19 @@ mu2e::FragmentAna::FragmentAna(const art::EDAnalyzer::Table<Config>& config) :
 //-----------------------------------------------------------------------------
   for (int i=0; i<kNDebugBits; ++i) _debugBit[i] = 0;
 
+  _anyBitOn = false;
+  
   const char* key;
-  int nbits = _debugBits.size(); // from FCL
+  int   nbits = _debugBits.size(); // from FCL
 
   for (int i=0; i<nbits; i++) {
     int index(0), value(0);
     key               = _debugBits[i].data();
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
+    if (value != 0) {
+      _anyBitOn = true;
+    }
 
     print_(e_INFO,std::format("FragmentAna: bit={:4d} is set to {}",index,_debugBit[index]));
   }
@@ -164,7 +200,7 @@ void mu2e::FragmentAna::print_(int Level, const std::string& Message, const std:
   } xx;
 
   std::string s;
-  if (_event) s = std::format("event: {}:{}:{} ",_event->run(),_event->subRun(),_event->event());
+  if (_event) s = std::format("event: {:06d}:{:06d}:{:08d} ",_event->run(),_event->subRun(),_event->event());
 
   std::vector<std::string> ss = xx.splitString(location.file_name(),"/");
 
@@ -213,15 +249,139 @@ void mu2e::FragmentAna::print_fragment(const artdaq::Fragment* Frag) {
 void mu2e::FragmentAna::beginRun(const art::Run&  ArtRun) {
 }
 
+
+//-----------------------------------------------------------------------------
+int mu2e::FragmentAna::analyze_dtc_fragment(const artdaq::Fragment* Frag) {
+  int rc(0);
+  int const packet_size(16); // in bytes
+
+  uint8_t* fdata                  = (uint8_t*) (Frag->dataBegin()) + sizeof(DTCLib::DTC_EventHeader);
+  DTCLib::DTC_SubEventHeader* seh = (DTCLib::DTC_SubEventHeader*) fdata;
+  uint32_t dtc_id                 = seh->source_dtc_id;
+  
+  ushort*  buf          = (ushort*) fdata;
+  int      nbytes       = buf[0];             // frag.dataSizeBytes() includes extra 0x20
+  uint8_t* roc_data     = fdata+sizeof(*seh);
+  uint8_t* last_address = fdata+nbytes;
+  
+  while (roc_data < last_address) {
+    RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
+    int nhits = 0;
+    // int header_printed = 0;
+//------------------------------------------------------------------------------
+// skip empty ROC blocks
+//------------------------------------------------------------------------------
+    if (rdh->packetCount > 1) {
+      if (nADCPackets_ < 0) {
+//-----------------------------------------------------------------------------
+// take the number of ADC packets per hit from the hit data,
+// trust that but watch if it changes
+// so far, any corruptions we saw were contained withing the ROC payload, and nhits
+// was a reliable number
+// 2026-03-20: don't store waveforms if only one packet per hit
+//-----------------------------------------------------------------------------
+        mu2e::TrackerDataDecoder::TrackerDataPacket* h0;
+        h0           = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (roc_data+packet_size);
+//-----------------------------------------------------------------------------
+// don't expect zero ADC packets, the error seen was that one of the ROCs just
+// doesn't send the second packet at all... work under that assumption
+//-----------------------------------------------------------------------------
+        if (h0->NumADCPackets == 0) {
+          print_(e_ERROR,std::format("dtc_id:{} link_id:{} N(ADC packets) = 0, skip ROC data",
+                                     dtc_id,(int) rdh->linkID));
+          
+          roc_data += (rdh->packetCount+1)*packet_size;
+          continue;
+        }
+        nADCPackets_ = h0->NumADCPackets;
+        nSamples_    = 3+12*nADCPackets_;
+        _np_per_hit  = nADCPackets_+1;
+      }
+      uint32_t link_id = rdh->linkID;
+      nhits            = rdh->packetCount/(nADCPackets_+1);
+//-----------------------------------------------------------------------------
+// there should not be more than 255 hits per ROC, if nhits>=255 it is a corruption,
+// stop processing of the event 
+//-----------------------------------------------------------------------------
+      if (nhits > 255) {
+        print_(e_ERROR,std::format("nhits:{}, skip event",nhits));
+        break;
+      }
+            
+      const TrkPanelMap::Row* tpmd = _trackerPanelMap->panel_map_by_online_ind(dtc_id,link_id);
+      if (tpmd == nullptr) {
+//-----------------------------------------------------------------------------
+// either DTC ID or link ID are corrupted. Haven't seen that so far, switch to the next ROC anyway
+//-----------------------------------------------------------------------------
+        print_(e_ERROR,std::format("either dtc_id:{} or link_id:{} is corrupted, skip ROC data",
+                                   dtc_id,link_id));
+        
+        roc_data += (nhits*_np_per_hit+1)*packet_size;
+        continue;
+      }
+
+      if (_debugMode) {
+        print_(e_INFO,std::format("-- DTC:{} ROC:{} nhits:{}",dtc_id,link_id,nhits));
+      }
+      
+      for (int ihit=0; ihit<nhits; ihit++) {
+//-----------------------------------------------------------------------------
+// first packet, 16 bytes, or 8 ushort's is the data header packet
+//-----------------------------------------------------------------------------
+        mu2e::TrackerDataDecoder::TrackerDataPacket* hit_data ;
+        
+        int offset = (ihit*_np_per_hit+1)*packet_size;   // in bytes
+        hit_data   = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (roc_data+offset);
+        if (roc_data+offset >= last_address) {
+          print_(e_ERROR,std::format("dtc_id:{} link_id:{} roc_data:{} offset:{} last_address:{} , SKIPPING",
+                                     dtc_id, link_id, (void*) roc_data, offset, (void*) last_address));
+          break;
+        }
+//-----------------------------------------------------------------------------
+// at this point, check consistency between the channel_id, dtc_id and link_id for a given run
+// panel ID is a derivative of the DTC ID and the link iD
+// mn_id - 'MinnesotaID' of the panel
+//-----------------------------------------------------------------------------
+        mu2e::StrawDigiFlag digi_flag;
+        uint16_t channel = static_cast<uint16_t>(hit_data->StrawIndex);
+        uint16_t chid    = mu2e::StrawId(channel).straw(); // channel ID within the panel
+        
+        if (chid >= StrawId::_nstraws) {
+          if (_debugBit[52] == 0) {
+            print_(e_ERROR,std::format("hit with corrupted chid:{:04x} : straw:{} / dtc_id:{} link_id:{}, SKIPPING",
+                                       hit_data->StrawIndex, chid, dtc_id, link_id));
+          }
+          continue;
+        }
+
+        //        uint16_t mnid    = channel >> mu2e::StrawId::_panelsft;
+        
+        if (hit_data->NumADCPackets != nADCPackets_) {
+          int np = hit_data->NumADCPackets;
+          print_(e_ERROR,std::format("wrong NADCpackets:{} , expected:{}, GO TO THE NEXT ROC",
+                                     np,nADCPackets_));
+          break;
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// end fo ROC data processing, on to the next one
+//-----------------------------------------------------------------------------
+    roc_data += (nhits*_np_per_hit+1)*packet_size;
+  }
+  
+  return rc;
+}
+
 // ----------------------------------------------------------------------
 // runs on tracker Artdaq fragments
 //-----------------------------------------------------------------------------
 void mu2e::FragmentAna::analyze(const art::Event& event) {
-  int const packet_size(16); // in bytes
 
-  if (_debugMode > 0) print_(e_INFO,"-- START");
+  if ((_debugMode > 0) and _debugBit[0]) print_(e_INFO,"-- START");
 
   _event = &event;                      // cache to print events
+  _fragment_ewts.clear();
 
   _trackerPanelMap = &_tpm_h.get(event.id());
 //-----------------------------------------------------------------------------
@@ -232,7 +392,7 @@ void mu2e::FragmentAna::analyze(const art::Event& event) {
 
   auto fragmentHandles = event.getMany<std::vector<artdaq::Fragment>>();
 
-  if (_debugMode > 0) {
+  if ((_debugMode > 0) and _debugBit[2]) {
     std::string msg = std::format("n_fragment_collections):{}",fragmentHandles.size());
     print_(e_INFO,msg);
   }
@@ -257,28 +417,36 @@ void mu2e::FragmentAna::analyze(const art::Event& event) {
 //-----------------------------------------------------------------------------
       int n_fragments = handle->size();
       
-      if (_debugMode) {
+      if (_debugMode and _debugBit[2]) {
         print_(e_INFO,std::format("-- next fragment collection,  n_fragments:{}",n_fragments));
       }
       
       for (int ifrag=0; ifrag<n_fragments; ifrag++) {
         const artdaq::Fragment* frag = &handle->at(ifrag);
 
-        if (_debugMode and (_debugBit[0] > 0)) {
+        if (_debugMode and (_debugBit[1] > 0)) {
           print_(e_INFO,
                  std::format("-- fragment number:{} type:{} version:{} ID:{} timestamp:{} data_size:{} type:{} DTC_SubEventHeader.size:{}",
                              ifrag,frag->type(),frag->version(),frag->fragmentID(),frag->timestamp(),frag->dataSizeBytes(),
                              frag->typeString(),sizeof(DTCLib::DTC_SubEventHeader)));
           print_fragment(frag);
         }
-        if (not _analyzeFragments) continue;
-
+        
         if (frag->type() == mu2e::FragmentType::CFO) {
 //-----------------------------------------------------------------------------
 // skip CFO fragment (type = 12)
 //-----------------------------------------------------------------------------
+          CfoFragment_t* cfo_frag = (CfoFragment_t*) frag->dataBegin();
+          long cfo_ewt = cfo_frag->ewTag;
+          _fragment_ewts.push_back(cfo_ewt);
           continue;
         }
+        _fragment_ewts.push_back(frag->timestamp());
+//-----------------------------------------------------------------------------
+// skip data header
+//-----------------------------------------------------------------------------
+        uint8_t* fdata = (uint8_t*) (frag->dataBegin()) + sizeof(DTCLib::DTC_EventHeader);
+        DTCLib::DTC_SubEventHeader* seh = (DTCLib::DTC_SubEventHeader*) fdata;
 //-----------------------------------------------------------------------------
 // skip fragments with the payload size less than the DTC header size
 // do it only for the current data format (runs > 107236)
@@ -290,15 +458,10 @@ void mu2e::FragmentAna::analyze(const art::Event& event) {
           continue;
         }
 //-----------------------------------------------------------------------------
-// skip data header
-//-----------------------------------------------------------------------------
-        uint8_t* fdata = (uint8_t*) (frag->dataBegin()) + sizeof(DTCLib::DTC_EventHeader);
-//-----------------------------------------------------------------------------
 // skip non-tracker fragments
 // after a recent format change, a DTC fragment may contain ROC data from different
 // subdetectors, make sure that at least one of them is the tracker ROC
 //-----------------------------------------------------------------------------
-        DTCLib::DTC_SubEventHeader* seh = (DTCLib::DTC_SubEventHeader*) fdata;
         if ((seh->link0_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
             (seh->link1_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
             (seh->link2_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
@@ -308,128 +471,37 @@ void mu2e::FragmentAna::analyze(const art::Event& event) {
           
           continue;
         }
-        uint32_t dtc_id = seh->source_dtc_id;
+
+        if (_analyzeFragments) {
 //-----------------------------------------------------------------------------
 // this is a tracker DTC fragment, loop over the ROCs
 //-----------------------------------------------------------------------------
-        ushort*  buf          = (ushort*) fdata;
-        int      nbytes       = buf[0];             // frag.dataSizeBytes() includes extra 0x20
-        uint8_t* roc_data     = fdata+sizeof(*seh);
-        uint8_t* last_address = fdata+nbytes;
-
-        while (roc_data < last_address) {
-          RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
-          int nhits = 0;
-          // int header_printed = 0;
-//------------------------------------------------------------------------------
-// skip empty ROC blocks
-//------------------------------------------------------------------------------
-          if (rdh->packetCount > 1) {
-            if (nADCPackets_ < 0) {
-//-----------------------------------------------------------------------------
-// take the number of ADC packets per hit from the hit data,
-// trust that but watch if it changes
-// so far, any corruptions we saw were contained withing the ROC payload, and nhits
-// was a reliable number
-// 2026-03-20: don't store waveforms if only one packet per hit
-//-----------------------------------------------------------------------------
-              mu2e::TrackerDataDecoder::TrackerDataPacket* h0;
-              h0           = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (roc_data+packet_size);
-//-----------------------------------------------------------------------------
-// don't expect zero ADC packets, the error seen was that one of the ROCs just
-// doesn't send the second packet at all... work under that assumption
-//-----------------------------------------------------------------------------
-              if (h0->NumADCPackets == 0) {
-                print_(e_ERROR,std::format("dtc_id:{} link_id:{} N(ADC packets) = 0, skip ROC data",
-                                   dtc_id,(int) rdh->linkID));
-                
-                roc_data += (rdh->packetCount+1)*packet_size;
-                continue;
-              }
-              nADCPackets_ = h0->NumADCPackets;
-              nSamples_    = 3+12*nADCPackets_;
-              np_per_hit_  = nADCPackets_+1;
-            }
-            uint32_t link_id = rdh->linkID;
-            nhits            = rdh->packetCount/(nADCPackets_+1);
-//-----------------------------------------------------------------------------
-// there should not be more than 255 hits per ROC, if nhits>=255 it is a corruption,
-// stop processing of the event 
-//-----------------------------------------------------------------------------
-            if (nhits > 255) {
-              print_(e_ERROR,std::format("nhits:{}, skip event",nhits));
-              break;
-            }
-            
-            const TrkPanelMap::Row* tpmd = _trackerPanelMap->panel_map_by_online_ind(dtc_id,link_id);
-            if (tpmd == nullptr) {
-//-----------------------------------------------------------------------------
-// either DTC ID or link ID are corrupted. Haven't seen that so far, switch to the next ROC anyway
-//-----------------------------------------------------------------------------
-              print_(e_ERROR,std::format("either dtc_id:{} or link_id:{} is corrupted, skip ROC data",
-                                 dtc_id,link_id));
-
-              roc_data += (nhits*np_per_hit_+1)*packet_size;
-              continue;
-            }
-
-            if (_debugMode) {
-              print_(e_INFO,std::format("-- DTC:{} ROC:{} nhits:{}",dtc_id,link_id,nhits));
-            }
-
-            for (int ihit=0; ihit<nhits; ihit++) {
-//-----------------------------------------------------------------------------
-// first packet, 16 bytes, or 8 ushort's is the data header packet
-//-----------------------------------------------------------------------------
-              mu2e::TrackerDataDecoder::TrackerDataPacket* hit_data ;
-
-              int offset = (ihit*np_per_hit_+1)*packet_size;   // in bytes
-              hit_data   = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (roc_data+offset);
-              if (roc_data+offset >= last_address) {
-                print_(e_ERROR,std::format("dtc_id:{} link_id:{} roc_data:{} offset:{} last_address:{} , SKIPPING",
-                                   dtc_id, link_id, (void*) roc_data, offset, (void*) last_address));
-                break;
-              }
-//-----------------------------------------------------------------------------
-// at this point, check consistency between the channel_id, dtc_id and link_id for a given run
-// panel ID is a derivative of the DTC ID and the link iD
-// mn_id - 'MinnesotaID' of the panel
-//-----------------------------------------------------------------------------
-              mu2e::StrawDigiFlag digi_flag;
-              uint16_t channel = static_cast<uint16_t>(hit_data->StrawIndex);
-              uint16_t chid    = mu2e::StrawId(channel).straw(); // channel ID within the panel
-
-              if (chid >= StrawId::_nstraws) {
-                if (_debugBit[52] == 0) {
-                  print_(e_ERROR,std::format("hit with corrupted chid:{:04x} : straw:{} / dtc_id:{} link_id:{}, SKIPPING",
-                                     hit_data->StrawIndex, chid, dtc_id, link_id));
-                }
-                continue;
-              }
-
-              uint16_t mnid    = channel >> mu2e::StrawId::_panelsft;
-
-              if (hit_data->NumADCPackets != nADCPackets_) {
-                int np = hit_data->NumADCPackets;
-                print_(e_ERROR,std::format("wrong NADCpackets:{} , expected:{}, GO TO THE NEXT ROC",
-                                   np,nADCPackets_));
-                break;
-              }
-            }
-          }
-//-----------------------------------------------------------------------------
-// end fo ROC data processing, on to the next one
-//-----------------------------------------------------------------------------
-          roc_data += (nhits*np_per_hit_+1)*packet_size;
+          analyze_dtc_fragment(frag);
         }
       }
     }
   }
 //-----------------------------------------------------------------------------
-// Store the straw digis in the event
+// check consistency of all timestamps
 //-----------------------------------------------------------------------------
+  int      nts  = _fragment_ewts.size();
+  uint64_t ewt0(-1); 
+  if (nts > 0) {
+    ewt0 = _fragment_ewts[0];
+    for (int i=1; i<nts; i++) {
+      if (_fragment_ewts[i] != ewt0) {
+        std::string msg = std::format("ewt0:0x{:08x} ewt[{:3d}]:0x{:08x}",ewt0,i,_fragment_ewts[i]);
+        print_(e_ERROR,msg);
+      }
+    };
+  }
 
-  if (_debugMode) print_(e_INFO,"-- END");
+  if (_debugMode and _debugBit[3]) {
+    std::string msg = std::format("ewt:0x{:08x}",ewt0);
+    print_(e_INFO,msg);
+  }
+
+  if (_debugMode and _debugBit[0]) print_(e_INFO,std::format("-- END: ewt:0x{:08x}",ewt0));
 }
 
 

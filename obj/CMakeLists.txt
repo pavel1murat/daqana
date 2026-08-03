@@ -20,6 +20,7 @@ ROOT_GENERATE_DICTIONARY(${dict}
   DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
   TrkSegment.hh SegmentFit.hh DaqTrkStrawHit.hh
   DaqCrvRecoPulse.hh DaqCrvDigi.hh DaqCrvCoincidenceCluster.hh
+  DaqCaloDigi.hh DaqCaloHit.hh DaqCaloCluster.hh
   RunDb.hh
   DaqFragment.hh
   digis.hh simres.hh TrkPanelMap_t.hh
@@ -34,8 +35,10 @@ add_library(${lib} SHARED
   DaqCrvRecoPulse.cc DaqCrvDigi.cc DaqCrvCoincidenceCluster.cc
   RunDb.cc
   DaqFragment.cc
+  DaqCaloDigi.cc DaqCaloHit.cc DaqCaloCluster.cc
   digis.cc simres.cc
   fit_dt01_msh.cc
+  FragmentMixer.cc
   ${dict}.cxx
 )
 add_library(daqana::obj ALIAS ${lib})

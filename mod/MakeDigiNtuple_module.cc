@@ -34,6 +34,8 @@
 #include "Offline/RecoDataProducts/inc/CrvRecoPulse.hh"
 #include "Offline/RecoDataProducts/inc/CrvCoincidenceCluster.hh"
 
+#include "Offline/RecoDataProducts/inc/CaloDigi.hh"
+
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
@@ -101,6 +103,9 @@ public:
 
   struct Config {
     
+    Atom<art::InputTag>   caldCollTag   {Name("caldCollTag"   ), Comment("calorimeter digi coll tag"  )};
+    Atom<art::InputTag>   calhCollTag   {Name("calhCollTag"   ), Comment("calorimeter hits coll tag"  )};
+    Atom<art::InputTag>   calcCollTag   {Name("calcCollTag"   ), Comment("calo cluster coll tag"      )};
     Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          )};
     Atom<art::InputTag>   crvpCollTag   {Name("crvpCollTag"   ), Comment("CRV reco pulse coll tag"    )};
     Atom<art::InputTag>   crvcCollTag   {Name("crvcCollTag"   ), Comment("CRV coins cluster coll tag" )};
@@ -112,6 +117,9 @@ public:
     Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                 )};
     Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"           )};
     Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms" )};
+    Atom<int>             makeCalD      {Name("makeCalD"      ), Comment("make CAL digis"             )}; // ,1};
+    Atom<int>             makeCalH      {Name("makeCalH"      ), Comment("make CAL hits"              )}; // ,1};
+    Atom<int>             makeCalC      {Name("makeCalC"      ), Comment("make CAL clusters"          )}; // ,1};
     Atom<int>             makeCrvD      {Name("makeCrvD"      ), Comment("make CRV digis"             )}; // ,1};
     Atom<int>             makeCrvP      {Name("makeCrvP"      ), Comment("make CRV pulses"            )}; // ,1};
     Atom<int>             makeCrvC      {Name("makeCrvC"      ), Comment("make CRV cclusters"         )}; // ,1};
@@ -148,6 +156,10 @@ public:
 
   int      fillFragments();
 
+  int      fillCalD();
+  int      fillCalH();
+  int      fillCalC();
+
   int      fillCrvD();
   int      fillCrvP();
   int      fillCrvC();              // CRV coincidence clusters
@@ -171,6 +183,9 @@ public:
   int                      _debugMode;
   std::vector<std::string> _sDebugBits;
   int                      _debugBit[100];
+  art::InputTag            _caldCollTag;        // CAL digi collection tag
+  art::InputTag            _calhCollTag;        // CAL hit  collection tag
+  art::InputTag            _calcCollTag;        // CAL cluster collection tag
   art::InputTag            _crvdCollTag;        // CRV digi collection tag
   art::InputTag            _crvpCollTag;        // CRV reco pulse collection tag
   art::InputTag            _crvcCollTag;        // CRV CC collection tag
@@ -180,6 +195,9 @@ public:
   art::InputTag            _ksCollTag;          // kalseed collection tag
   std::string              _outputDir;
   int                      _saveWaveforms;
+  int                      _makeCalD;
+  int                      _makeCalH;
+  int                      _makeCalC;
   int                      _makeCrvD;
   int                      _makeCrvP;
   int                      _makeCrvC;
@@ -207,6 +225,9 @@ public:
   const art::Event*        _art_event;
   int                      _last_run;
 
+  int                     _ncald;
+  int                     _ncalh;
+  int                     _ncalc;
   int                     _nstrawdigis;
   int                     _nstrawhits;
   int                     _ncombohits;
@@ -228,6 +249,9 @@ public:
 
   int                     _hist_booked;
    
+  const mu2e::CaloDigiCollection*              _caldc;
+  const mu2e::CaloHitCollection*               _calhc;
+  const mu2e::CaloClusterCollection*           _calcc;
   const mu2e::CrvDigiCollection*               _crvdc;
   const mu2e::CrvRecoPulseCollection*          _crvpc;
   const mu2e::CrvCoincidenceClusterCollection* _crvcc;
@@ -303,15 +327,24 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     art::EDAnalyzer{config},
     _debugMode     (config().debugMode     ()),
     _sDebugBits    (config().debugBits     ()),
+
+    _caldCollTag   (config().caldCollTag   ()),
+    _calhCollTag   (config().calhCollTag   ()),
+    _calcCollTag   (config().calcCollTag   ()),
+
     _crvdCollTag   (config().crvdCollTag   ()),
     _crvpCollTag   (config().crvpCollTag   ()),
     _crvcCollTag   (config().crvcCollTag   ()),
+
     _sdCollTag     (config().sdCollTag     ()),
     _shCollTag     (config().shCollTag     ()),
     _tcCollTag     (config().tcCollTag     ()),
     _ksCollTag     (config().ksCollTag     ()),
     _outputDir     (config().outputDir     ()),
     _saveWaveforms (config().saveWaveforms ()),
+    _makeCalD      (config().makeCalD      ()),
+    _makeCalH      (config().makeCalH      ()),
+    _makeCalC      (config().makeCalC      ()),
     _makeCrvD      (config().makeCrvD      ()),
     _makeCrvP      (config().makeCrvP      ()),
     _makeCrvC      (config().makeCrvC      ()),
@@ -324,9 +357,9 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _makeTrk       (config().makeTrk       ()),
     _ewLength      (config().ewLength      ()),
     _nSamplesBL    (config().nSamplesBL    ()),
+    _minNSegments  (config().minNSegments  ()),
     _minPulseHeight(config().minPulseHeight()),
     _minSDPHToSave (config().minSDPHToSave ()),
-    _minNSegments  (config().minNSegments  ()),
     _vDrift        (config().vDrift        ()),
     _tOffset       (config().tOffset       ()),
     _art_event     (nullptr)
@@ -373,9 +406,8 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
 
   
     //  _file = new TFile(Form("%s/make_digi_ntuple_%06i.root",outputDir_.data(),ArtRun.run()),"RECREATE");
-    TTree::SetMaxTreeSize(8000000000LL);
+    TTree::SetMaxTreeSize(4000000000LL);
 
-  //  _tree = new TTree("digis","digis");
     _tree = tfs->make<TTree>("digis","digis");
 
     _event = new DaqEvent();
@@ -384,11 +416,6 @@ void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
     _branch->SetAutoDelete(kFALSE);
     
     if (_branch) { 
-    // _event->strawdigis = new TClonesArray("DaqStrawDigi",100);
-    // _event->strawdigis->BypassStreamer(kFALSE);          // the whole point is to split everything
-    // _event->calodigis  = new TClonesArray("DaqStrawDigi",100);
-    // _event->crvdigis   = new TClonesArray("DaqStrawDigi",100);
-    // _event->stmdigis   = new TClonesArray("DaqStrawDigi",100);
     }
     _hist_booked = 1;
   }
@@ -443,28 +470,16 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // tracker
 //-----------------------------------------------------------------------------
-  art::Handle<mu2e::StrawDigiCollection>            sdch;
-  art::Handle<mu2e::StrawDigiADCWaveformCollection> sdawfch;
-  art::Handle<mu2e::StrawHitCollection>             shch;
-  art::Handle<mu2e::ComboHitCollection>             chch;
-
-  _nstrawdigis   = 0;
-  _nstrawhits    = 0;
-  _ncombohits    = 0;
-  _ntimeclusters = 0;
-  _ntracks       = 0;
-  // _ncalodigis  = 0;
-  // _ncrvdigis   = 0;
-  // _nstmdigis   = 0;
+  bool ok;
 
   _sdc         = nullptr;
   _sdawfc      = nullptr;
-  _shc         = nullptr;
-  _chc         = nullptr;
-
-  bool ok;
+  _nstrawdigis = 0;
 
   if (_makeSD) {
+    art::Handle<mu2e::StrawDigiCollection>            sdch;
+    art::Handle<mu2e::StrawDigiADCWaveformCollection> sdawfch;
+    
     ok = ArtEvent.getByLabel(_sdCollTag,sdch);
     if (ok) { 
       _sdc         = sdch.product();
@@ -487,7 +502,10 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     }
   }
 
+  _shc = nullptr;
+  _nstrawhits = 0;
   if (_makeSH) {
+    art::Handle<mu2e::StrawHitCollection>             shch;
     ok = ArtEvent.getByLabel(_shCollTag,shch);
     if (ok) { 
       _shc         = shch.product();
@@ -499,6 +517,8 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     }
   }
 
+  _tcc = nullptr;
+  _ntimeclusters = 0;
   if (_makeTC != 0) {
     art::Handle<mu2e::TimeClusterCollection>          tcch;
     ok =  ArtEvent.getByLabel(_tcCollTag,tcch);
@@ -514,21 +534,27 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // assume that chCollTag == _shCollTag
 //-----------------------------------------------------------------------------
-    art::Handle<mu2e::ComboHitCollection>             chch;
-    ok =  ArtEvent.getByLabel(_shCollTag,chch);
-    if (ok) { 
-      _chc           = chch.product();
-      _ncombohits    = _chc->size();
-    }
-    else {
-      print_(e_WARNING,std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
-                       _shCollTag.encode().data()));
-      return -1;
+    _chc        = nullptr;
+    _ncombohits = 0;
+    if (_makeCH != 0) {
+      art::Handle<mu2e::ComboHitCollection> chch;
+      ok =  ArtEvent.getByLabel(_shCollTag,chch);
+      if (ok) { 
+        _chc           = chch.product();
+        _ncombohits    = _chc->size();
+      }
+      else {
+        print_(e_WARNING,std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
+                                     _shCollTag.encode().data()));
+        return -1;
+      }
     }
   }
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
+  _ksc     = nullptr;
+  _ntracks = 0;
   if (_makeTrk != 0) {
     art::Handle<mu2e::KalSeedCollection>  ksch;
     ok =  ArtEvent.getByLabel(_ksCollTag,ksch);
@@ -545,9 +571,55 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // calorimeter
 //-----------------------------------------------------------------------------
+  _caldc = nullptr;
+  _ncald = 0;
+  if (_makeCalD != 0) {
+    art::Handle<mu2e::CaloDigiCollection>     caldch;
+    ok = ArtEvent.getByLabel(_caldCollTag,caldch);
+    if (ok) { 
+      _caldc = caldch.product();
+      _ncald = _caldc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: CaloDigiCollection:{:s} not found.\n",
+                         _caldCollTag.encode().data()));
+    }
+  }
+  
+  _calhc = nullptr;
+  _ncalh = 0;
+  if (_makeCalH != 0) {
+    art::Handle<mu2e::CaloHitCollection>     calhch;
+    ok = ArtEvent.getByLabel(_calhCollTag,calhch);
+    if (ok) { 
+      _calhc = calhch.product();
+      _ncalh = _calhc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: CaloHitCollection:{:s} not found.\n",
+                         _calhCollTag.encode().data()));
+    }
+  }
+  
+  _calcc = nullptr;
+  _ncalc = 0;
+  if (_makeCalC != 0) {
+    art::Handle<mu2e::CaloClusterCollection>     calcch;
+    ok = ArtEvent.getByLabel(_calcCollTag,calcch);
+    if (ok) { 
+      _calcc = calcch.product();
+      _ncalc = _calcc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: CaloClusterCollection:{:s} not found.\n",
+                         _calcCollTag.encode().data()));
+    }
+  }
 //-----------------------------------------------------------------------------
 // CRV
 //-----------------------------------------------------------------------------
+  _crvdc = nullptr;
+  _ncrvd = 0;
   if (_makeCrvD != 0) {
     art::Handle<mu2e::CrvDigiCollection>     crvdch;
     ok = ArtEvent.getByLabel(_crvdCollTag,crvdch);
@@ -561,6 +633,8 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
     }
   }
   
+  _crvpc = nullptr;
+  _ncrvp = 0;
   if (_makeCrvP != 0) {
     art::Handle<mu2e::CrvRecoPulseCollection>      crvpch;
     ok = ArtEvent.getByLabel(_crvpCollTag,crvpch);
@@ -573,7 +647,9 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
                          _crvpCollTag.encode().data()));
     }
   }
-  
+
+  _crvcc = nullptr;
+  _ncrvc = 0;
   if (_makeCrvC != 0) {
     art::Handle<mu2e::CrvCoincidenceClusterCollection>     crvcch;
     ok = ArtEvent.getByLabel(_crvcCollTag,crvcch);
@@ -652,6 +728,77 @@ int mu2e::MakeDigiNtuple::process_adc_waveform(float* Wf, WfParam_t* Wp) {
   return 0;
 }
   
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCalD() {
+  for (int i=0; i<_ncald; i++) {
+    const mu2e::CaloDigi* cald = &_caldc->at(i);
+    int ns = cald->waveform().size();
+
+    DaqCaloDigi* nt_cald = (DaqCaloDigi*) _event->cald->ConstructedAt(i);
+    nt_cald->Init(ns);
+    
+    nt_cald->sipmid       = cald->SiPMID();
+    nt_cald->t0           = cald->t0();
+    nt_cald->ppos         = cald->peakpos();
+//-----------------------------------------------------------------------------
+// store the waveform
+//-----------------------------------------------------------------------------
+    for (int is=0; is<ns; is++) {
+      nt_cald->wf[is] = cald->waveform()[is];
+    }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCalH() {
+  _event->edisk[0] = 0;
+  _event->edisk[1] = 0;
+  
+  for (int i=0; i<_ncalh; i++) {
+    const mu2e::CaloHit* calh = &_calhc->at(i);
+
+    DaqCaloHit* nt_calh = (DaqCaloHit*) _event->calh->ConstructedAt(i);
+    nt_calh->cid        = calh->crystalID();
+    nt_calh->nsipms     = calh->nSiPMs();
+    nt_calh->time       = calh->time();
+    nt_calh->sigt       = calh->timeErr();
+    nt_calh->edep       = calh->energyDep();
+    nt_calh->sige       = calh->energyDepErr();
+
+    int disk = 0;
+    if (calh->crystalID() >= 674) disk = 1;
+    _event->edisk[disk] += nt_calh->edep;
+  }
+  
+  _event->ecal = _event->edisk[0]+_event->edisk[1];
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// calorimeter clusters
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCalC() {
+  
+  for (int i=0; i<_ncalc; i++) {
+    const mu2e::CaloCluster* calc = &_calcc->at(i);
+
+    DaqCaloCluster* nt_calc = (DaqCaloCluster*) _event->calc->ConstructedAt(i);
+    nt_calc->disk       = calc->diskID();
+    nt_calc->size       = calc->size();
+    nt_calc->time       = calc->time();
+    nt_calc->sigt       = calc->timeErr();
+    nt_calc->edep       = calc->energyDep();
+    nt_calc->sige       = calc->energyDepErr();
+    nt_calc->split      = calc->isSplit();
+    nt_calc->x          = calc->cog3Vector().x();
+    nt_calc->y          = calc->cog3Vector().y();
+    nt_calc->z          = calc->cog3Vector().z();
+  }
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillCrvD() {
   for (int i=0; i<_ncrvd; i++) {
@@ -846,8 +993,8 @@ int mu2e::MakeDigiNtuple::fillFragments() {
 //-----------------------------------------------------------------------------
 // this is a tracker DTC fragment, loop over the ROCs
 //-----------------------------------------------------------------------------
-        ushort*  buf          = (ushort*) fdata;
-        int      nbytes       = buf[0];
+        // ushort*  buf          = (ushort*) fdata;
+        // int      nbytes       = buf[0];
         uint8_t* roc_data     = fdata+sizeof(*seh);
         // uint8_t* last_address = fdata+nbytes;
         for (int lnk=0; lnk<6; lnk++) {
@@ -1530,12 +1677,17 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->run     = ArtEvent.run();
   _event->srn     = ArtEvent.subRun();
   _event->evn     = ArtEvent.event();
+  _event->ewtag   = -1;                 // to be figured separately from either 
                                         // defined in getData()
   _event->nsdtot  = _nstrawdigis;
   _event->nshtot  = _nstrawhits;
   _event->nch     = _ncombohits;
   _event->ntc     = _ntimeclusters;
   _event->ntrk    = _ntracks;
+
+  _event->ncald   = _ncald;
+  _event->ncalh   = _ncalh;
+  _event->ncalc   = _ncalc;
 
   _event->ncrvd   = _ncrvd;
   _event->ncrvp   = _ncrvp;
@@ -1554,6 +1706,10 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeSH       ) fillSH ();
   if (_makeCH       ) fillCH ();
   if (_makeTC       ) fillTC ();
+
+  if (_makeCalD     ) fillCalD ();
+  if (_makeCalH     ) fillCalH ();
+  if (_makeCalC     ) fillCalC ();
 
   if (_makeCrvD     ) fillCrvD ();
   if (_makeCrvP     ) fillCrvP ();

@@ -1,0 +1,67 @@
+#
+#include "production/JobConfig/reco/Extracted.fcl"
+
+services : { @table::Services.SimAndReco
+    TimeTracker : {
+	printSummary : true
+	dbOutput : {
+	    filename  : ""
+	    overwrite : false
+	}
+    }
+   message: @local::default_message
+} 
+
+physics.producers.EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
+    SpillType         : 0       ## offspill
+    RecoFromMCTruth   : false   ## default
+    RecoFromMCTruthErr: 0       ## default
+    InitialPhaseShift : 0       ## optional, set it to zero just in case
+}
+
+
+physics.producers.CaloHitFastMaker : {
+    module_type         : "CaloHitMakerFast"
+    ProtonBunchTimeTag  : "EWMProducer"
+    caloDigiCollection  : "CaloDigiMaker"
+    caphriEDepMax       : 100
+    caphriEDepMin       : 1
+    deltaTPulses        : 11
+    digiSampling        : 5
+    nPEperMeV           : 30
+    nSigmaNoise         : 4
+    noiseLevelMeV       : 5.5e-1
+    ADCToMeV            : @local::ADCToMeV
+    diagLevel           : 0
+}
+
+physics.producers.CaloDigiMaker: { module_type:  CaloDigisFromDTCEvents
+    dataType     : 0
+    diagLevel    : 1000
+    useOfflineID : true
+}
+
+physics.RecoPath: [
+                   "EWMProducer", 
+                   "CaloDigiMaker",
+                   "CaloRecoDigiMaker",
+                   "CaloHitMaker",
+                   "CaloHitFastMaker",
+                   "CaloProtoClusterMaker",
+                   "CaloClusterMaker"
+#                   , "CaloClusterFastMaker"
+                  ]
+
+outputs.KinematicLineOutput : {
+    module_type   :   RootOutput
+    fileName: "rec.owner.description.version.sequencer.art"
+    outputCommands : [ "keep *_*_*_*"]
+}
+
+# source.fileNames : [ INPUT_FILES ]
+outputs.KinematicLineOutput.fileName : "OUTPUT_FILE.art"
+
+services.SeedService.baseSeed         : 8
+services.SeedService.maxUniqueEngines : 100
+services.scheduler.wantSummary        : true
+services.TFileService.fileName        : "/dev/null" 
