@@ -846,10 +846,10 @@ int mu2e::MakeDigiNtuple::fillCrvP() {
     nt_crvp->le_time         = crvp->GetLEtime();
     nt_crvp->flags           = crvp->GetRecoPulseFlags().to_ulong();
     
-    nt_crvp->npes_nofit      = crvp->GetPEsNoFit();
-    nt_crvp->time_nofit      = crvp->GetPulseTimeNoFit();
-    nt_crvp->tstart          = crvp->GetPulseStart();
-    nt_crvp->tend            = crvp->GetPulseEnd();
+    nt_crvp->npes_nofit      = crvp->GetPEs();
+    nt_crvp->time_nofit      = crvp->GetPulseTime();
+    nt_crvp->tstart          = -1.; // no longer exists // crvp->GetPulseStart();
+    nt_crvp->tend            = -1.; // no longer exists // crvp->GetPulseEnd();
 
     nt_crvp->sbid            = crvp->GetScintillatorBarIndex().asInt();
     nt_crvp->sipm            = crvp->GetSiPMNumber();
@@ -868,16 +868,19 @@ int mu2e::MakeDigiNtuple::fillCrvC() {
     DaqCrvCoincidenceCluster* nt_crvc = (DaqCrvCoincidenceCluster*) _event->crvc->ConstructedAt(i);
     nt_crvc->Init();
 
-    nt_crvc->stype   = crvc->GetCrvSectorType();
-    nt_crvc->tstart  = crvc->GetStartTime();
-    nt_crvc->tend    = crvc->GetEndTime();
-    nt_crvc->pes     = crvc->GetPEs();
-    nt_crvc->time    = crvc->GetAvgHitTime();
-    nt_crvc->x       = crvc->GetAvgHitPos().x();
-    nt_crvc->y       = crvc->GetAvgHitPos().y();
-    nt_crvc->z       = crvc->GetAvgHitPos().z();
-    nt_crvc->nlayers = crvc->GetLayers().size();
-    nt_crvc->nsides  = (crvc->HasTwoReadoutSides() == 0) ? 1 : 2;
+    nt_crvc->stype    = crvc->GetCrvSectorType();
+    nt_crvc->tstart   = crvc->GetStartTime();
+    nt_crvc->tend     = crvc->GetEndTime();
+    nt_crvc->pes      = crvc->GetPEs();
+    nt_crvc->time     = crvc->GetAvgHitTime();
+    nt_crvc->x        = crvc->GetAvgHitPos().x();
+    nt_crvc->y        = crvc->GetAvgHitPos().y();
+    nt_crvc->z        = crvc->GetAvgHitPos().z();
+    nt_crvc->nlayers  = crvc->GetLayers().size();
+    nt_crvc->tside[0] = crvc->GetSideTimes()[0];
+    nt_crvc->tside[1] = crvc->GetSideTimes()[1];
+    nt_crvc->peside[0] = crvc->GetSidePEs()[0];
+    nt_crvc->peside[1] = crvc->GetSidePEs()[1];
   }
   return 0;
 }

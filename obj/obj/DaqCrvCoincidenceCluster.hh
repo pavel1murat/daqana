@@ -16,7 +16,8 @@ public:
   float    y;
   float    z;
   int      nlayers;
-  int      nsides;                      // 1 or 2
+  float    tside [2];                   //
+  float    peside[2];                   //
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -27,7 +28,7 @@ public:
 
   virtual void Clear(const char* Opt) override ;
 
-  ClassDefOverride(DaqCrvCoincidenceCluster,1);
+  ClassDefOverride(DaqCrvCoincidenceCluster,2);
 };
 
 #endif

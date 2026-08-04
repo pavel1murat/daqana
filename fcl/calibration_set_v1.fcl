@@ -5,10 +5,12 @@ services.DbService : {
     version  : v0                          ## ignored
     dbName   : "mu2e_conditions_prd"       ## ignored
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v0.txt",      ## based on pulse injections runs 122968-122976
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v0.txt",               ## based on pulse injections runs 122968-122976
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-                 "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use "DB"
-                 "daqana/calibrations/TrkDelayPanel_v2.txt"        ## corrected based on run 123098
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",          ## use "DB"
+                 "daqana/calibrations/TrkDelayPanel_v2.txt"                 ## corrected based on run 123098
+                 "daqana/rundb/123000/123680/CaloRecoTable_20260731.txt",   ## calorimeter energy
+                 "daqana/rundb/123000/123680/CaloTimeCalib.txt"             ## calorimeter timing
                 ]
                 
     verbose  : 100
@@ -24,5 +26,7 @@ services.ProditionsService.strawPhysics.useDb           : false
 services.ProditionsService.strawResponse.useDb          : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
 services.ProditionsService.trackerPanelMap.useDb        : true
+
+services.ProditionsService.calCalib.useDb               : true
 
 ## services.ProditionsService.trackerPanelMap.verbose      : 10
