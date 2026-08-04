@@ -1,0 +1,152 @@
+#include "mu2e-trig-config/core/trigProducers.fcl"
+#include "Offline/fcl/standardProducers.fcl"
+#include "Offline/fcl/standardServices.fcl"
+#include "Offline/CRVResponse/fcl/prolog.fcl"
+#include "Production/JobConfig/reco/prolog.fcl"
+
+process_name : TrackerCRVCaloPass1
+
+services :
+{
+  @table::Services.Core
+  @table::Services.Reco
+}
+
+source :
+{
+  module_type : RootInput
+  fileNames   : @nil
+  maxEvents   : -1
+}
+
+physics :
+{
+  producers :
+  {
+    @table::Reconstruction.producers
+    CrvDigi :
+    {
+      module_type   : CrvDigisFromArtdaqFragmentsFEBII
+      diagLevel     : 0
+      useROC4asROC2 : true
+    }
+    CrvRecoPulses: @local::CrvRecoPulses
+    CrvCoincidenceClusterFinder: @local::CrvCoincidenceClusterFinder
+    CaloDigiMaker : {
+      module_type : CaloDigisFromDTCEvents
+      dataType : 0
+      diagLevel : 0
+      useOfflineID : true
+    }
+  }
+  filters : {
+    @table::Reconstruction.filters
+    EventIDFilter : {
+      module_type: EventIDFilter
+      idsToMatch: [ "123680:1-204:*",
+                          "123680:205:1-2040079","123680:205:2040081-100000000",
+                          "123680:206-869:*",
+                          "123680:870:1-8698085","123680:870:8698087-100000000",
+                          "123680:871-10000:*"
+                         ]
+    }
+  }
+  analyzers :
+  {
+    @table::Reconstruction.analyzers
+    CrvDQMcollector: @local::CrvDQMcollector
+  }
+
+  RecoPath: [
+    EventIDFilter,
+    CaloDigiMaker,
+    makeSH,
+    SimpleTimeCluster,
+    CosmicShowerFilter,
+    CaloRecoDigiMaker,
+    CaloHitMaker,
+    CaloHitFastMaker,
+    CaloProtoClusterMaker,
+    CaloClusterMaker,
+    CaloClusterFastMaker,
+    LineFinder,
+    KKLine,
+    SelectReco
+  ]
+
+  t1 : [ EventIDFilter, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+
+  trigger_paths  : [t1, RecoPath]
+  end_paths      : []
+}
+
+#include "Offline/CRVReco/fcl/epilog_extracted.fcl"
+#physics.producers.CrvCoincidenceClusterFinder.ignoreSecondaryPulses : true
+
+services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
+services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
+services.TimeTracker.printSummary : true
+services.scheduler.wantSummary    : true
+services.message.destinations.log.outputStatistics : true
+
+outputs.KinematicLineOutput : {
+    @table::Reconstruction.Output
+    SelectEvents : [ "t1","RecoPath" ]
+    fileName: "rec.owner.description.version.sequencer.art"
+
+    outputCommands : [ "drop *_*_*_*",
+      @sequence::Reconstruction.GeneralProducts,
+      @sequence::Reconstruction.HighRecoProducts,
+      @sequence::Reconstruction.MidRecoProducts,
+      "keep *_DummyLumiInfo_*_*",
+      "keep *_TriggerResults_*_*",
+      "keep mu2e::CrvRecoPulses_*_*_*",
+      "keep mu2e::CrvDigis_*_*_*",
+      "keep mu2e::CrvDAQerrors_*_*_*",
+      "keep *_eventHeaderFromCFOFragment_*_*",
+      "keep mu2e::CrvCoincidenceClusters_*_*_*",
+      "keep mu2e::CrvStatuss_*_*_*",
+      "drop artdaq::*_*_*_*" ,
+      "drop mu2e::CrvDigis_*_NZS_*"
+    ]
+
+}
+
+physics.EndPath : [ KinematicLineOutput]
+physics.end_paths : [ EndPath ]
+
+# final config
+#include "Production/JobConfig/reco/NoPileup_epilog.fcl"
+#include "Production/JobConfig/reco/OffSpillTiming_epilog.fcl"
+
+physics.producers.KKLine.ModuleSettings.SampleSurfaces : @local::Mu2eKinKal.producers.KKLine.ModuleSettings.SampleSurfaces
+
+physics.producers.
+
+#include "PassN/Tracker/TrkReco_epilog.fcl"
+#include "PassN/Tracker/TrkReco_calibrations.fcl"
+#include "PassN/Tracker/TrkRecoFromFragments_epilog.fcl"
+
+services.DbService.purpose : CRV_COMMISSIONING
+services.DbService.version : v1_0
+services.DbService.verbose : 0
+services.DbService.nearestMatch : true
+services.DbService.textFile : ["PassN/Tracker/TrkPanelMap.txt","PassN/Tracker/currentcalib.txt"]
+services.ProditionsService.alignedTracker.useDb: true
+services.ProditionsService.alignedTracker.verbose: 0
+services.ProditionsService.trackerStatus.Settings.useDb: true
+services.ProditionsService.trackerStatus.Settings.verbose: 0
+services.ProditionsService.strawElectronics.useDb: true
+services.ProditionsService.strawElectronics.verbose: 0
+services.ProditionsService.crvStatus.useDb : true
+services.ProditionsService.crvCalib.useDb  : true
+#include "PassN/Tracker/currentcalib.fcl"
+
+#physics.producers.KKLine.KKFitSettings.CaloPositionResolution : 100.
+#physics.producers.KKLine.KKFitSettings.CaloTimeResolution : 10.
+#physics.producers.KKLine.KKFitSettings.CaloTrackerTimeOffset: -1400
+#physics.producers.KKLine.KKFitSettings.MaxCaloClusterDOCA: 1000
+#physics.producers.KKLine.KKFitSettings.MaxCaloClusterDt: 100
+#physics.producers.KKLine.KKFitSettings.UseCaloCluster : true
+#physics.producers.LineFinder.AddCaloClusters: true
+#physics.producers.LineFinder.CaloClusterCollection : CaloClusterMaker 
