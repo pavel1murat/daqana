@@ -6,34 +6,27 @@
 
 process_name : TrackerCRVCaloPass1
 
-services :
-{
+services : {
   @table::Services.Core
   @table::Services.Reco
 }
 
-source :
-{
+source : {
   module_type : RootInput
   fileNames   : @nil
   maxEvents   : -1
 }
 
-physics :
-{
-  producers :
-  {
+physics : {
+  producers :   {
     @table::Reconstruction.producers
-    CrvDigi :
-    {
-      module_type   : CrvDigisFromArtdaqFragmentsFEBII
+    CrvDigi : { module_type   : CrvDigisFromArtdaqFragmentsFEBII
       diagLevel     : 0
       useROC4asROC2 : true
     }
     CrvRecoPulses: @local::CrvRecoPulses
     CrvCoincidenceClusterFinder: @local::CrvCoincidenceClusterFinder
-    CaloDigiMaker : {
-      module_type : CaloDigisFromDTCEvents
+    CaloDigiMaker : { module_type : CaloDigisFromDTCEvents
       dataType : 0
       diagLevel : 0
       useOfflineID : true
@@ -51,8 +44,7 @@ physics :
                          ]
     }
   }
-  analyzers :
-  {
+  analyzers : {
     @table::Reconstruction.analyzers
     CrvDQMcollector: @local::CrvDQMcollector
   }
@@ -83,8 +75,8 @@ physics :
 #include "Offline/CRVReco/fcl/epilog_extracted.fcl"
 #physics.producers.CrvCoincidenceClusterFinder.ignoreSecondaryPulses : true
 
-services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
-services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
+services.GeometryService.bFieldFile                : "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
+services.GeometryService.inputFile                 : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
 services.TimeTracker.printSummary : true
 services.scheduler.wantSummary    : true
 services.message.destinations.log.outputStatistics : true
@@ -106,7 +98,7 @@ outputs.KinematicLineOutput : {
       "keep *_eventHeaderFromCFOFragment_*_*",
       "keep mu2e::CrvCoincidenceClusters_*_*_*",
       "keep mu2e::CrvStatuss_*_*_*",
-      "drop artdaq::*_*_*_*" ,
+                       # "drop artdaq::*_*_*_*" ,
       "drop mu2e::CrvDigis_*_NZS_*"
     ]
 

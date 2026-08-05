@@ -1665,7 +1665,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   }
 
   if (_debugMode > 0) {
-    print_(e_DEBUG,std::format("-- START event:{}:{}:{}\n",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
+    print_(e_DEBUG,std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()));
   }
 
   int rc = getData(ArtEvent);
@@ -1728,7 +1728,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
     _tree->Fill();
   }
 
-  if (_debugMode > 0) print_(e_DEBUG,"-- END\n");
+  if (_debugMode > 0) print_(e_DEBUG,"-- END");
 }
 
 

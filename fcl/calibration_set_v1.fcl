@@ -1,4 +1,7 @@
 # -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# added initial version of the calorimeter calibrations
+#------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
     purpose  : EMPTY
@@ -10,7 +13,7 @@ services.DbService : {
                  "Offline/TrackerConditions/data/TrkPanelMap.txt",          ## use "DB"
                  "daqana/calibrations/TrkDelayPanel_v2.txt"                 ## corrected based on run 123098
                  "daqana/rundb/123000/123680/CaloRecoTable_20260731.txt",   ## calorimeter energy
-                 "daqana/rundb/123000/123680/CaloTimeCalib.txt"             ## calorimeter timing
+                 "daqana/rundb/123000/123680/CaloTimeCalib.txt"             ## calorimeter timing - all zeroes
                 ]
                 
     verbose  : 100

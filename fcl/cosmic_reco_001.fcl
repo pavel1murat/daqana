@@ -29,13 +29,12 @@ END_PROLOG
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v101.fcl"
 
-
 services.message.destinations.log.categories.MAKE_SD: {
     # reportEvery :  1
     limit       : 1000   # -1
 }
 
-process_name : MakeDaqNtuple
+process_name : CosmicReco001
 
 source : {
     module_type : RootInput
@@ -48,14 +47,26 @@ source : {
 }
 
 outputs:  {
-    defaultOutput :  {
-        module_type   :   RootOutput
-        fileName      :   "make_n003.art"
-
-#        outputCommands: [
-#                         "drop *_*_*_*",
-#                         "keep *_*_*_*"
-#                        ]
+    defaultOutput :  { module_type : RootOutput
+        fileName       :   "rec.mu2e.cosmics.kpp.%06r_%06s.art"
+        outputCommands :  [
+                          "drop *_*_*_*",
+                          @sequence::Reconstruction.GeneralProducts,
+                          @sequence::Reconstruction.HighRecoProducts,
+                          @sequence::Reconstruction.MidRecoProducts,
+                          "keep mu2e::TimeClusters_*_*_*",
+                          "keep *_makeSH_*_*",
+                          "keep *_DummyLumiInfo_*_*",
+                          "keep *_TriggerResults_*_*",
+                          "keep mu2e::CrvRecoPulses_*_*_*",
+                          "keep mu2e::CrvDigis_*_*_*",
+                          "keep mu2e::CrvDAQerrors_*_*_*",
+                          "keep *_eventHeaderFromCFOFragment_*_*",
+                          "keep mu2e::CrvCoincidenceClusters_*_*_*",
+                          "keep mu2e::CrvStatus_*_*_*",
+                          "drop artdaq::*_*_*_*" ,
+                          "drop mu2e::CrvDigis_*_NZS_*"
+                         ]
     }
 }
 
@@ -63,9 +74,9 @@ physics : {
     
     producers : {
         
-        CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 0 ## 10
-            useROC4asROC2 : true
+        CrvDigi :  { module_type : CrvDigisFromArtdaqFragmentsFEBII
+            diagLevel       : 0 ## 10
+            useROC4asROC2   : true
             # useSubsystem0 : false
         }
 
@@ -86,10 +97,13 @@ physics : {
             keyOnMnid        : true ## true    ## default:false
         }
         
-        makeSH: { @table::TrkHitReco.producers.makeSH }
+        makeSH: { @table::TrkHitReco.producers.makeSH
+            # MinimumEnergy : 0.0006
+        }
+        
         
         TimeCluster : { @table::CosmicReco.SimpleTimeCluster
-            minNStrawHits : 4
+            minNStrawHits : 8
             minNPanels    : 1
             TimeWindow    : 160 ## assume running with correct calibrations ## 400
             TimeStep      : 50
@@ -102,10 +116,13 @@ physics : {
         }
 
         CaloRecoDigiMaker : { @table::CaloReco.CaloRecoDigiMaker
-            globalDt : 1572.     ## 
+            globalDt : 1572.     ## <T(calo> - T(tracker)>
         }
 
         CaloHitMaker      : { @table::CaloReco.CaloHitMaker
+        }
+        
+        CaloHitFastMaker  : { @table::CaloReco.CaloHitFastMaker
         }
         
         CaloProtoClusterMaker : { @table::CaloCluster.CaloProtoClusterMaker
@@ -113,12 +130,25 @@ physics : {
 
         CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
         }
+        
+        CaloClusterFastMaker : { @table::CaloCluster.CaloClusterFastMaker
+        }
 
         CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
             globalDt : 486.  ## <T(CRV)-T(tracker)>
         }
 
         CrvCoincidenceClusterFinder : { @table::CrvRecoPackage.producers.CrvCoincidenceClusterFinder
+        }
+
+        LineFinder : { @table::CosmicReco.LineFinder
+            minPeak              : 8
+            NSteps               : 5
+            StepSize             : 0.25
+            TimeClusterCollection: "TimeCluster"
+        }
+
+        KKLine : { @table::Reconstruction.producers.KKLine   
         }
     }
     
@@ -156,24 +186,42 @@ physics : {
            , makeSD, makeSH, TimeCluster                           ## tracker
            , CaloDigiMaker, CaloRecoDigiMaker, CaloHitMaker        ## calorimeter
            , CaloProtoClusterMaker, CaloClusterMaker
-           # , CaloHitFastMaker, CaloClusterFastMaker
+           , CaloHitFastMaker, CaloClusterFastMaker
            , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder   ## CRV
-           # , LineFinder, KKLine
+           , LineFinder, KKLine
           ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
+    e1 : [ defaultOutput ] ## MakeDigiNtuple ] ## defaultOutput 
     # e1 : []
 
     trigger_paths  : [ p2 ]
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-# assume we're on mu2edaq22
+# 
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n006.%06r_%06s.root"
+services.TFileService.fileName   :   "/dev/null" ## "nts.mu2e.trk.vst00s000r000n006.%06r_%06s.root"
+
+services.GeometryService.bFieldFile             : "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
+services.GeometryService.inputFile              : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
 
 services.scheduler.wantSummary                  : true
 
 services.message.destinations.log.categories.ArtReport.reportEvery : 1
 services.message.destinations.log.categories.ArtReport.limit       : 1000
 services.message.destinations.log.categories.ArtReport.timespan    : 300
+#------------------------------------------------------------------------------
+# tracker final config
+#------------------------------------------------------------------------------
+#include "Production/JobConfig/reco/NoPileup_epilog.fcl"
+#include "Production/JobConfig/reco/OffSpillTiming_epilog.fcl"
+
+physics.producers.KKLine.ModuleSettings.SampleSurfaces : @local::Mu2eKinKal.producers.KKLine.ModuleSettings.SampleSurfaces
+#include "PassN/Tracker/TrkReco_epilog.fcl"
+
+## *DONT NEED* includes the same tables, but redefines DbService.purpose and DbService.version ##include "PassN/Tracker/TrkReco_calibrations.fcl"
+## *DONT NEED* in a hidden way, redefines the reco path  by adding EWMProducer ##include "PassN/Tracker/TrkRecoFromFragments_epilog.fcl"
+#------------------------------------------------------------------------------
+# CRV redefinitions
+#------------------------------------------------------------------------------
+#include "Offline/CRVReco/fcl/epilog_extracted.fcl"

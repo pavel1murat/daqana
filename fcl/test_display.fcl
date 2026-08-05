@@ -146,8 +146,8 @@ outputs.detectorOutput.fileName           : "sim.user.display.xxx.000001.art"
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org for more details
 #------------------------------------------------------------------------------
 physics.analyzers.MuHitDisplay.primaryParticleTag   : ""
-physics.analyzers.MuHitDisplay.timeClusterCollTag   : "SimpleTimeCluster" ## SimpleTimeCluster" ## "TZClusterFinder"
-physics.analyzers.MuHitDisplay.phiClusterCollTag    : "SimpleTimeCluster" ## "SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.timeClusterCollTag   : "TimeCluster" ## SimpleTimeCluster" ## "TZClusterFinder"
+physics.analyzers.MuHitDisplay.phiClusterCollTag    : "TimeCluster" ## "SimpleTimeCluster" ## "TZClusterFinder"
 physics.analyzers.MuHitDisplay.comboHitCollTag      : @local::COMBO_HIT_COLL_TAG    ## "makePH" "FlagBkgHits"
 physics.analyzers.MuHitDisplay.strawHitCollTag      : "makeSH"  ## "FlagBkgHits"
 physics.analyzers.MuHitDisplay.kffCollTag           : "KKLine"  ##
