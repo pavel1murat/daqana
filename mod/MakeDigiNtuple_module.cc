@@ -59,6 +59,7 @@
 #include "daqana/obj/TrkSegment.hh"
 #include "daqana/obj/SegmentFit.hh"
 
+#include <source_location>
 #include <ostream>
 #include <regex>
 // #include <ranges>
@@ -727,7 +728,7 @@ int mu2e::MakeDigiNtuple::process_adc_waveform(float* Wf, WfParam_t* Wp) {
   // }
   return 0;
 }
-  
+
 //-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillCalD() {
   for (int i=0; i<_ncald; i++) {

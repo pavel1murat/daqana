@@ -22,6 +22,8 @@ public:
 
   int     Init(int Ns);
 
+  int     Disk() { return (cid / 674); }
+
   virtual void Clear(const char* Opt) override ;
 
   ClassDefOverride(DaqCaloHit,1);

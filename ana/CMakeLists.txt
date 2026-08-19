@@ -22,6 +22,7 @@ ROOT_GENERATE_DICTIONARY(${dict}
   plot_n001_noise.hh
   plot_n001_pin.hh
   plot_n002_tc.hh
+  plot_n006_time_res.hh
   booking.hh
   fit_dt01.hh
   LINKDEF ana/Linkdef.h)
@@ -34,6 +35,7 @@ add_library(${lib} SHARED
   plot_n001_noise.cc
   plot_n001_pin.cc
   plot_n002_tc.cc
+  plot_n006_time_res.cc
   fit_dt01.cc
   ${dict}.cxx
 )

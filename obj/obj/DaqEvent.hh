@@ -81,6 +81,13 @@ public:
   DaqSegment*      Seg(int I) { return (DaqSegment*) seg->At(I); }
   int              Nsh(int Plane, int Panel) { return nsh[Plane][Panel]; }
   int              Pmp(int DtcID) { return pmp[DtcID] ; }
+  
+  DaqCaloDigi*              Cald(int I) { return (DaqCaloDigi*)              cald->At(I); }
+  DaqCaloHit*               Calh(int I) { return (DaqCaloHit*)               calh->At(I); }
+  DaqCaloCluster*           Calc(int I) { return (DaqCaloCluster*)           calc->At(I); }
+  
+  DaqCrvRecoPulse*          Crvp(int I) { return (DaqCrvRecoPulse*)          crvp->At(I); }
+  DaqCrvCoincidenceCluster* Crvc(int I) { return (DaqCrvCoincidenceCluster*) crvc->At(I); }
 
   DaqStrawDigi* NewSD(int I) {
     DaqStrawDigi* digi = new ((*sd)[I]) DaqStrawDigi();

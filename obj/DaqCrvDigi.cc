@@ -21,4 +21,3 @@ int DaqCrvDigi::Init(int Ns) {
 //-----------------------------------------------------------------------------
 void DaqCrvDigi::Clear(const char* Opt) {
 }
-

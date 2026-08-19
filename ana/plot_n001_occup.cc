@@ -2,9 +2,23 @@
 // 
 /////////////////////////////////////////////////////////////////////////////////
 /*
-  .L v001/daqana/scripts/plot_n002_hist_001.C
-  //
-  x->SaveHist("pulse_injection_120807_120808.hist");
+root [0] gSystem->Load("v001/.spack-env/view/lib/libdaqana_ana.so")
+root [1] auto x  = new plot_n001_occup(124040)
+root [2] x->Loop()
+nentries:40972
+qtot:22815544
+ix: 12 iy:  3 plane:00 panel:3 channel:12 dtc_id:20 link:1 MN210 nxy:  303832 percent:  0.0133
+ix: 43 iy:125 plane:20 panel:5 channel:43 dtc_id:17 link:2 MN133 nxy:  741604 percent:  0.0325
+ix: 58 iy:136 plane:22 panel:4 channel:58 dtc_id:16 link:1 MN052 nxy:  243722 percent:  0.0107
+ix: 74 iy: 63 plane:10 panel:3 channel:74 dtc_id:23 link:0 MN085 nxy: 1973814 percent:  0.0865
+ix: 86 iy: 65 plane:10 panel:5 channel:86 dtc_id:23 link:3 MN113 nxy:  297838 percent:  0.0131
+ix: 92 iy:  5 plane:00 panel:5 channel:92 dtc_id:20 link:2 MN191 nxy: 1009689 percent:  0.0443
+ix: 92 iy:143 plane:23 panel:5 channel:92 dtc_id:15 link:5 MN225 nxy:  333176 percent:  0.0146
+ix: 93 iy: 79 plane:13 panel:1 channel:93 dtc_id:26 link:4 MN188 nxy:  388606 percent:  0.0170
+ix: 95 iy:174 plane:29 panel:0 channel:95 dtc_id:03 link:2 MN057 nxy:  751288 percent:  0.0329
+root [3] x->PrintHistograms(0); // no threshold
+root [4] x->PrintHistograms(1); // occupancies for hits above 0.5 keV
+x->SaveHist("pulse_injection_120807_120808.hist");
 */
 #include "ana/plot_n001_occup.hh"
 

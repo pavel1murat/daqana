@@ -75,8 +75,6 @@ physics : {
             debugMode        : 0 ## 10
             debugBits        : ["bit0:1"]
             saveWaveforms    : true
-            geography        : [  ]
-            # dtcHeaderPresent : false
             keyOnMnid        : true ## true    ## default:false
         }
         

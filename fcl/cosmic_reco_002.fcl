@@ -5,7 +5,7 @@
 #   CRV    : digis+pulses+coincidence clusters
 #   CALO   : digis
 #
-# Usage: mu2e -c daqana/fcl/cosmic_reco_001.fcl -s <input art file> [-n 10]
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
 # intentionally use v0 calibrations
@@ -50,28 +50,22 @@ outputs:  {
     defaultOutput :  { module_type : RootOutput
         fileName       :   "rec.mu2e.cosmics.kpp.%06r_%06s.art"
         outputCommands :  [
-                           "drop *_*_*_*",
-                           "keep mu2e::EventWindowMarker_*_*_*",
-                           "keep mu2e::ProtonBunchTime_*_*_*",
-                           "keep mu2e::TimeClusters_*_*_*",
-                           "keep mu2e::KalSeeds_K*_*_*",
-                           "keep mu2e::CaloClusters_*_*_*",
-                           "keep mu2e::CaloHits_*_*_*",
-                           "keep mu2e::CaloDigis_*_*_*",
-                           "keep mu2e::StrawDigis_*_*_*",
-                           "keep mu2e::StrawDigiADCWaveforms_*_*_*",
-                           "keep mu2e::TimeClusters_*_*_*",
-                           "keep *_makeSH_*_*",                     ## straw and combo hits
-                           "keep *_DummyLumiInfo_*_*",
-                           "keep *_TriggerResults_*_*",
-                           "keep mu2e::CrvRecoPulses_*_*_*",
-                           "keep mu2e::CrvDigis_*_*_*",
-                           "keep mu2e::CrvDAQerrors_*_*_*",
-                           "keep *_eventHeaderFromCFOFragment_*_*",
-                           "keep mu2e::CrvCoincidenceClusters_*_*_*",
-                           "keep mu2e::CrvStatus_*_*_*",
-                           "keep artdaq::*_*_*_*" ,
-                           "drop mu2e::CrvDigis_*_NZS_*"
+                          "drop *_*_*_*",
+                          @sequence::Reconstruction.GeneralProducts,
+                          @sequence::Reconstruction.HighRecoProducts,
+                          @sequence::Reconstruction.MidRecoProducts,
+                          "keep mu2e::TimeClusters_*_*_*",
+                          "keep *_makeSH_*_*",
+                          "keep *_DummyLumiInfo_*_*",
+                          "keep *_TriggerResults_*_*",
+                          "keep mu2e::CrvRecoPulses_*_*_*",
+                          "keep mu2e::CrvDigis_*_*_*",
+                          "keep mu2e::CrvDAQerrors_*_*_*",
+                          "keep *_eventHeaderFromCFOFragment_*_*",
+                          "keep mu2e::CrvCoincidenceClusters_*_*_*",
+                          "keep mu2e::CrvStatus_*_*_*",
+                          "drop artdaq::*_*_*_*" ,
+                          "drop mu2e::CrvDigis_*_NZS_*"
                          ]
     }
 }
@@ -189,9 +183,11 @@ physics : {
             makeSD        : 0
             makeCH        : 1
             makeTC        : 1
+            makeTrk       : 1
             saveWaveforms : 0
             
             tcCollTag     : "TimeCluster"   ## "TZClusterFinder"  ##
+            ksCollTag     : "KKLine"        ##
 
             debugMode     : 1
             debugBits: [
@@ -211,18 +207,16 @@ physics : {
            , LineFinder, KKLine
           ]
 
-    e1 : [ defaultOutput ] ## MakeDigiNtuple ] ## defaultOutput 
+    e1 : [ MakeDigiNtuple ] ##, defaultOutput ] ## MakeDigiNtuple ] ## 
     # e1 : []
 
     trigger_paths  : [ p2 ]
     end_paths      : [ e1 ]
 }
-outputs.defaultOutput.SelectEvents : [ p2 ]
-outputs.defaultOutput.fileName     : "rec.mu2e.cosmics.kpp00s000r001n000.%06r_%06s.art"
 #------------------------------------------------------------------------------
 # 
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "/dev/null" ## "nts.mu2e.trk.vst00s000r000n006.%06r_%06s.root"
+services.TFileService.fileName   :   "nts.mu2e.cosmics.kpp00s000r001n007.%06r_%06s.root"
 
 services.GeometryService.bFieldFile             : "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
 services.GeometryService.inputFile              : "Offline/Mu2eG4/geom/geom_common_extracted.txt"

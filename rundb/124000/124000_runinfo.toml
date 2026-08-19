@@ -1,0 +1,7 @@
+[["runinfo"]]
+run_number   = 124040
+run_type     = 2             # "cosmics"
+event_mode   = 1             # ran in offspill mode
+cfo_rate     = 10000.0       # CFO HB rate, Hz
+ew_length    = 100.0e-6      # event window, sec
+trigger_rate = 740.0         # rate to disk, Hz, approx (from the DL log)

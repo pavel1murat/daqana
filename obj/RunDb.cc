@@ -1,9 +1,14 @@
 //
+#include <filesystem>
+namespace fs = std::filesystem;
+
 #include <iostream>
 #include <string>
 #include <format>
 #include "toml++/toml.hpp"
 #include "daqana/obj/RunDb.hh"
+
+#include "TRACE/trace.h"
 
 RunDb* RunDb::fgInstance(nullptr);
 
@@ -36,6 +41,12 @@ int RunDb::GetRunInfo(int RunNumber, RunDb::Data_t* RunInfo) {
   int subdir = (RunNumber / 1000 )*1000;
   
   std::string fn = std::format("{}/daqana/rundb/{:06d}/{:06d}_runinfo.toml",getenv("SPACK_ENV"),subdir,subdir);
+
+  if (not fs::exists(fn)) {
+    TLOG(TLVL_ERROR) << std::format("file {} doesn't exist. Forgot to create?",fn);
+    return -1;
+  }
+
   toml::table tbl = toml::parse_file(fn);
     
   auto maps = tbl["runinfo"].as_array();
