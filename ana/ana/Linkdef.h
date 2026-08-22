@@ -14,6 +14,7 @@
 #pragma link C++  class  plot_n001_pin;
 #pragma link C++  class  plot_n002_tc;
 #pragma link C++  class  plot_n006_time_res;
+#pragma link C++  class  plot_crv_tc_dt;
 
 #pragma link C++  class   fit_dt01;
 #pragma link C++  class   fit_dt01::fit_results_t;
