@@ -1,9 +1,21 @@
 ///////////////////////////////////////////////////////////////////////////////
+// plot differences between the average hit times reconstructed in different planes
+// in a timecluster.
+// this gives a fairly good approximation for the time offsets between teh different
+// planes which need to be calibrated out
+// take plane 0 as a reference plane and define all offsets with rhespect to it
+// then, within each plane, can look at the differences between the panels
+// and the average
+// calibration code ADDS the TrkDelayPanel timing offset to the hit time,
+// so the sign of the dt05[ip][ip-1] has to be inversed in the calibration table
 /////////////////////////////////////////////////////////////////////////////////
 /*
-  .L v001/daqana/scripts/plot_n002_hist_001.C
-  //
-  x->SaveHist("pulse_injection_120807_120808.hist");
+root [0] gSystem->Load("v001/.spack-env/view/lib/libdaqana_ana.so");
+root [1] auto x = new plot_n002_tc(124155,"results/2026-08-22-15-43.make_n0041.mu2e-dl-01.fnal.gov.2403029/nts.mu2e.trk.vst00s000r000n004.124155_000001.root","004")
+tree: 0xd8ea4f0
+(plot_n002_tc *) 0x3041c90
+root [2] x->Loop()
+nentries:47331
 */
 #include "ana/plot_n002_tc.hh"
 
@@ -128,6 +140,20 @@ int plot_n002_tc::BookHistograms(TFolder* Folder) {
     }
   }
 
+  for (int i=0; i<216; i++) {
+    name  = std::format("panel_dt_{:03}",i);
+    title = std::format("{} : T{:03} - T(tc_best)",prefix,i);
+    fBook->HBook1F(fHist->h_panel_dt[i],name.data(),title.data(),200,-100,100,Folder);
+  }
+
+  name  = std::format("pdt_all");
+  title = std::format("panel dt, all",prefix);
+  fBook->HBook1F(fHist->h_pdt_216,name.data(),title.data(),200,-10,10,Folder);
+
+  name  = std::format("dt05_36");
+  title = std::format("plane dT = T(i)-T(i-1) vs plane",prefix);
+  fBook->HBook2F(fHist->h_dt05_36,name.data(),title.data(),200,-200,200,36,0,36,Folder);
+
   return 0;
 }
 
@@ -165,13 +191,20 @@ int plot_n002_tc::FillHistograms() {
   // DaqStrawDigi* sdr = (DaqStrawDigi*) fEvent->sd->UncheckedAt(fHitIndex[fRefPlane][0]);
   // float tr = sdr->tdc0*(5./256.)*1.e-3;
 
-  Index_t index;
+  //  Index_t index;
   
   for (int i=0; i<fEvent->ntc; i++) {
     DaqTimeCluster*  tc = (DaqTimeCluster* ) fEvent->tc->UncheckedAt(i);
 
     FillTimeClusterHistograms(fHist->tc[0],tc);
+  }; 
+
+  for (int i=0; i<216; i++) {
+    if (fPanelNh[i] > 0) {
+      fHist->h_panel_dt[i]->Fill(fPanelDt[i]);
+    }
   }
+  
   return 0;
 }
 
@@ -223,9 +256,11 @@ void plot_n002_tc::Loop(int NEvents) {
       n05[i] = 0;
     }
     
-    // the number of straw hits is the same as teh number of straw digis
-    for (int i=0; i<fEvent->nshtot; i++) {
-      DaqStrawHit*  sh = (DaqStrawHit* ) fEvent->sh->UncheckedAt(i);
+    // if conly "close" hits are stored, the number of hits in the list is less than the total
+    // number of hits reconstructed in the event
+    int nsh = fEvent->sh->GetEntriesFast();
+    for (int i=0; i<nsh; i++) {
+      DaqStrawHit*  sh = fEvent->Sh(i);
       if (sh->edep > 0.0005) {
         int ip = sh->plane();
         t05[ip] += sh->time;
@@ -244,6 +279,51 @@ void plot_n002_tc::Loop(int NEvents) {
           dt05[j][i] = t05[j]-t05[i];
           fHist->h_dt05[j][i]->Fill(dt05[j][i]);
         }
+      }
+    }
+    // station 7 (planes 14 and 15 missing), need 16-13
+    for (int i=1; i<36; i++) {
+      if ((i < 14) or (i > 16)) {
+        fHist->h_dt05_36->Fill(dt05[i][i-1],i);
+      }
+      else if (i == 16) {
+        fHist->h_dt05_36->Fill(dt05[16][i-3],16);
+      }
+    }
+
+    // identify time cluster with the largest number of hits
+    int             nsh_best(0);
+    DaqTimeCluster* tc_best(nullptr);
+    
+    for (int itc=0; itc<fEvent->ntc; itc++) {
+      auto tc = fEvent->Tc(itc);
+      if ((tc->nsh > nsh_best) and (tc->nplanes > 3)) {
+        tc_best  = tc;
+        nsh_best = tc->nsh;
+      }
+    }
+
+    if (tc_best) {
+      // for each panel plot the time difference between the combohit time and the TC t0
+      int nch = fEvent->ch->GetEntriesFast();
+      
+      for (int i=0; i<216; i++) {
+        fPanelNh[i] = 0;
+      }
+      
+      for (int i=0; i<nch; i++) {
+        DaqComboHit*  ch = fEvent->Ch(i);
+        if (ch->edep > 0.0005) {
+          int pln        = ch->plane();
+          int pnl        = ch->panel();
+          int pnl216     = pln*6+pnl;
+          fPanelDt[pnl216]  = ch->time-tc_best->t0;
+          fPanelNh[pnl216] += 1;
+        }
+      }
+      // average times
+      for (int i=0; i<216; i++) {
+        fPanelDt[i] = fPanelDt[i]/(fPanelNh[i]+1.e-12);
       }
     }
 
@@ -279,9 +359,65 @@ int plot_n002_tc::SaveHistograms(const char* Filename) {
 }
 
 //-----------------------------------------------------------------------------
+// one occupancy canvas per station Ip2>Ip1
+//-----------------------------------------------------------------------------
+int plot_n002_tc::FitHistogram(TH1F* Hist, fit_result_t* Fr, int Ip1, int Ip2, int NMin) {
+
+  //  fit_result_t* fr = &fFr[Ip2][Ip1];
+
+  Fr->chi2dof = -1;
+      
+  for (int ip=0; ip<3; ip++) {
+    Fr->p[ip] = 0;
+    Fr->e[ip] = -1;
+  }
+
+  // TH1F* h = fHist->h_dt05[Ip2][Ip1];
+
+  int nent = Hist->GetEntries();
+      
+  if (nent < NMin) {
+    return -1;
+  }
+
+  // find max bin
+
+  int nbins = Hist->GetNbinsX();
+  int imax = -1;
+  int qmax = -1;
+  for (int i=0; i<nbins; i++) {
+    float q = Hist->GetBinContent(i+1);
+    if (q > qmax) {
+      imax = i+1;
+      qmax = q;
+    }
+  }
+
+  float tmax = Hist->GetBinCenter(imax);
+  
+  // for some reason, "sq" is required for tfr be defined
+  TFitResultPtr tfr = Hist->Fit("gaus","sq","",tmax-50,tmax+50);
+  
+  if ((! tfr->IsValid()) or tfr->IsEmpty()) {
+    std::cout << std::format("# FIT ERROR: h_dt05[{}]:[{}]\n",Ip2,Ip1);
+    return -1;
+  }
+
+  Fr->chi2dof = tfr->Chi2()/tfr->Ndf();
+  double sf    = sqrt(Fr->chi2dof);
+          
+  for (int ip=0; ip<3; ip++) {
+    Fr->p[ip] = tfr->Parameter(ip);
+    Fr->e[ip] = tfr->Error(ip)*sf;
+  }
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 // one occupancy canvas per station
 //-----------------------------------------------------------------------------
-int plot_n002_tc::PrintHistograms(int ISet) {
+int plot_n002_tc::PrintHistograms(int Refit) {
 
   gROOT->SetBatch(kTRUE);   // no GUI windows
 
@@ -289,15 +425,39 @@ int plot_n002_tc::PrintHistograms(int ISet) {
   
   gStyle->SetStatW(0.30);   // wider (NDC)
 
+
+  for (int ip1=0; ip1<35; ip1++) {
+    for (int ip2=ip1+1; ip2<36; ip2++) {
+
+      //      fit_result_t* fr = &fFr[ip2][ip1];
+
+      if (Refit) FitHistogram(fHist->h_dt05[ip2][ip1],&fFr[ip2][ip1],ip2,ip1);
+    }
+  }
+
+
+  // next: perform fits
+  
+
   for (int ic=0; ic<3; ic++) {
+    // ic : canvas index. Plot 12 distributions per canvas
+    
     TCanvas c(Form("c_%02i",ic),Form("c_%02i",ic),1600,1800);
     c.Divide(3,4);
     for (int ip=0; ip<12; ip++) {
+      
+      // 12 plane plots per canvas
       int plane = ic*12+ip;
       if (plane == 0) continue;
+
+      // by default, delta_t = dt05[plane]-dt05[plane-1]
+      // dt05 : hits above 0.5 keV
+      
       TH1F* h = fHist->h_dt05[plane][plane-1];
       h->GetXaxis()->SetRangeUser(-100,100);
       c.cd(ip+1);
+      h->Draw();
+
       // float hmax = (int(fMaxEvent/1.e6)+1)*1e6;
       //      // normalization to the rate :
 
@@ -306,8 +466,8 @@ int plot_n002_tc::PrintHistograms(int ISet) {
       //      h->Scale(scale);
       //      h->SetMaximum(hmax);
       //      gPad->SetLogy(kTRUE);
-      h->Fit("gaus","","",-100,100);
-      // make statbox transparent
+
+    // make statbox transparent
       gPad->Update();           // create stats box
 
       auto st = (TPaveStats*)h->FindObject("stats");
@@ -328,6 +488,87 @@ int plot_n002_tc::PrintHistograms(int ISet) {
     else {
       c.Print(fn.data());     // or .pdf, .root, ...
     }
+  }
+
+
+  // finally, print the resulting table
+
+  float corr[36];
+
+  std::cout << std::format("# i       dt      corr[i]   fit_chi2\n");
+  for (int ip=0; ip<36; ip++) {
+    corr[ip] = -1;
+    fit_result_t* fr = &fFr[ip][ip-1];
+    float dt = 0;
+
+    if (ip == 0) {
+      corr[ip] = 0;
+    }
+    else if (ip > 0) {
+      dt = fr->p[1];
+      corr[ip] = corr[ip-1]+dt; // total correction wrt plane 0
+    }
+    
+    // planes 14 and 15 - slot 7 - are missing 
+
+    if ((ip == 14) or (ip == 15)) {
+      dt       = -1;
+      corr[ip] = -1;
+    }
+    else if (ip == 16) {
+
+      // pick the closest
+      fr = &fFr[16][13];
+      dt = fr->p[1];
+      corr[ip] = corr[13]+dt;
+      
+    }
+
+    // inverse signs of the step and total offsets (to add to calibrations)
+    std::cout  << std::format(" {:3d} {:10.4f} {:10.4f} {:10.4f} \n",ip,-dt,corr[ip],fr->chi2dof);
+    
+  }
+
+  return 0;
+}
+//-----------------------------------------------------------------------------
+// one occupancy canvas per station
+//-----------------------------------------------------------------------------
+int plot_n002_tc::PrintPanelDt() {
+
+  // gROOT->SetBatch(kTRUE);   // no GUI windows
+
+  // std::string fn = std::format("run_{:6d}_n002_tc.pdf",fRunNumber);
+  
+  gStyle->SetStatW(0.30);   // wider (NDC)
+
+
+  fHist->h_dt_vs_panel = new TH1F("dt_vs_panel","dt vs panel",216,0,216);
+  
+  for (int ip=0; ip<216; ip++) {
+    FitHistogram(fHist->h_panel_dt[ip],&fPanelFr[ip],ip,0);
+    float y  = fPanelFr[ip].p[1];
+    float ey = fPanelFr[ip].e[1];
+    fHist->h_dt_vs_panel->SetBinContent(ip+1,y );
+    fHist->h_dt_vs_panel->SetBinError  (ip+1,ey);
+    if (fPanelFr[ip].chi2dof > 0) {
+      fHist->h_pdt_216->Fill(y);
+    }
+  }
+
+  fHist->h_dt_vs_panel->Draw();
+
+  // finally, print the resulting table
+
+
+  std::cout << std::format("# i       dt      err      fit_chi2\n");
+  for (int ip=0; ip<216; ip++) {
+    //    corr[ip] = -1;
+    fit_result_t* fr = &fPanelFr[ip];
+
+    // inverse signs of the step and total offsets (to add to calibrations)
+    std::cout  << std::format(" {:3d} {:10.4f} {:10.4f} {:10.4f} \n",ip,fr->p[1],fr->e[1],fr->chi2dof);
+   
   }
 
   return 0;

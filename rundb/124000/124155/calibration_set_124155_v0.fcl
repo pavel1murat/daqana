@@ -1,7 +1,4 @@
 # -*- mode:tcl -*-
-#------------------------------------------------------------------------------
-# added initial version of the calorimeter calibrations
-#------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
     dbName       : "mu2e_conditions_prd"       ## ignored
@@ -10,19 +7,18 @@ services.DbService : {
     verbose      : 100
     nearestMatch : true
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v0.txt",               ## based on pulse injections runs 122968-122976
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-                 "Offline/TrackerConditions/data/TrkPanelMap.txt",          ## use "DB"
-                 "daqana/calibrations/TrkDelayPanel_v2.txt"                 ## corrected based on run 123098
-                 "daqana/rundb/123000/123680/CaloRecoTable_20260731.txt",   ## calorimeter energy
-                 "daqana/rundb/123000/123680/CaloTimeCalib.txt"             ## calorimeter timing - all zeroes
-                ]
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
+                 "daqana/rundb/124000/124155/TrkDelayPanel_124155_v0.txt"    ]       ## all zeroes
+                
+    verbose  : 100
 }
 
 services.ProditionsService.alignedTracker.useDb         : false
 services.ProditionsService.alignedTrackerSim.useDb      : false
 services.ProditionsService.strawElectronics.useDb       : true        ## default false
-# services.ProditionsService.strawElectronics.verbose     : 10
+services.ProditionsService.strawElectronics.verbose     : 100
 services.ProditionsService.fullReadoutStraw.useDb       : false
 services.ProditionsService.strawDrift.useDb             : false
 services.ProditionsService.strawPhysics.useDb           : false
@@ -30,6 +26,5 @@ services.ProditionsService.strawResponse.useDb          : false
 services.ProditionsService.trackerStatus.Settings.useDb : false
 services.ProditionsService.trackerPanelMap.useDb        : true
 
-services.ProditionsService.calCalib.useDb               : true
-
-## services.ProditionsService.trackerPanelMap.verbose      : 10
+## :: #include "Offline/DAQ/fcl/proditions_trk_panel_map.fcl"
+## services.ProditionsService.trackerPanelMap              : @local::trackerPanelMap

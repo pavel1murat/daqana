@@ -59,6 +59,14 @@ public :
     int ch;
   };
   
+  struct CrvIndex_t {
+    int sel  {-1};
+    int sbid {-1};
+    int roc  {-1};                           // 0-17
+    int feb  {-1};                           // 
+    int ch   {-1};                            // 
+  };
+  
   struct RunData_t {
     int run_number;
     int n_pulsed_channels;
@@ -68,18 +76,44 @@ public :
 //-----------------------------------------------------------------------------
 // histogram structures
 //-----------------------------------------------------------------------------
- 
   struct CrvcHist_t {
     TH1F* h_dt;
   };
   
-  struct CrvpHist_t {
+  struct ChannelHist_t {
+    TH1F* h_ch;
     TH1F* h_dt;
+  };
+
+  struct CrvpHist_t {
+    TH1F* h_ch;
+    TH1F* h_feb;
+    TH1F* h_dt;
+    TH2F* h_dt_vs_feb;
+  };
+
+  struct FebHist_t {
+    ChannelHist_t ch[64];
+    CrvpHist_t*   crvp;               // for the whole FEB
+    TH1F*         h_sbid;
+    TH1F*         h_dt;
+  };
+  
+  struct RocHist_t {
+    CrvpHist_t*   crvp;               // for the whole ROC
+    FebHist_t*    feb [30];
+    TH1F*         h_sbid;
+    TH2F*          h_feb_vs_dt;
   };
   
   struct Hist_t {
-    CrvpHist_t* crvp[10];
-    CrvcHist_t* crvc[10];
+    CrvpHist_t* crvp[10];               // for all
+    CrvcHist_t* crvc[10];               // for all
+    RocHist_t*  roc [10];               // by ROC
+    TH1F*       h_sbid;
+    TH2F*       h_feb_vs_ch;
+    TH2F*       h_dt_vs_sbid;
+    TH2F*       h_feb_vs_sbid[2];       // one per ROC
   };
 
 //-----------------------------------------------------------------------------
@@ -111,9 +145,15 @@ public :
   // int             n05 [36];
   // float           dt05[36][36];
 //-----------------------------------------------------------------------------
-                                        // for independent runs, the name should eb the same..
+                                        // for independent runs, the name should be the same..
                                         // make it different to process the same run with different refence channels
-  plot_crv_tc_dt(int RunNumber, const char* Fn = nullptr, const char* Label = "002");
+                                        // subrun number - chooses the file, assuming only one file
+  
+  plot_crv_tc_dt(int RunNumber, int SubrunNumber, const char* Label = "n002");
+
+                                        // one file in an arbitrary place
+  
+  plot_crv_tc_dt(int RunNumber, const char* Fn);
   
   virtual ~plot_crv_tc_dt();
   
@@ -123,9 +163,11 @@ public :
 
   void             Loop          (int NEvents = -1);
 
-  int              BookCrvpHistograms (CrvpHist_t*  Hist, Index_t* Index, TFolder* Folder);
-  int              BookCrvcHistograms (CrvcHist_t*  Hist, Index_t* Index, TFolder* Folder);
-  int              BookHistograms     (TFolder* Folder);
+  int              BookCrvpHistograms (CrvpHist_t*  Hist, CrvIndex_t* Index, TFolder* Folder);
+  int              BookCrvcHistograms (CrvcHist_t*  Hist, CrvIndex_t* Index, TFolder* Folder);
+  int              BookFebHistograms  (FebHist_t*   Hist, CrvIndex_t* Index, TFolder* Folder);
+  int              BookRocHistograms  (RocHist_t*   Hist, CrvIndex_t* Index, TFolder* Folder);
+  int              BookHistograms     (Hist_t*      Hist, TFolder* Folder);
 
   int              FillHistograms       ();
 

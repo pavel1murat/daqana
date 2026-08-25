@@ -4,20 +4,19 @@ services.DbService : {
     dbName       : "mu2e_conditions_prd"       ## ignored
     purpose      : CRV_COMMISSIONING           ## EMPTY
     version      : v1_0                        ## v1_0   ## v0                ## ignored
-    verbose      : 100
+    verbose      : 0                           ## 100
     nearestMatch : true
     
-    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",
+    textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
-#                 "daqana/calibrations/TrkPanelMap.txt"            , ## use local copy
-                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is evolving
-                 "daqana/calibrations/TrkDelayPanel_v21.txt"    ]       ## everything needed
+                 "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
+                 "daqana/rundb/124000/124155/TrkDelayPanel_124155_v0.txt"    ]       ## all zeroes
 }
 
 services.ProditionsService.alignedTracker.useDb         : false
 services.ProditionsService.alignedTrackerSim.useDb      : false
 services.ProditionsService.strawElectronics.useDb       : true        ## default false
-services.ProditionsService.strawElectronics.verbose     : 10
+services.ProditionsService.strawElectronics.verbose     : 100
 services.ProditionsService.fullReadoutStraw.useDb       : false
 services.ProditionsService.strawDrift.useDb             : false
 services.ProditionsService.strawPhysics.useDb           : false

@@ -1,0 +1,21 @@
+#+startup:fold -*- buffer-read-only:t -*-
+
+* ------------------------------------------------------------------------------
+* 124000                                                                     
+|------------+----------------------+----------+--------+--------------+------------+-----------+---------+----|
+| run number | dsid                 | duration | nfiles | subdetectors | tracker HV | EW length | EW rate | DH |
+|------------+----------------------+----------+--------+--------------+------------+-----------+---------+----|
+|     124040 | raw.mu2e.trk.vst.art | 1 hr     |     73 | tracker      |       1375 | 100 us    | 10 kHz  | OK |
+|     120041 | raw.mu2e.trk.vst.art | 1 hr     |     70 | tracker      |       1375 | 100 us    | 10 kHz  | OK |
+|     124080 | raw.mu2e.trk.vst.art | 30 min   |     39 | tracker      |       1400 | 100 us    | 10 kHz  | OK |
+|     124081 | raw.mu2e.trk.vst.art | 10 min   |     18 | tracker      |       1400 | 100 us    | 10 kHz  | OK |
+|     124085 | raw.mu2e.trk.vst.art | 3 hrs    |    129 | tracker      |       1400 | 100 us    | 10 kHz  | OK |
+|     124093 | raw.mu2e.trk.vst.art | 40 min   |     25 | tracker      |       1400 | 100 us    | 10 kHz  | OK |
+|     124111 | raw.mu2e.trk.vst.art | 2 hrs    |    111 | tracker+CRV  |       1400 | 100 us    | 10 kHz  | OK |
+|     124117 | raw.mu2e.trk.vst.art | 5.5 hrs  |    194 | tracker      |       1400 | 100 us    | 10 kHz  | OK |
+|     124155 | raw.mu2e.trk.vst.art | 6 hrs    |    225 | tracker+CRV  |       1400 | 100 us    | 10 kHz  | OK |
+|            |                      |          |        |              |            |           |         |    |
+|------------+----------------------+----------+--------+--------------+------------+-----------+---------+----|
+* 123000
+* 122000
+* ------------------------------------------------------------------------------

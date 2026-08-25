@@ -115,16 +115,17 @@ daqana : {
             
             outputDir      : "./"
 
-            saveWaveforms  : 0
-            ewLength       : 1000
-            debugMode      : 0
-            debugBits      : [ "bit0:0", "bit1:0" ]
-            nSamplesBL     : 6
-            minPulseHeight : 5.
-            minSDPHToSave  : -1.
-            minNSegments   : 0
-            vDrift         : 61.3e-3  ## mm/ns
-            tOffset        : 0.       ## by default, no drift offsets
+            saveWaveforms     : 0
+            ewLength          : 1000
+            debugMode         : 0
+            debugBits         : [ "bit0:0", "bit1:0" ]
+            nSamplesBL        : 6
+            minPulseHeight    : 5.
+            minSDPHToSave     : -1.
+            minNSegments      : 0
+            vDrift            : 61.3e-3  ## mm/ns
+            tOffset           : 0.       ## by default, no drift offsets
+            saveOnlyCloseHits : false
         }
 
         StationAna: { module_type: StationAna

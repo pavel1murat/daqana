@@ -14,24 +14,15 @@
 #define TRACE_NAME "plot_crv_tc_dt"
 
 //-----------------------------------------------------------------------------
-plot_crv_tc_dt::plot_crv_tc_dt(int RunNumber, const char* Fn, const char* Label) :
-  TNamed(Form("run_%06d_n002_tc",RunNumber),Form("run_%06d_%s_tc",RunNumber,Label)),
+plot_crv_tc_dt::plot_crv_tc_dt(int RunNumber, const char* Fn) :
+  TNamed(Form("run_%06d_plot_crv_tc_dt",RunNumber),Form("run_%06d_plot_crv_tc_dt",RunNumber)),
   fChain(0) {
 
-  std::string dir = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000{}",Label); 
-  
   TFile *f(nullptr);
   if (Fn != nullptr) {
     f = (TFile*)gROOT->GetListOfFiles()->FindObject(Fn);
     if (!f || !f->IsOpen()) {
       f = new TFile(Fn);
-    }
-  }
-  else {
-    std::string fn = std::format("{}/nts.mu2e.trk.vst00s000r000{}.{:06d}_000001.root",dir,Label,RunNumber);
-    f = (TFile*)gROOT->GetListOfFiles()->FindObject(fn.data());
-    if (!f || !f->IsOpen()) {
-      f = new TFile(fn.data());
     }
   }
 
@@ -69,8 +60,65 @@ plot_crv_tc_dt::plot_crv_tc_dt(int RunNumber, const char* Fn, const char* Label)
   printf("tree: %p\n",(void*) tree);
 
   Init(tree);
-  BookHistograms(fRunFolder);
+  
+  fHist = new Hist_t;
+  BookHistograms(fHist,fRunFolder);
 }
+
+
+//-----------------------------------------------------------------------------
+plot_crv_tc_dt::plot_crv_tc_dt(int RunNumber, int SubrunNumber, const char* Label) :
+  TNamed(Form("run_%06d_n002_tc",RunNumber),Form("run_%06d_%s_tc",RunNumber,Label)),
+  fChain(0) {
+
+  std::string dir = std::format("/data/mu2e/mu2etrk/datasets/vst00s000r000{}",Label); 
+  
+  TFile *f(nullptr);
+
+  std::string fn = std::format("{}/nts.mu2e.trk.vst00s000r000{}.{:06d}_{:06d}.root",dir,Label,RunNumber,SubrunNumber);
+  f = (TFile*)gROOT->GetListOfFiles()->FindObject(fn.data());
+  if (!f || !f->IsOpen()) {
+    f = new TFile(fn.data());
+  }
+
+  fRunNumber = RunNumber;
+  fEvent     = nullptr;
+//-----------------------------------------------------------------------------
+// pulsed channels
+//-----------------------------------------------------------------------------
+  // RunData_t rd;
+  // rd.run_number        = 122629;
+  //  rd.ref_channel       = 13;
+
+  //  fRefChannel          = 21;
+  const char* name = GetName();
+
+  fTopFolder = (TFolder*) gROOT->GetRootFolder()->FindObject(name);
+  
+  if (fTopFolder == nullptr) {
+    fTopFolder = gROOT->GetRootFolder()->AddFolder(name,name);
+  }
+
+  std::string rns = std::to_string(fRunNumber);
+  
+  fRunFolder = fTopFolder->AddFolder(rns.data(),rns.data());
+//-----------------------------------------------------------------------------
+// allow histograms in different folders to have the same name
+//-----------------------------------------------------------------------------
+  TH1::AddDirectory(0);
+
+  fTpm       = TrkPanelMap_t::Instance(RunNumber);
+  fBook      = new Booking(fRunFolder);
+
+  TTree* tree = (TTree*) f->Get("/MakeDigiNtuple/digis");
+
+  printf("tree: %p\n",(void*) tree);
+
+  Init(tree);
+  fHist = new Hist_t;
+  BookHistograms(fHist,fRunFolder);
+}
+
 
 //-----------------------------------------------------------------------------
 plot_crv_tc_dt::~plot_crv_tc_dt() {
@@ -80,9 +128,9 @@ plot_crv_tc_dt::~plot_crv_tc_dt() {
 
 
 //-----------------------------------------------------------------------------
-int plot_crv_tc_dt::BookCrvcHistograms(CrvcHist_t* Hist, Index_t* Index, TFolder* Folder) {
+int plot_crv_tc_dt::BookCrvcHistograms(CrvcHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
 
-  std::string prefix = std::format("run:{:06d} slot:{:02d}",fRunNumber,Index->slot);
+  std::string prefix = std::format("run:{:06d} sel:{:02d}",fRunNumber,Index->sel);
   std::string name, title;
 
   name  = "dt";
@@ -93,14 +141,27 @@ int plot_crv_tc_dt::BookCrvcHistograms(CrvcHist_t* Hist, Index_t* Index, TFolder
 }
 
 //-----------------------------------------------------------------------------
-int plot_crv_tc_dt::BookCrvpHistograms(CrvpHist_t* Hist, Index_t* Index, TFolder* Folder) {
+int plot_crv_tc_dt::BookCrvpHistograms(CrvpHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
 
-  std::string prefix = std::format("run:{:06d} slot:{:02d}",fRunNumber,Index->slot);
+  std::string prefix = std::format("run:{:06d} sel:{} roc:{:02d} feb:{}",
+                                   fRunNumber,Index->sel, Index->roc, Index->feb);
   std::string name, title;
 
   name  = "dt";
   title = std::format("{} : dt",prefix);
   fBook->HBook1F(Hist->h_dt,name.data(),title.data(),1000,-1000,1000,Folder);   // in us...
+
+  name  = "feb";
+  title = std::format("{} : feb",prefix);
+  fBook->HBook1F(Hist->h_feb,name.data(),title.data(),100,0,100,Folder);   // in us...
+
+  name  = "ch";
+  title = std::format("{} : ch",prefix);
+  fBook->HBook1F(Hist->h_ch,name.data(),title.data(),2000,0,2000,Folder);   // in us...
+
+  name  = "dt_vs_feb";
+  title = std::format("{} : dt vs feb",prefix);
+  fBook->HBook2F(Hist->h_dt_vs_feb,name.data(),title.data(),100,0,100,1000,-1000,1000,Folder);   // in us...
 
   return 0;
 }
@@ -108,15 +169,125 @@ int plot_crv_tc_dt::BookCrvpHistograms(CrvpHist_t* Hist, Index_t* Index, TFolder
 
 
 //-----------------------------------------------------------------------------
-int plot_crv_tc_dt::BookHistograms(TFolder* Folder) {
+int plot_crv_tc_dt::BookFebHistograms(FebHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
 
-  std::string prefix = std::format("");
+  // std::string prefix = std::format("");
+  // std::string name, title;
+
+  // Index_t index;
+
+  std::string prefix = std::format("run:{:06d} roc:{} feb:{:02d}",fRunNumber,Index->roc, Index->feb);
   std::string name, title;
 
-  Index_t index;
+  name  = "sbid";
+  title = std::format("{} : SBID",prefix);
+  fBook->HBook1F(Hist->h_sbid,name.data(),title.data(),1500,0,1500,Folder);
 
-  fHist = new Hist_t;
+  name  = "dt";
+  title = std::format("{} : T(pulse)-T(trk TC)",prefix);
+  fBook->HBook1F(Hist->h_dt,name.data(),title.data(),400,-1000,1000,Folder);
 
+  // name  = "feb_vs_ch";
+  // title = std::format("{} : FEB vs CH",prefix);
+  // fBook->HBook2F(Hist->h_feb_vs_ch,name.data(),title.data(),64,0,64,30,0,30,Folder);
+
+//-----------------------------------------------------------------------------
+// CRV reco pulses
+//-----------------------------------------------------------------------------
+  std::string folder_name = std::format("crvp");
+  TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
+  if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
+  Hist->crvp = new CrvpHist_t();
+  BookCrvpHistograms(Hist->crvp,Index,fol);
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// by FEB: 32 scintillation bars per FEB 
+//-----------------------------------------------------------------------------
+int plot_crv_tc_dt::BookRocHistograms(RocHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
+
+  // std::string prefix = std::format("");
+  // std::string name, title;
+
+  // Index_t index;
+
+  std::string prefix = std::format("run:{:06d} roc:{:02d}",fRunNumber,Index->roc);
+  std::string name, title;
+
+  name  = "sbid";
+  title = std::format("{} : SBID",prefix);
+  fBook->HBook1F(Hist->h_sbid,name.data(),title.data(),1500,0,1500,Folder);
+
+  name  = "feb_vs_dt";
+  title = std::format("{} : FEB vs_dt",prefix);
+  fBook->HBook2F(Hist->h_feb_vs_dt,name.data(),title.data(),1000,-1000,1000,30,0,30,Folder);
+
+  // name  = "feb_vs_ch";
+  // title = std::format("{} : FEB vs CH",prefix);
+  // fBook->HBook2F(Hist->h_feb_vs_ch,name.data(),title.data(),64,0,64,30,0,30,Folder);
+
+//-----------------------------------------------------------------------------
+// CRV reco pulses
+//-----------------------------------------------------------------------------
+  std::string folder_name = std::format("crvp");
+  TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
+  if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
+  Hist->crvp = new CrvpHist_t();
+  BookCrvpHistograms(Hist->crvp,Index,fol);
+
+//-----------------------------------------------------------------------------
+// by FEB - 24 or 25 FEBs per ROC ?
+//-----------------------------------------------------------------------------
+  int n_feb_histsets(30);
+
+  for (int i=0; i<n_feb_histsets; i++) {
+    std::string folder_name = std::format("feb_{:02d}",i);
+    TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
+    if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
+    Hist->feb[i] = new FebHist_t();
+    BookFebHistograms(Hist->feb[i],Index,fol);
+  }
+
+  
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int plot_crv_tc_dt::BookHistograms(Hist_t* Hist, TFolder* Folder) {
+
+  // std::string prefix = std::format("");
+  // std::string name, title;
+
+  CrvIndex_t index;
+
+  std::string prefix = std::format("run:{:06d}",fRunNumber);
+  std::string name, title;
+
+  name  = "sbid";
+  title = std::format("{} : SBID",prefix);
+  fBook->HBook1F(Hist->h_sbid,name.data(),title.data(),1500,0,1500,Folder);
+
+  name  = "feb_vs_ch";
+  title = std::format("{} : FEB vs CH",prefix);
+  fBook->HBook2F(Hist->h_feb_vs_ch,name.data(),title.data(),64,0,64,30,0,30,Folder);
+
+  name  = "dt_vs_sbid";
+  title = std::format("{} : dt vs SBID",prefix);
+  fBook->HBook2F(Hist->h_dt_vs_sbid,name.data(),title.data(),1500,0,1500,200,0,1000,Folder);
+
+  name  = "feb_vs_sbid_0";
+  title = std::format("{} : dt vs SBID ROC=1",prefix);
+  fBook->HBook2F(Hist->h_feb_vs_sbid[0],name.data(),title.data(),600,0,600,30,0,30,Folder);
+
+  name  = "feb_vs_sbid_1";
+  title = std::format("{} : dt vs SBID ROC=2",prefix);
+  fBook->HBook2F(Hist->h_feb_vs_sbid[1],name.data(),title.data(),600,0,600,30,0,30,Folder);
+  // good for now
+//-----------------------------------------------------------------------------
+// CRV coincidence clusters
+//-----------------------------------------------------------------------------
   int book_crvc_histset[10];
   int n_crvc_histsets(10);
 
@@ -129,10 +300,13 @@ int plot_crv_tc_dt::BookHistograms(TFolder* Folder) {
     std::string folder_name = std::format("crvc_{:02d}",i);
     TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
     if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
-    fHist->crvc[i] = new CrvcHist_t();
-    BookCrvcHistograms(fHist->crvc[i],&index,fol);
+    Hist->crvc[i] = new CrvcHist_t();
+    BookCrvcHistograms(Hist->crvc[i],&index,fol);
   }
 
+//-----------------------------------------------------------------------------
+// CRV reco pulses
+//-----------------------------------------------------------------------------
   int book_crvp_histset[10];
   int n_crvp_histsets(10);
 
@@ -145,8 +319,31 @@ int plot_crv_tc_dt::BookHistograms(TFolder* Folder) {
     std::string folder_name = std::format("crvp_{:02d}",i);
     TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
     if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
-    fHist->crvp[i] = new CrvpHist_t();
-    BookCrvpHistograms(fHist->crvp[i],&index,fol);
+    Hist->crvp[i] = new CrvpHist_t();
+    index.sel = i;
+    BookCrvpHistograms(Hist->crvp[i],&index,fol);
+  }
+
+//-----------------------------------------------------------------------------
+// by ROC, links 0 and 3 --> rocs #1 and #4
+//-----------------------------------------------------------------------------
+  int book_roc_histset[10];
+  int n_roc_histsets(10);
+
+  for (int i=0; i<n_roc_histsets; i++) { book_roc_histset[i] = 0; }
+
+  book_roc_histset[1] = 1;
+  book_roc_histset[2] = 1;
+  book_roc_histset[4] = 1;
+
+  for (int i=0; i<n_roc_histsets; i++) {
+    if (book_roc_histset[i] == 0) continue;
+    std::string folder_name = std::format("roc_{:02d}",i);
+    TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
+    if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
+    Hist->roc[i] = new RocHist_t();
+    index.sel = i;
+    BookRocHistograms(Hist->roc[i],&index,fol);
   }
 
   return 0;
@@ -173,35 +370,59 @@ void plot_crv_tc_dt::Init(TTree *tree) {
 }
 
 //-----------------------------------------------------------------------------
+// need to optimize the filling time
+//-----------------------------------------------------------------------------
 int plot_crv_tc_dt::FillHistograms() {
   // filling histograms: plot time differences between
 
-  // DaqStrawDigi* sdr = (DaqStrawDigi*) fEvent->sd->UncheckedAt(fHitIndex[fRefPlane][0]);
-  // float tr = sdr->tdc0*(5./256.)*1.e-3;
-
-  Index_t index;
+  //  Index_t index;
   
+  for (int i2=0; i2<fEvent->ncrvp; i2++) {
+    DaqCrvRecoPulse*  crvp = fEvent->Crvp(i2);
+    //CrvpHist_t* hr = fHist->crvp[0];
+                                        // this is a global histogram
+    fHist->h_feb_vs_ch->Fill(crvp->ch,crvp->feb);
+                                        // have two histograms - one per roc , to color them
+                                        // ROCs 1 and 2 --> hists 0 and 1
+    fHist->h_feb_vs_sbid[crvp->roc-1]->Fill(crvp->sbid,crvp->feb);
+    
+    fHist->h_sbid->Fill(crvp->sbid);
+    fHist->roc[crvp->roc]->h_sbid->Fill(crvp->sbid);
+    fHist->roc[crvp->roc]->feb[crvp->feb]->h_sbid->Fill(crvp->sbid);
+  }
+//-----------------------------------------------------------------------------
+// double-nested loops start here
+//-----------------------------------------------------------------------------
   for (int i=0; i<fEvent->ntc; i++) {
-    DaqTimeCluster*  tc = (DaqTimeCluster* ) fEvent->Tc(i);
+    DaqTimeCluster*  tc = fEvent->Tc(i);
 
     for (int i2=0; i2<fEvent->ncrvc; i2++) {
-      DaqCrvCoincidenceCluster*  crvc = (DaqCrvCoincidenceCluster* ) fEvent->Crvc(i2);
+      DaqCrvCoincidenceCluster*  crvc = fEvent->Crvc(i2);
       float dt = crvc->time-tc->t0;
       
       fHist->crvc[0]->h_dt->Fill(dt);
     }
-  }
-  
-  for (int i=0; i<fEvent->ntc; i++) {
-    DaqTimeCluster*  tc = (DaqTimeCluster* ) fEvent->Tc(i);
 
-    for (int i2=0; i2<fEvent->ncrvc; i2++) {
-      DaqCrvRecoPulse*  crvp = (DaqCrvRecoPulse* ) fEvent->Crvp(i2);
-      float dt = crvp->time-tc->t0;
+    for (int i2=0; i2<fEvent->ncrvp; i2++) {
+      DaqCrvRecoPulse*  crvp = fEvent->Crvp(i2);
+      float dt       = crvp->time-tc->t0;
+      //int feb = crvp->feb;
+
+      CrvpHist_t* hr = fHist->crvp[0];
       
-      fHist->crvp[0]->h_dt->Fill(dt);
+      hr->h_dt->Fill(dt);
+      fHist->h_dt_vs_sbid->Fill(crvp->sbid,dt);
+
+      RocHist_t* roc_hr = fHist->roc[crvp->roc];
+      roc_hr->h_feb_vs_dt->Fill(dt,crvp->feb);
+
+      FebHist_t* feb_hr = fHist->roc[crvp->roc]->feb[crvp->feb];
+      feb_hr->h_dt->Fill(dt);
+
+
     }
   }
+  
   return 0;
 }
 

@@ -2,9 +2,13 @@
 # should be the same as Richie is using
 # services.DbService : @local::DbEmpty
 services.DbService : {
-    purpose  : MDC2020_perfect
-    version  : v1_3                        ## ignored
-    dbName   : "mu2e_conditions_prd"       ## ignored
+    dbName       : "mu2e_conditions_prd"       ## ignored
+    purpose      : CRV_COMMISSIONING           ## EMPTY 
+    version      : v1_0                        ## v1_0   ## v0                ## ignored
+    verbose      : 100
+    nearestMatch : true
+#    purpose  : MDC2020_perfect
+#    version  : v1_3                        ## ignored
     
     textFile : [ "trkvst/stationfcl/TrackerStatus.txt",
                  "trkvst/stationfcl/TrackerAlign.txt" ,
@@ -12,8 +16,6 @@ services.DbService : {
                  "Offline/TrackerConditions/data/TrkPanelMap.txt", ## use DB
                  "trkvst/stationfcl/calib107894.txt"   
                 ]
-                
-    verbose  : 100
 }
 
 services.ProditionsService.alignedTrackerSim.useDb      : true

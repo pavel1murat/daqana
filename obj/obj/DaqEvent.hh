@@ -76,6 +76,7 @@ public:
   // TClonesArray*  stmdigis;
 
   DaqStrawDigi*    Sd(int I) { return (DaqStrawDigi*  ) sd->At(I); }
+  DaqComboHit*     Ch(int I) { return (DaqComboHit*   ) ch->At(I); }
   DaqStrawHit*     Sh(int I) { return (DaqStrawHit*   ) sh->At(I); }
   DaqTimeCluster*  Tc(int I) { return (DaqTimeCluster*) tc->At(I); }
   DaqSegment*      Seg(int I) { return (DaqSegment*) seg->At(I); }

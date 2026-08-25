@@ -1,16 +1,16 @@
 # -*- mode:tcl -*-
 # services.DbService : @local::DbEmpty
 services.DbService : {
-    purpose  : EMPTY
-    version  : v0                          ## ignored
-    dbName   : "mu2e_conditions_prd"       ## ignored
+    dbName       : "mu2e_conditions_prd"       ## ignored
+    purpose      : CRV_COMMISSIONING           ## EMPTY
+    version      : v1_0                        ## v1_0   ## v0                ## ignored
+    verbose      : 100
+    nearestMatch : true
     
     textFile : [ "daqana/calibrations/TrkPreampStraw_v2.txt",       ## from runs 122968-122976 (plot_001_pin)
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  "Offline/TrackerConditions/data/TrkPanelMap.txt",  ## use Offline - the table is stable
                  "daqana/calibrations/TrkDelayPanel.txt"    ]       ## all zeroes
-                
-    verbose  : 100
 }
 
 services.ProditionsService.alignedTracker.useDb         : false

@@ -104,40 +104,41 @@ public:
 
   struct Config {
     
-    Atom<art::InputTag>   caldCollTag   {Name("caldCollTag"   ), Comment("calorimeter digi coll tag"  )};
-    Atom<art::InputTag>   calhCollTag   {Name("calhCollTag"   ), Comment("calorimeter hits coll tag"  )};
-    Atom<art::InputTag>   calcCollTag   {Name("calcCollTag"   ), Comment("calo cluster coll tag"      )};
-    Atom<art::InputTag>   crvdCollTag   {Name("crvdCollTag"   ), Comment("CRV digi coll tag"          )};
-    Atom<art::InputTag>   crvpCollTag   {Name("crvpCollTag"   ), Comment("CRV reco pulse coll tag"    )};
-    Atom<art::InputTag>   crvcCollTag   {Name("crvcCollTag"   ), Comment("CRV coins cluster coll tag" )};
-    Atom<art::InputTag>   sdCollTag     {Name("sdCollTag"     ), Comment("straw digi coll tag"        )};
-    Atom<art::InputTag>   shCollTag     {Name("shCollTag"     ), Comment("straw hit  coll tag"        )};
-    Atom<art::InputTag>   tcCollTag     {Name("tcCollTag"     ), Comment("time cluster coll tag"      )};
-    Atom<art::InputTag>   ksCollTag     {Name("ksCollTag"     ), Comment("KS coll tag"                )};  // ,""};
-    Atom<int>             debugMode     {Name("debugMode"     ), Comment("debug mode"                 )};
-    Sequence<std::string> debugBits     {Name("debugBits"     ), Comment("debug bits"                 )};
-    Atom<std::string>     outputDir     {Name("outputDir"     ), Comment("output directory"           )};
-    Atom<int>             saveWaveforms {Name("saveWaveforms" ), Comment("save StrawDigiADCWaveforms" )};
-    Atom<int>             makeCalD      {Name("makeCalD"      ), Comment("make CAL digis"             )}; // ,1};
-    Atom<int>             makeCalH      {Name("makeCalH"      ), Comment("make CAL hits"              )}; // ,1};
-    Atom<int>             makeCalC      {Name("makeCalC"      ), Comment("make CAL clusters"          )}; // ,1};
-    Atom<int>             makeCrvD      {Name("makeCrvD"      ), Comment("make CRV digis"             )}; // ,1};
-    Atom<int>             makeCrvP      {Name("makeCrvP"      ), Comment("make CRV pulses"            )}; // ,1};
-    Atom<int>             makeCrvC      {Name("makeCrvC"      ), Comment("make CRV cclusters"         )}; // ,1};
-    Atom<int>             makeSD        {Name("makeSD"        ), Comment("make straw digi branch"     )}; // ,1};
-    Atom<int>             makeSH        {Name("makeSH"        ), Comment("make straw hit branch"      )}; // ,1};
-    Atom<int>             makeCH        {Name("makeCH"        ), Comment("make combo hit branch"      )}; // ,1};
-    Atom<int>             makeFragments {Name("makeFragments" ), Comment("make artdaq branch"         )};       // ,1};
-    Atom<int>             makeTC        {Name("makeTC"        ), Comment("make time cluster branch"   )};       // ,1};
-    Atom<int>             makeSeg       {Name("makeSeg"       ), Comment("make segment branch"        )};        // ,1};
-    Atom<int>             makeTrk       {Name("makeTrk"       ), Comment("make track branch"          )};        // ,1};
-    Atom<int>             ewLength      {Name("ewLength"      ), Comment("event window length, in units of 25 ns"),1000};
-    Atom<int>             nSamplesBL    {Name("nSamplesBL"    ), Comment("n(samples) to determine the BL"),6};
-    Atom<float>           minPulseHeight{Name("minPulseHeight"), Comment("min height of the first non-BL sample"),5};
-    Atom<float>           minSDPHToSave {Name("minSDPHToSave" ), Comment("min PH of the SD to save")   };
-    Atom<int>             minNSegments  {Name("minNSegments"  ), Comment("min N(segments)")            };
-    Atom<float>           vDrift        {Name("vDrift"        ), Comment("vDrift, um/ns")              };
-    Atom<float>           tOffset       {Name("tOffset"       ), Comment("T0 offset, ns")              };
+    Atom<art::InputTag>   caldCollTag      {Name("caldCollTag"      ), Comment("calorimeter digi coll tag"  )};
+    Atom<art::InputTag>   calhCollTag      {Name("calhCollTag"      ), Comment("calorimeter hits coll tag"  )};
+    Atom<art::InputTag>   calcCollTag      {Name("calcCollTag"      ), Comment("calo cluster coll tag"      )};
+    Atom<art::InputTag>   crvdCollTag      {Name("crvdCollTag"      ), Comment("CRV digi coll tag"          )};
+    Atom<art::InputTag>   crvpCollTag      {Name("crvpCollTag"      ), Comment("CRV reco pulse coll tag"    )};
+    Atom<art::InputTag>   crvcCollTag      {Name("crvcCollTag"      ), Comment("CRV coins cluster coll tag" )};
+    Atom<art::InputTag>   sdCollTag        {Name("sdCollTag"        ), Comment("straw digi coll tag"        )};
+    Atom<art::InputTag>   shCollTag        {Name("shCollTag"        ), Comment("straw hit  coll tag"        )};
+    Atom<art::InputTag>   tcCollTag        {Name("tcCollTag"        ), Comment("time cluster coll tag"      )};
+    Atom<art::InputTag>   ksCollTag        {Name("ksCollTag"        ), Comment("KS coll tag"                )};  // ,""};
+    Atom<int>             debugMode        {Name("debugMode"        ), Comment("debug mode"                 )};
+    Sequence<std::string> debugBits        {Name("debugBits"        ), Comment("debug bits"                 )};
+    Atom<std::string>     outputDir        {Name("outputDir"        ), Comment("output directory"           )};
+    Atom<int>             saveWaveforms    {Name("saveWaveforms"    ), Comment("save StrawDigiADCWaveforms" )};
+    Atom<int>             makeCalD         {Name("makeCalD"         ), Comment("make CAL digis"             )}; // ,1};
+    Atom<int>             makeCalH         {Name("makeCalH"         ), Comment("make CAL hits"              )}; // ,1};
+    Atom<int>             makeCalC         {Name("makeCalC"         ), Comment("make CAL clusters"          )}; // ,1};
+    Atom<int>             makeCrvD         {Name("makeCrvD"         ), Comment("make CRV digis"             )}; // ,1};
+    Atom<int>             makeCrvP         {Name("makeCrvP"         ), Comment("make CRV pulses"            )}; // ,1};
+    Atom<int>             makeCrvC         {Name("makeCrvC"         ), Comment("make CRV cclusters"         )}; // ,1};
+    Atom<int>             makeSD           {Name("makeSD"           ), Comment("make straw digi branch"     )}; // ,1};
+    Atom<int>             makeSH           {Name("makeSH"           ), Comment("make straw hit branch"      )}; // ,1};
+    Atom<int>             makeCH           {Name("makeCH"           ), Comment("make combo hit branch"      )}; // ,1};
+    Atom<int>             makeFragments    {Name("makeFragments"    ), Comment("make artdaq branch"         )};       // ,1};
+    Atom<int>             makeTC           {Name("makeTC"           ), Comment("make time cluster branch"   )};       // ,1};
+    Atom<int>             makeSeg          {Name("makeSeg"          ), Comment("make segment branch"        )};        // ,1};
+    Atom<int>             makeTrk          {Name("makeTrk"          ), Comment("make track branch"          )};        // ,1};
+    Atom<int>             ewLength         {Name("ewLength"         ), Comment("event window length, in units of 25 ns"),1000};
+    Atom<int>             nSamplesBL       {Name("nSamplesBL"       ), Comment("n(samples) to determine the BL"),6};
+    Atom<float>           minPulseHeight   {Name("minPulseHeight"   ), Comment("min height of the first non-BL sample"),5};
+    Atom<float>           minSDPHToSave    {Name("minSDPHToSave"    ), Comment("min PH of the SD to save")   };
+    Atom<int>             minNSegments     {Name("minNSegments"     ), Comment("min N(segments)")            };
+    Atom<float>           vDrift           {Name("vDrift"           ), Comment("vDrift, um/ns")              };
+    Atom<float>           tOffset          {Name("tOffset"          ), Comment("T0 offset, ns")              };
+    Atom<bool>            saveOnlyCloseHits{Name("saveOnlyCloseHits"), Comment(" within 500 ns")             };
   };
 
   // --- C'tor/d'tor:
@@ -152,7 +153,8 @@ public:
   int      process_adc_waveform(float* Wf, WfParam_t* Wp);
 
   int      calculateMissingTrkParameters();
-  
+  bool     closeEnough(float Time);
+    
   int      makeSegments();
 
   int      fillFragments();
@@ -216,6 +218,7 @@ public:
   float                    _minSDPHToSave;
   float                    _vDrift;
   float                    _tOffset;
+  bool                     _saveOnlyCloseHits;
     
   
   int                      _n_adc_samples;
@@ -363,6 +366,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _minSDPHToSave (config().minSDPHToSave ()),
     _vDrift        (config().vDrift        ()),
     _tOffset       (config().tOffset       ()),
+    _saveOnlyCloseHits(config().saveOnlyCloseHits()),
     _art_event     (nullptr)
 {
   _n_adc_samples = -1;
@@ -1116,14 +1120,44 @@ int mu2e::MakeDigiNtuple::fillSD() {
 }
 
 //-----------------------------------------------------------------------------
+// compressing ntuple for specialized studies
+// check whether the hist time is close enough to one of the time clusters
+//-----------------------------------------------------------------------------
+bool mu2e::MakeDigiNtuple::closeEnough(float Time) {
+  bool close_enough = false;
+  for (int itc=0; itc<_ntimeclusters; itc++) {
+    const mu2e::TimeCluster* tc = &_tcc->at(itc);
+    float dt = Time - tc->t0().t0();
+    if (fabs(dt) < 500.) {
+      close_enough = true;
+      break;
+    }
+  }
+  return close_enough;
+}
+
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillSH() {
 
   if ((_debugMode > 0) and (_debugBit[1] != 0)) {
     printf("evn    sid  pln  pnl mnid    time    dt   tot0 tot1   edep\n");
     printf("---------------------------------------------------------\n");
   }
+
+  int ish = 0;
   for (int i=0; i<_nstrawhits; i++) {
     const mu2e::StrawHit* sh = &_shc->at(i);
+//-----------------------------------------------------------------------------
+// experimental: as the size of ntuples grows, to save space, save only hits within 500 ns from
+// any of the existing time clusters
+//-----------------------------------------------------------------------------
+    float t = sh->time(mu2e::StrawEnd::cal);
+
+    if (_saveOnlyCloseHits) {
+      bool close_enough = closeEnough(t);
+      if (not close_enough) continue;
+    }
+    
     int pln = sh->strawId().plane();
     int pnl = sh->strawId().panel();
     //    const TrkPanelMap_t* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
@@ -1133,7 +1167,9 @@ int mu2e::MakeDigiNtuple::fillSH() {
     //    int pcie_addr = dtc_id % 2;                      // convention
     _event->nsh[dtc_id-1][tpm->link()] += 1;         // assume DTC_ID runs from 1 to 36 (tracker)
    
-    DaqStrawHit* nt_sh = new ((*_event->sh)[i]) DaqStrawHit();
+    DaqStrawHit* nt_sh = new ((*_event->sh)[ish]) DaqStrawHit();
+    ish++;
+    
     nt_sh->sid         = sh->strawId().asUint16();
     nt_sh->zface       = tpm->zface();
     nt_sh->mnid        = tpm->mnid();
@@ -1155,6 +1191,8 @@ int mu2e::MakeDigiNtuple::fillSH() {
              nt_sh->edep);
     }
   }
+
+  _nstrawhits = ish;
   return 0;
 }
 
@@ -1169,18 +1207,27 @@ int mu2e::MakeDigiNtuple::fillCH() {
       printf("---------------------------------------------------------\n");
     }
   }
+
+  int ich = 0;
   for (int i=0; i<_ncombohits; i++) {
     const mu2e::ComboHit* ch = &_chc->at(i);
+    float corrected_time = ch->correctedTime();
+    if (_saveOnlyCloseHits) {
+      bool close_enough = closeEnough(corrected_time);
+      if (not close_enough) continue;
+    }
+    
     int pln = ch->strawId().plane();
     int pnl = ch->strawId().panel();
     const TrkPanelMap::Row* tpm = _trkPanelMap->panel_map_by_offline_ind(pln,pnl);
 
-    DaqComboHit* nt_ch = new ((*_event->ch)[i]) DaqComboHit();
+    DaqComboHit* nt_ch = new ((*_event->ch)[ich]) DaqComboHit();
+    ich++;
     nt_ch->sid         = ch->strawId().asUint16();
     nt_ch->nsh         = ch->nStrawHits();
     nt_ch->zface       = tpm->zface();
     nt_ch->mnid        = tpm->mnid();
-    nt_ch->time        = ch->correctedTime();
+    nt_ch->time        = corrected_time; // ch->correctedTime();
     nt_ch->dtime       = ch->driftTime();
     nt_ch->x           = ch->pos().x();
     nt_ch->y           = ch->pos().y();
@@ -1202,6 +1249,7 @@ int mu2e::MakeDigiNtuple::fillCH() {
       }
     }
   }
+  _ncombohits = ich;
   return 0;
 }
 

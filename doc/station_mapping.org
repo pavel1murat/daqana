@@ -25,15 +25,16 @@
 |-------+--------+----------|
 |     0 |        | all in   |
 * <2026-06-26 Fri> *(documenting readout issues) - panels which do not have high voltage ON*                                   
-- 
 ** MN026 : trk-15/DTC1/link5 : *OFF*, bad . don't remember why
+** MN030 : can't talk to HV AMB
 ** MN064 : trk-07/DTC0/link2 : *OFF*, needs AMB replacement
 ** MN086 : trk-04/DTC0/link4 : *OFF* timeouts     
 %MSG-e TrackerBRDR:  Early 01-Jul-2026 22:20:26 CDT pre-events TrackerBRDR_generator.cc:440
 br07: event:130 DTC:0 link:4 ERROR CODE:0x08 NBYTES:16 NPACKETS:0
-** MN138 : trk-18/DTC1/link0 : *OFF* 
-** MN272 : trk-18/DTC0/link5 : *OFF* flaky
-
+** MN138 : trk-18/DTC1/link0 : *OFF* : link not locked
+** MN185 : can't talk to HV AMB
+** MN256 : slot 2            : *OFF* : fiber doesn't link
+** MN272 : trk-18/DTC0/link5 : *OFF* : can't read, keep disabled
 * <2026-06-24 Wed> timing chains for 18 stations                                                             
 - status: all chains show up locked at the CFO
 - if the loopback measurement returns zeroes, reprogram the DTC (or the previous one in the chain)

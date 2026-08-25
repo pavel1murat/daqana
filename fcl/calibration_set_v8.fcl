@@ -8,9 +8,11 @@
 #------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
-    purpose  : EMPTY
-    version  : v0                          ## ignored
-    dbName   : "mu2e_conditions_prd"       ## ignored
+    dbName       : "mu2e_conditions_prd"       ## ignored
+    purpose      : CRV_COMMISSIONING           ## EMPTY
+    version      : v1_0                        ## v1_0   ## v0                ## ignored
+    verbose      : 100
+    nearestMatch : true
     
     textFile : [ "daqana/calibrations/TrkPreampStraw_v5.txt",
                  "daqana/calibrations/TrkDelayRStraw.txt"   ,
@@ -19,8 +21,6 @@ services.DbService : {
                  "daqana/calibrations/TrkAlignStraw_0_10_22_v03.txt",
                  "Offline/TrackerConditions/data/TrkPanelMap.txt"  , ## use DB
                  "daqana/calibrations/TrkDelayPanel_v3.txt" ]
-                
-    verbose  : 100
 }
 #------------------------------------------------------------------------------
 # where the tables are coming from

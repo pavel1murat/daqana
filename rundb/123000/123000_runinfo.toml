@@ -7,6 +7,7 @@ ew_length    = 100.0e-6      # event window, sec
 trigger_rate = 325.0         # rate to disk, Hz
 
 [["runinfo"]]
+# TRK+CALO+CRV (a mix of 123680 and 123681 (calo only trigger)
 run_number   = 123680
 run_type     = 2             # "cosmics"
 event_mode   = 0             # off-spill

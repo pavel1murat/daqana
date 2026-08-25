@@ -7,6 +7,9 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
@@ -45,7 +48,6 @@ public :
     double e[3];
     double chi2dof;
   };
-
 //-----------------------------------------------------------------------------
 // data structures
 //-----------------------------------------------------------------------------
@@ -75,7 +77,11 @@ public :
   
   struct Hist_t {
     TH1F*              h_dt05[36][36];
+    TH1F*              h_panel_dt[216];
     TimeClusterHist_t* tc[100];
+    TH1F*              h_dt_vs_panel;
+    TH1F*              h_pdt_216;
+    TH2F*              h_dt05_36;
   };
 
 //-----------------------------------------------------------------------------
@@ -106,8 +112,13 @@ public :
   float           t05 [36];
   int             n05 [36];
   float           dt05[36][36];
+  fit_result_t    fFr [36][36];
+
+  float           fPanelDt[216];
+  int             fPanelNh[216];
+  fit_result_t    fPanelFr[216];
 //-----------------------------------------------------------------------------
-                                        // for independent runs, the name should eb the same..
+// for independent runs, the name should eb the same..
                                         // make it different to process the same run with different refence channels
   plot_n002_tc(int RunNumber, const char* Fn = nullptr, const char* Label = "002");
   
@@ -125,10 +136,12 @@ public :
 
   int              FillTimeClusterHistograms(TimeClusterHist_t* Hist, DaqTimeCluster* Tc);
   int              FillHistograms       ();
+  int              FitHistogram(TH1F* Hist, fit_result_t* Fr, int Ip2, int Ip1, int NMin = 100);
 
   int              ResetHistograms();
   int              SaveHistograms (const char* Filename);
   
-  int              PrintHistograms   (int ISet);
+  int              PrintHistograms   (int Refit = 1);
+  int              PrintPanelDt();
 };
 #endif

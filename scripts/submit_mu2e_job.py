@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # example :
 # ---------
-#  v001/daqana/scripts/submit_mu2e_job.py --c=a.fcl --rn=105935 --idsid=vst --calib=v0 --diag_level=10
+#  v001/daqana/scripts/submit_mu2e_job.py --c=a.fcl --rn=105935 --idsid=vst --calib-ver=v0 --diag_level=10
 #
 # --rn  : use files of a given run number
 # --fcl : 
@@ -48,6 +48,28 @@ class SubmitJob:
 #        print(message)
 
 #------------------------------------------------------------------------------
+    def make_log_name(fname: str) -> str:
+        # Standard: XXX.<s1>.<s2>.<s3>.<run>_<subrun>.YYY
+        
+        m_std = re.match(
+            r'^[^.]+\.(?P<s1>[^.]+)\.(?P<s2>[^.]+)\.(?P<s3>[^.]+)\.(?P<rs>\d+_\d+)\.[^.]+$',
+            fname
+        )
+        if m_std:
+            s1, s2, s3, rs = m_std.group('s1', 's2', 's3', 'rs')
+            return f'log.{s1}.{s2}.{s3}.{rs}.log'
+    
+        # Fallback: find any <s1>.<s2>.<s3>.<run> and keep only run
+        m_fb = re.search(
+            r'(?P<s1>[^.]+)\.(?P<s2>[^.]+)\.(?P<s3>[^.]+)\.(?P<run>\d+)',
+            fname
+        )
+        if m_fb:
+            s1, s2, s3, run = m_fb.group('s1', 's2', 's3', 'run')
+            return f'log.{s1}.{s2}.{s3}.{run}.log'
+    
+        raise ValueError("Could not find pattern '<seg1>.<seg2>.<seg3>.<run>' in input name")
+    
     def parse_parameters(self):
         name = 'parse_parameters'
         
@@ -56,7 +78,7 @@ class SubmitJob:
         
         parser = argparse.ArgumentParser()
 
-        parser.add_argument("--calib-ver"       , default=None,           help="calibration version, defaults to 0")
+        parser.add_argument("--calib-ver"       , default=None,           help="calibration version, defaults to v0")
         parser.add_argument("--calib-run"       , default=None,           help="use calibrations keyed on a given run")
         parser.add_argument("-D", "--data-dir"  , default=None,           help="input data directory")
         parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
@@ -122,10 +144,12 @@ class SubmitJob:
         logger.debug(f'000:template_fcl:{template_fcl} job_fcl:{job_fcl}');
 #------------------------------------------------------------------------------
 # overrides, calib: 'v1'
+# if calib_run is not specified, use calibrations from daqana/fcl,
+#                                     otherwise - from daqana/rundb/XXXXXX/${calib_run}
 #------------------------------------------------------------------------------
         overrides_cmd = ''
         if (args.calib_ver):
-            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_v{args.calib_ver}/'
+            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_{args.calib_ver}/'
             # overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib_set}/'
 
         if (args.calib_run):
@@ -154,6 +178,7 @@ class SubmitJob:
 #-------v----------------------------------------------------------------------
         input_file_list=None
         if (not args.source):
+            # this also defines the input file name
             input_file_list=f'/tmp/submit_mu2e_job_input.{args.run_number}.txt.{os.getpid()}'
 
             print(f'args.data_dir:{args.data_dir}')
@@ -180,6 +205,9 @@ class SubmitJob:
             (out, err) = p.communicate();
 
             logger.info(f'input_file_list:{input_file_list}')
+#------------------------------------------------------------------------------
+# use the name of the first file in the list to define the log file name - TODO
+#-------v----------------------------------------------------------------------
 #------------------------------------------------------------------------------
 # form the command to execute
 #-------v----------------------------------------------------------------------

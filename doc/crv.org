@@ -1,0 +1,28 @@
+#+startup:fold -*- buffer-read-only:t -*-
+* Ralf: CRV channel maps:
+https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
+* extracted position sectors
+- <2026-08-25 Tue> file:../../Offline/CRVReco/fcl/epilog_extracted_v04.fcl
+|--------+------+--------+--------+--------+-----+--------+-------+--------+-------------|
+| sector | type | sipms  |  coins |    bar |   N | Ncntrs |     N | Nsipms | N(channels) |
+|        |      | side 1 | layers | length | mod |   /mod | cntrs |  /cntr |             |
+|--------+------+--------+--------+--------+-----+--------+-------+--------+-------------|
+| EX     |    1 | T      |      3 |   6000 |   4 |     16 |    64 |      4 |         256 |
+| T1     |    2 | T      |      4 |   2370 |   2 |     16 |    32 |      4 |         128 |
+| T2     |    3 | T      |      4 |   3200 |   2 |     16 |    32 |      4 |         128 |
+| M1     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M2     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M3     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M4     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M5     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M6     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M7     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+| M8     |    4 | F      |      4 |   2200 |   1 |      2 |     2 |      2 |           4 |
+|--------+------+--------+--------+--------+-----+--------+-------+--------+-------------|
+#+TBLFM: $10=$6*$7*$9::$8=$6*$7::
+- total number of channels: 256+256+4*8 = 512+32 = 544
+* need to use 
+* ROCs #1 and #4 (links 0 and 3)
+
+- ROC#1 : FEBs : 1-24
+- ROC#4 : FEBs : 1-7
