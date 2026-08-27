@@ -10,6 +10,7 @@
 #pragma link C++  class  DaqEvent;
 
 #pragma link C++  class  DaqCaloDigi;
+#pragma link C++  class  DaqCaloRecoDigi;
 #pragma link C++  class  DaqCaloHit;
 #pragma link C++  class  DaqCaloCluster;
 
@@ -35,5 +36,6 @@
 #pragma link C++  class  DaqRocData;
 
 #pragma link C++  class  CrvChannelMap_t;
+#pragma link C++  class  CalChannelMap_t;
 
 #endif

@@ -87,6 +87,7 @@ daqana : {
 
         MakeDigiNtuple: { module_type: MakeDigiNtuple
             makeCalD       : 0
+            makeCalRD      : 0      ## reco digis
             makeCalH       : 0      ## calo hits
             makeCalC       : 0      ## calo hits
             makeCrvD       : 0
@@ -101,6 +102,7 @@ daqana : {
             makeTrk        : 0
             
             caldCollTag    : "CaloDigiMaker"
+            calrdCollTag   : "CaloRecoDigiMaker"
             calhCollTag    : "CaloHitMaker"
             calcCollTag    : "CaloClusterMaker"
             crvdCollTag    : "CrvDigi"

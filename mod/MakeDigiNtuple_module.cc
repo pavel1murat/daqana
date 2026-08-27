@@ -35,6 +35,7 @@
 #include "Offline/RecoDataProducts/inc/CrvCoincidenceCluster.hh"
 
 #include "Offline/RecoDataProducts/inc/CaloDigi.hh"
+#include "Offline/RecoDataProducts/inc/CaloRecoDigi.hh"
 
 #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
 #include "Offline/RecoDataProducts/inc/StrawHit.hh"
@@ -104,8 +105,9 @@ public:
 
   struct Config {
     
-    Atom<art::InputTag>   caldCollTag      {Name("caldCollTag"      ), Comment("calorimeter digi coll tag"  )};
-    Atom<art::InputTag>   calhCollTag      {Name("calhCollTag"      ), Comment("calorimeter hits coll tag"  )};
+    Atom<art::InputTag>   caldCollTag      {Name("caldCollTag"      ), Comment("calo digi coll tag"         )};
+    Atom<art::InputTag>   calrdCollTag     {Name("calrdCollTag"     ), Comment("calo reco digi coll tag"    )};
+    Atom<art::InputTag>   calhCollTag      {Name("calhCollTag"      ), Comment("calo hits coll tag"         )};
     Atom<art::InputTag>   calcCollTag      {Name("calcCollTag"      ), Comment("calo cluster coll tag"      )};
     Atom<art::InputTag>   crvdCollTag      {Name("crvdCollTag"      ), Comment("CRV digi coll tag"          )};
     Atom<art::InputTag>   crvpCollTag      {Name("crvpCollTag"      ), Comment("CRV reco pulse coll tag"    )};
@@ -119,6 +121,7 @@ public:
     Atom<std::string>     outputDir        {Name("outputDir"        ), Comment("output directory"           )};
     Atom<int>             saveWaveforms    {Name("saveWaveforms"    ), Comment("save StrawDigiADCWaveforms" )};
     Atom<int>             makeCalD         {Name("makeCalD"         ), Comment("make CAL digis"             )}; // ,1};
+    Atom<int>             makeCalRD        {Name("makeCalRD"        ), Comment("make CAL reco digis"        )}; // ,1};
     Atom<int>             makeCalH         {Name("makeCalH"         ), Comment("make CAL hits"              )}; // ,1};
     Atom<int>             makeCalC         {Name("makeCalC"         ), Comment("make CAL clusters"          )}; // ,1};
     Atom<int>             makeCrvD         {Name("makeCrvD"         ), Comment("make CRV digis"             )}; // ,1};
@@ -160,21 +163,22 @@ public:
 
   int      fillFragments();
 
-  int      fillCalD();
-  int      fillCalH();
-  int      fillCalC();
+  int      fillCalD ();
+  int      fillCalRD();
+  int      fillCalH ();
+  int      fillCalC ();
 
   int      fillCrvD();
   int      fillCrvP();
   int      fillCrvC();              // CRV coincidence clusters
 
-  int      fillSD ();
-  int      fillSH ();
-  int      fillCH ();
-  int      fillTC ();
-  int      fillSeg();
+  int      fillSD   ();
+  int      fillSH   ();
+  int      fillCH   ();
+  int      fillTC   ();
+  int      fillSeg  ();
   int      fillSegSh();
-  int      fillTrk();
+  int      fillTrk  ();
 //-----------------------------------------------------------------------------
 // overloaded virtual functions of EDAnalyzer
 //-----------------------------------------------------------------------------
@@ -188,6 +192,7 @@ public:
   std::vector<std::string> _sDebugBits;
   int                      _debugBit[100];
   art::InputTag            _caldCollTag;        // CAL digi collection tag
+  art::InputTag            _calrdCollTag;       // CAL reco digi collection tag
   art::InputTag            _calhCollTag;        // CAL hit  collection tag
   art::InputTag            _calcCollTag;        // CAL cluster collection tag
   art::InputTag            _crvdCollTag;        // CRV digi collection tag
@@ -200,6 +205,7 @@ public:
   std::string              _outputDir;
   int                      _saveWaveforms;
   int                      _makeCalD;
+  int                      _makeCalRD;
   int                      _makeCalH;
   int                      _makeCalC;
   int                      _makeCrvD;
@@ -232,6 +238,7 @@ public:
   int                      _last_run;
 
   int                     _ncald;
+  int                     _ncalrd;
   int                     _ncalh;
   int                     _ncalc;
   int                     _nstrawdigis;
@@ -256,6 +263,7 @@ public:
   int                     _hist_booked;
    
   const mu2e::CaloDigiCollection*              _caldc;
+  const mu2e::CaloRecoDigiCollection*          _calrdc;
   const mu2e::CaloHitCollection*               _calhc;
   const mu2e::CaloClusterCollection*           _calcc;
   const mu2e::CrvDigiCollection*               _crvdc;
@@ -335,6 +343,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _sDebugBits    (config().debugBits     ()),
 
     _caldCollTag   (config().caldCollTag   ()),
+    _calrdCollTag  (config().calrdCollTag  ()),
     _calhCollTag   (config().calhCollTag   ()),
     _calcCollTag   (config().calcCollTag   ()),
 
@@ -349,6 +358,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _outputDir     (config().outputDir     ()),
     _saveWaveforms (config().saveWaveforms ()),
     _makeCalD      (config().makeCalD      ()),
+    _makeCalRD     (config().makeCalRD     ()),
     _makeCalH      (config().makeCalH      ()),
     _makeCalC      (config().makeCalC      ()),
     _makeCrvD      (config().makeCrvD      ()),
@@ -593,6 +603,21 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
                          _caldCollTag.encode().data()));
     }
   }
+
+  _calrdc = nullptr;
+  _ncalrd = 0;
+  if (_makeCalRD != 0) {
+    art::Handle<mu2e::CaloRecoDigiCollection> calrdch;
+    ok = ArtEvent.getByLabel(_calrdCollTag,calrdch);
+    if (ok) { 
+      _calrdc = calrdch.product();
+      _ncalrd = _calrdc->size();
+    }
+    else {
+      print_(e_ERROR,std::format("ERROR: CaloRecoDigiCollection:{:s} not found.\n",
+                         _calrdCollTag.encode().data()));
+    }
+  }
   
   _calhc = nullptr;
   _ncalh = 0;
@@ -754,6 +779,25 @@ int mu2e::MakeDigiNtuple::fillCalD() {
     for (int is=0; is<ns; is++) {
       nt_cald->wf[is] = cald->waveform()[is];
     }
+  }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int mu2e::MakeDigiNtuple::fillCalRD() {
+  for (int i=0; i<_ncalrd; i++) {
+    const mu2e::CaloRecoDigi* calrd = &_calrdc->at(i);
+
+    DaqCaloRecoDigi* nt_calrd = (DaqCaloRecoDigi*) _event->calrd->ConstructedAt(i);
+    
+    nt_calrd->sipmid   = calrd->SiPMID();
+    nt_calrd->ndf      = calrd->ndf();
+    nt_calrd->pileup   = calrd->pileUp() ? 1 : 0;
+    nt_calrd->time     = calrd->time();
+    nt_calrd->time_err = calrd->timeErr();
+    nt_calrd->edep     = calrd->energyDep();
+    nt_calrd->edep_err = calrd->energyDepErr();
+    nt_calrd->chi2     = calrd->chi2();
   }
   return 0;
 }
@@ -1749,6 +1793,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   _event->ntrk    = _ntracks;
 
   _event->ncald   = _ncald;
+  _event->ncalrd  = _ncalrd;
   _event->ncalh   = _ncalh;
   _event->ncalc   = _ncalc;
 
@@ -1771,6 +1816,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   if (_makeTC       ) fillTC ();
 
   if (_makeCalD     ) fillCalD ();
+  if (_makeCalRD    ) fillCalRD();
   if (_makeCalH     ) fillCalH ();
   if (_makeCalC     ) fillCalC ();
 

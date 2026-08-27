@@ -5,6 +5,7 @@
 #include "TObject.h"
 
 #include "daqana/obj/DaqCaloDigi.hh"
+#include "daqana/obj/DaqCaloRecoDigi.hh"
 #include "daqana/obj/DaqCaloHit.hh"
 #include "daqana/obj/DaqCaloCluster.hh"
 
@@ -51,6 +52,9 @@ public:
   int            ncald;                 // number of calo digis
   TClonesArray*  cald;
 
+  int            ncalrd;                 // number of calo reco digis
+  TClonesArray*  calrd;
+
   int            ncalh;                 // number of calo hits (normally, 2 digis per hit)
   TClonesArray*  calh;
 
@@ -83,12 +87,13 @@ public:
   int              Nsh(int Plane, int Panel) { return nsh[Plane][Panel]; }
   int              Pmp(int DtcID) { return pmp[DtcID] ; }
   
-  DaqCaloDigi*              Cald(int I) { return (DaqCaloDigi*)              cald->At(I); }
-  DaqCaloHit*               Calh(int I) { return (DaqCaloHit*)               calh->At(I); }
-  DaqCaloCluster*           Calc(int I) { return (DaqCaloCluster*)           calc->At(I); }
+  DaqCaloDigi*              Cald (int I) { return (DaqCaloDigi*)             cald->At(I);  }
+  DaqCaloRecoDigi*          Calrd(int I) { return (DaqCaloRecoDigi*)         calrd->At(I); }
+  DaqCaloHit*               Calh (int I) { return (DaqCaloHit*)              calh->At(I);  }
+  DaqCaloCluster*           Calc (int I) { return (DaqCaloCluster*)          calc->At(I);  }
   
-  DaqCrvRecoPulse*          Crvp(int I) { return (DaqCrvRecoPulse*)          crvp->At(I); }
-  DaqCrvCoincidenceCluster* Crvc(int I) { return (DaqCrvCoincidenceCluster*) crvc->At(I); }
+  DaqCrvRecoPulse*          Crvp(int I) { return (DaqCrvRecoPulse*)          crvp->At(I);  }
+  DaqCrvCoincidenceCluster* Crvc(int I) { return (DaqCrvCoincidenceCluster*) crvc->At(I);  }
 
   DaqStrawDigi* NewSD(int I) {
     DaqStrawDigi* digi = new ((*sd)[I]) DaqStrawDigi();

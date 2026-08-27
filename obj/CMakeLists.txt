@@ -20,12 +20,13 @@ ROOT_GENERATE_DICTIONARY(${dict}
   DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
   TrkSegment.hh SegmentFit.hh DaqTrkStrawHit.hh
   DaqCrvRecoPulse.hh DaqCrvDigi.hh DaqCrvCoincidenceCluster.hh
-  DaqCaloDigi.hh DaqCaloHit.hh DaqCaloCluster.hh
+  DaqCaloDigi.hh DaqCaloRecoDigi.hh DaqCaloHit.hh DaqCaloCluster.hh
   RunDb.hh
   DaqFragment.hh
   digis.hh simres.hh TrkPanelMap_t.hh
   fit_functions.hh
   CrvChannelMap_t.hh
+  CalChannelMap_t.hh
   LINKDEF obj/Linkdef.h)
 
 set_property(SOURCE ${dict}.cxx PROPERTY generated)
@@ -36,10 +37,11 @@ add_library(${lib} SHARED
   DaqCrvRecoPulse.cc DaqCrvDigi.cc DaqCrvCoincidenceCluster.cc
   RunDb.cc
   DaqFragment.cc
-  DaqCaloDigi.cc DaqCaloHit.cc DaqCaloCluster.cc
+  DaqCaloDigi.cc DaqCaloRecoDigi.cc DaqCaloHit.cc DaqCaloCluster.cc
   digis.cc simres.cc
   fit_dt01_msh.cc
   CrvChannelMap_t.cc
+  CalChannelMap_t.cc
   FragmentMixer.cc
   ${dict}.cxx
 )

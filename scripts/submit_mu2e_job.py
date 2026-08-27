@@ -95,6 +95,7 @@ class SubmitJob:
 
         args = parser.parse_args()
 
+        logger.info(f'args.idsid      = {args.idsid}'        )
         logger.info(f'args.diag_level = {args.diag_level}'   )
         logger.info(f'args.calib_ver  = {args.calib_ver}'    )
         logger.info(f'args.calib_run  = {args.calib_run}'    )
@@ -184,7 +185,7 @@ class SubmitJob:
             print(f'args.data_dir:{args.data_dir}')
             
             if (args.data_dir):
-                cmd  = f"ls -al {args.data_dir}/* | awk '{{print $9}}'"   ## list all raw files
+                cmd  = f"ls -al {args.data_dir}/{args.idsid}/* | awk '{{print $9}}'"   ## list all raw files
             else:
                 cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
                 
@@ -211,6 +212,7 @@ class SubmitJob:
 #------------------------------------------------------------------------------
 # form the command to execute
 #-------v----------------------------------------------------------------------
+
         input_dsid = args.idsid
         if (input_dsid == None):
             if (args.source):

@@ -9,6 +9,7 @@
 DaqEvent::DaqEvent() { // : TObject() {
 
   cald  = new TClonesArray("DaqCaloDigi"             ,100);
+  calrd = new TClonesArray("DaqCaloRecoDigi"         ,100);
   calh  = new TClonesArray("DaqCaloHit"              ,100);
   calc  = new TClonesArray("DaqCaloCluster"          ,100);
 
@@ -33,6 +34,7 @@ DaqEvent::DaqEvent() { // : TObject() {
 DaqEvent::~DaqEvent() {
 
   cald->Delete(); delete cald;
+  calrd->Delete(); delete calrd;
   calh->Delete(); delete calh;
   calc->Delete(); delete calc;
 
@@ -74,6 +76,7 @@ void DaqEvent::Clear(const char* Opt) {
   }
   
   ncald   = 0; cald->Clear();
+  ncalrd  = 0; calrd->Clear();
   ncalh   = 0; calh->Clear();
   ncalc   = 0; calc->Clear();
 

@@ -1,16 +1,14 @@
 # -*- mode:tcl -*-
-
 #------------------------------------------------------------------------------
-# n104: 
-#   tracker: digis+SH+CH+TC (close enough)
+# n004:
+#   tracker: hits+time clusters
 #   CRV    : digis+pulses+coincidence clusters
+#   CALO   : digis
 #
-# to reduce the ntuple size, only hits within 500 ns from any time cluster are stored
-# see minStrawHitDt > 0
-# that gives an order of magnitude reduction in size
-#
-# Usage: mu2e -c daqana/fcl/make_n104.fcl -s <input art file> [-n 10]
+# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
 # 
+# hopefully, prolog variables below are not used
+# intentionally use v0 calibrations
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
 #   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
@@ -29,7 +27,7 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/fcl/calibration_set_v0.fcl"
+#include "daqana/fcl/calibration_set_v101.fcl"
 
 
 services.message.destinations.log.categories.MAKE_SD: {
@@ -66,9 +64,8 @@ physics : {
     producers : {
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 1 ## 10
+            diagLevel     : 0 ## 10
             useROC4asROC2 : true
-
             # useSubsystem0 : false
         }
 
@@ -85,7 +82,6 @@ physics : {
             debugMode        : 0 ## 1
             debugBits        : ["bit0:1"]
             saveWaveforms    : true
-#            geography        : [  ]
             # dtcHeaderPresent : false
             keyOnMnid        : true ## true    ## default:false
         }
@@ -95,39 +91,102 @@ physics : {
         TimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 400
-            TimeStep      : 30
+            TimeWindow    : 160 ## assume running with correct calibrations ## 400
+            TimeStep      : 50
+        }
+        
+        CaloDigiMaker : { module_type:  CaloDigisFromDTCEvents
+            dataType     : 0
+            diagLevel    : 0
+            useOfflineID : true
+        }
+
+        CaloRecoDigiMaker : { @table::CaloReco.CaloRecoDigiMaker
+            globalDt : 1572.     ## 
+        }
+
+        CaloHitMaker      : { @table::CaloReco.CaloHitMaker
+        }
+        
+        CaloProtoClusterMaker : { @table::CaloCluster.CaloProtoClusterMaker
+        }
+
+        CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
+        }
+
+        CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
+            globalDt : 486.  ## <T(CRV)-T(tracker)>
+        }
+
+        CrvCoincidenceClusterFinder : { @table::CrvRecoPackage.producers.CrvCoincidenceClusterFinder
+        }
+        
+        LineFinder : { @table::CosmicReco.LineFinder
+            minPeak              : 8
+            NSteps               : 5
+            StepSize             : 0.25
+            TimeClusterCollection: "TimeCluster"
+        }
+
+        KKLine : { @table::Reconstruction.producers.KKLine   
         }
     }
     
-    filters   : {                       }
+    filters   : {
+        EventIDFilter : { module_type: EventIDFilter
+            idsToMatch: [
+                         "123680:1-69:*",
+                         "123680:70:1-693386", "123680:70:693388-100000000",     ## skip event: 693387:CaloHitFastMaker
+                         "123680:71-74:*",
+                         "123680:75:1-747808", "123680:75:747810-100000000",     ## 123680:75:747809: CaloHitFastMaker
+                         "123680:76-204:*",
+                         "123680:205:1-2040079","123680:205:2040081-100000000",
+                         "123680:206-869:*",
+                         "123680:870:1-8698085","123680:870:8698087-100000000",
+                         "123680:871-10000:*"
+                        ]
+        }
+    }
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
+            makeCalD      : 1
+            makeCalRD     : 1
+            makeCalH      : 1
+            makeCalC      : 1
+            
             makeCrvD      : 1
             makeCrvP      : 1
             makeCrvC      : 1
+            
             makeFragments : 0
+            
             makeSD        : 0
-            makeSH        : 1
             makeCH        : 1
             makeTC        : 1
+            makeTrk       : 1
             saveWaveforms : 0
             
-            tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
+            tcCollTag     : "TimeCluster"   ## "TZClusterFinder"  ##
 
             debugMode     : 1
             debugBits: [
                         ## "bit21:1"
                        ]
-            
-            minStrawHitDt : 80
+            minStrawHitDt : 80.
        }
     }
 
     # p1 : [ EWMProducer, makeSD, makeSH  ]
     # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
-    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p2 : [ EventIDFilter, EWMProducer
+           , makeSD, makeSH, TimeCluster                           ## tracker
+           , CaloDigiMaker, CaloRecoDigiMaker, CaloHitMaker        ## calorimeter
+           , CaloProtoClusterMaker, CaloClusterMaker
+           # , CaloHitFastMaker, CaloClusterFastMaker
+           , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder   ## CRV
+           , LineFinder, KKLine                                    ## track reco
+          ]
 
     e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
     # e1 : []
@@ -136,15 +195,15 @@ physics : {
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
-#
+# _extracted.fcl/.txt below is important
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n104.%06r_%06s.root"
+services.TFileService.fileName   :   "nts.mu2e.cosmics.kpp00s000r000n008.%06r_%06s.root"
 
-services.scheduler.wantSummary                   : true
+services.scheduler.wantSummary                  : true
 
 services.message.destinations.log.categories.ArtReport.reportEvery : 1
-services.message.destinations.log.categories.ArtReport.limit : 1000
-services.message.destinations.log.categories.ArtReport.timespan : 300
+services.message.destinations.log.categories.ArtReport.limit       : 1000
+services.message.destinations.log.categories.ArtReport.timespan    : 300
 
 services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
 services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
