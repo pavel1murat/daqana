@@ -25,6 +25,7 @@ ROOT_GENERATE_DICTIONARY(${dict}
   DaqFragment.hh
   digis.hh simres.hh TrkPanelMap_t.hh
   fit_functions.hh
+  CrvChannelMap_t.hh
   LINKDEF obj/Linkdef.h)
 
 set_property(SOURCE ${dict}.cxx PROPERTY generated)
@@ -38,6 +39,7 @@ add_library(${lib} SHARED
   DaqCaloDigi.cc DaqCaloHit.cc DaqCaloCluster.cc
   digis.cc simres.cc
   fit_dt01_msh.cc
+  CrvChannelMap_t.cc
   FragmentMixer.cc
   ${dict}.cxx
 )

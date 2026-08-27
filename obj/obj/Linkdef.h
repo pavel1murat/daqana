@@ -34,4 +34,6 @@
 #pragma link C++  class  DaqFragment;
 #pragma link C++  class  DaqRocData;
 
+#pragma link C++  class  CrvChannelMap_t;
+
 #endif

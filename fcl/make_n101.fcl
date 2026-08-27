@@ -1,16 +1,7 @@
 # -*- mode:tcl -*-
-
 #------------------------------------------------------------------------------
-# n104: 
-#   tracker: digis+SH+CH+TC (close enough)
-#   CRV    : digis+pulses+coincidence clusters
-#
-# to reduce the ntuple size, only hits within 500 ns from any time cluster are stored
-# see minStrawHitDt > 0
-# that gives an order of magnitude reduction in size
-#
-# Usage: mu2e -c daqana/fcl/make_n104.fcl -s <input art file> [-n 10]
-# 
+# saved: SH only, require edep > 0.5 keV
+# purpose: make the smallest size ntuples to study time dependencies
 #-----------------------------------------------------------------------------
 BEGIN_PROLOG
 #   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
@@ -30,8 +21,6 @@ END_PROLOG
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
 #include "daqana/fcl/calibration_set_v0.fcl"
-
-
 services.message.destinations.log.categories.MAKE_SD: {
     # reportEvery :  1
     limit       : 1000   # -1
@@ -52,7 +41,7 @@ source : {
 outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
-        fileName      :   "make_n003.art"
+        fileName      :   "trk_fragment_ana.art"
 
 #        outputCommands: [
 #                         "drop *_*_*_*",
@@ -66,9 +55,7 @@ physics : {
     producers : {
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 1 ## 10
-            useROC4asROC2 : true
-
+            diagLevel     : 10
             # useSubsystem0 : false
         }
 
@@ -82,73 +69,37 @@ physics : {
         }
 
         makeSD: { @table::DAQ.producers.makeSD
-            debugMode        : 0 ## 1
+            debugMode        : 0 ## 10
             debugBits        : ["bit0:1"]
             saveWaveforms    : true
-#            geography        : [  ]
-            # dtcHeaderPresent : false
             keyOnMnid        : true ## true    ## default:false
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
-        
-        TimeCluster : { @table::CosmicReco.SimpleTimeCluster
-            minNStrawHits : 4
-            minNPanels    : 1
-            TimeWindow    : 400
-            TimeStep      : 30
-        }
     }
     
     filters   : {                       }
     
     analyzers : {
         MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeCrvD      : 1
-            makeCrvP      : 1
-            makeCrvC      : 1
-            makeFragments : 0
-            makeSD        : 0
+            makeSD        : 0   ## 1
             makeSH        : 1
-            makeCH        : 1
-            makeTC        : 1
-            saveWaveforms : 0
-            
-            tcCollTag : "TimeCluster"   ## "TZClusterFinder"  ##
-
-            debugMode     : 1
-            debugBits: [
-                        ## "bit21:1"
-                       ]
-            
-            minStrawHitDt : 80
-       }
+            makeTC        : 0
+            saveWaveforms : 0  ## 1
+            minStrawHitDt : 100
+        }
     }
 
-    # p1 : [ EWMProducer, makeSD, makeSH  ]
-    # p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
-    p2 : [ EWMProducer, makeSD, makeSH, TimeCluster, CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
+    p1 : [ EWMProducer, makeSD, makeSH ]
+    p2 : [ EWMProducer, makeSD, makeSH ] ## , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
+    e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
-    trigger_paths  : [ p2 ]
+    trigger_paths  : [ p1 ]
     end_paths      : [ e1 ]
 }
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n104.%06r_%06s.root"
-
-services.scheduler.wantSummary                   : true
-
-services.message.destinations.log.categories.ArtReport.reportEvery : 1
-services.message.destinations.log.categories.ArtReport.limit : 1000
-services.message.destinations.log.categories.ArtReport.timespan : 300
-
-services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
-services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
-#include "Offline/CRVReco/fcl/epilog_extracted.fcl"
-
-# services.ProditionsService.calCalib.verbose               : 100
-# services.ProditionsService.crvCalib.verbose               : 100
+services.TFileService.fileName   :   "nts.mu2e.trk.vst00s000r000n001.%06r_%06s.root"

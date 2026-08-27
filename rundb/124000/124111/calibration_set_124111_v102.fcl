@@ -1,6 +1,7 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
 # added initial version of the calorimeter calibrations
+# v102: fix TrkDelayPanel
 #------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
@@ -32,13 +33,12 @@ services.DbService : {
                 "daqana/calibrations/Richie/TrkStrawStatusLong.txt",        ## split by table name
                 "daqana/calibrations/Richie/TrkStrawStatusShort.txt",       ## split by table name
                 
-                
                 # "daqana/rundb/124000/124155/TrkDelayPanel_124680_v1.txt",   ## corrected based on run 123098
                 # "daqana/calibrations/TrkPreampStraw_v0.txt",                ## based on pulse injections runs 122968-122976
                 # "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  
-                 "daqana/rundb/124000/124155/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
-                 "daqana/rundb/124000/124155/CaloTimeCalib_20260804.txt"    ## calo timing, Paolo - all zeroes
+                "daqana/rundb/124000/124155/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
+                "daqana/rundb/124000/124155/CaloTimeCalib_20260804.txt"    ## calo timing, Paolo - all zeroes
                 ]
 }
 #------------------------------------------------------------------------------
@@ -73,6 +73,3 @@ services.ProditionsService.crvStatus.useDb                : true
 services.ProditionsService.crvCalib.useDb                 : true
 
 services.ProditionsService.crvPhotonYield.useDb           : false
-
-services.ProditionsService.crvStatus.useDb                : false
-services.ProditionsService.crvCalib.useDb                 : false

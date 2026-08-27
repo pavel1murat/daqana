@@ -14,3 +14,4 @@ event_mode   = 0             # off-spill
 cfo_rate     = 4000.0        # CFO HB rate, Hz
 ew_length    = 250.0e-6      # event window, sec
 trigger_rate = 745.0         # rate to disk, Hz
+dt_crv_trk   = 551.7         # ns, to be subtracted from the CRV pulse time

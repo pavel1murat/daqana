@@ -1,7 +1,14 @@
 #+startup:fold -*- buffer-read-only:t -*-
-* Ralf: CRV channel maps:
-https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
-* extracted position sectors
+* ------------------------------------------------------------------------------
+* assuming Offline is cloned locally
+*
+* Ralf: CRV channel maps: https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
+* CRV channel map: file:../../Offline/CRVConditions/data/extracted_v04.txt
+* CRV extracted in Mu2e geometry:
+  file:../../Offline/Mu2eG4/geom/geom_common_extracted.txt
+  file:../../Offline/Mu2eG4/geom/crv_counters_extracted_v04.txt
+* CRV numerology : file:../../Offline/DataProducts/inc/CRVId.hh
+* extracted position sectors                                                    
 - <2026-08-25 Tue> file:../../Offline/CRVReco/fcl/epilog_extracted_v04.fcl
 |--------+------+--------+--------+--------+-----+--------+-------+--------+-------------|
 | sector | type | sipms  |  coins |    bar |   N | Ncntrs |     N | Nsipms | N(channels) |
@@ -22,7 +29,8 @@ https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
 #+TBLFM: $10=$6*$7*$9::$8=$6*$7::
 - total number of channels: 256+256+4*8 = 512+32 = 544
 * need to use 
-* ROCs #1 and #4 (links 0 and 3)
+* ROCs #1 and #4 (links 0 and 3)                                                
 
 - ROC#1 : FEBs : 1-24
 - ROC#4 : FEBs : 1-7
+* ---------------------------------------------------------------------------------

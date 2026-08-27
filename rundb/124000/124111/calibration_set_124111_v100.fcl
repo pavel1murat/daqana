@@ -76,6 +76,3 @@ services.ProditionsService.crvStatus.useDb                : true
 services.ProditionsService.crvCalib.useDb                 : true
 
 services.ProditionsService.crvPhotonYield.useDb           : false
-
-services.ProditionsService.crvStatus.useDb                : false
-services.ProditionsService.crvCalib.useDb                 : false

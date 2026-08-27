@@ -38,9 +38,11 @@ services.DbService : {
                 # "daqana/calibrations/TrkPreampStraw_v0.txt",                ## based on pulse injections runs 122968-122976
                 # "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  
-                 "daqana/rundb/124000/124155/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
-                 "daqana/rundb/124000/124155/CaloTimeCalib_20260804.txt"    ## calo timing, Paolo - all zeroes
-                ]
+                "daqana/rundb/124000/124155/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
+                "daqana/rundb/124000/124155/CaloTimeCalib_20260804.txt"    ## calo timing, Paolo - all zeroes
+
+                # , "daqana/rundb/124000/124155/CRVTime_cid_302.txt"         ## CRV timing from run 124111
+               ]
 }
 #------------------------------------------------------------------------------
 # calibration constants : tracker

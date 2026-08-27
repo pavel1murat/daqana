@@ -34,7 +34,9 @@ public:
   DaqCrvRecoPulse();
   virtual ~DaqCrvRecoPulse();
 
-  int      Init();
+  int          Init();
+
+  int          OfflineChID() { return 4*sbid+sipm; }
 
   virtual void Clear(const char* Opt) override ;
 

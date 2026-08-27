@@ -138,7 +138,8 @@ public:
     Atom<int>             minNSegments     {Name("minNSegments"     ), Comment("min N(segments)")            };
     Atom<float>           vDrift           {Name("vDrift"           ), Comment("vDrift, um/ns")              };
     Atom<float>           tOffset          {Name("tOffset"          ), Comment("T0 offset, ns")              };
-    Atom<bool>            saveOnlyCloseHits{Name("saveOnlyCloseHits"), Comment(" within 500 ns")             };
+    Atom<float>           minEDep          {Name("minEDep"          ), Comment("min SH/CH EDep, MeV")        };
+    Atom<float>           minStrawHitDt    {Name("minStrawHitDt"    ), Comment("min |SH/CH-TC| Dt, ns")      };
   };
 
   // --- C'tor/d'tor:
@@ -218,7 +219,8 @@ public:
   float                    _minSDPHToSave;
   float                    _vDrift;
   float                    _tOffset;
-  bool                     _saveOnlyCloseHits;
+  float                    _minEDep;
+  float                    _minStrawHitDt;
     
   
   int                      _n_adc_samples;
@@ -366,7 +368,8 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     _minSDPHToSave (config().minSDPHToSave ()),
     _vDrift        (config().vDrift        ()),
     _tOffset       (config().tOffset       ()),
-    _saveOnlyCloseHits(config().saveOnlyCloseHits()),
+    _minEDep       (config().minEDep       ()),
+    _minStrawHitDt (config().minStrawHitDt ()),
     _art_event     (nullptr)
 {
   _n_adc_samples = -1;
@@ -824,9 +827,9 @@ int mu2e::MakeDigiNtuple::fillCrvD() {
 //-----------------------------------------------------------------------------
 // store the waveform
 //-----------------------------------------------------------------------------
-    // for (int is=0; is<ns; is++) {
-    //   nt_crvd->adc[is] = crvd->GetADCs()[is];
-    // }
+    for (int is=0; is<ns; is++) {
+      nt_crvd->adc[is] = crvd->GetADCs()[is];
+    }
   }
   return 0;
 }
@@ -1128,7 +1131,7 @@ bool mu2e::MakeDigiNtuple::closeEnough(float Time) {
   for (int itc=0; itc<_ntimeclusters; itc++) {
     const mu2e::TimeCluster* tc = &_tcc->at(itc);
     float dt = Time - tc->t0().t0();
-    if (fabs(dt) < 500.) {
+    if (fabs(dt) < _minStrawHitDt) {
       close_enough = true;
       break;
     }
@@ -1153,9 +1156,15 @@ int mu2e::MakeDigiNtuple::fillSH() {
 //-----------------------------------------------------------------------------
     float t = sh->time(mu2e::StrawEnd::cal);
 
-    if (_saveOnlyCloseHits) {
-      bool close_enough = closeEnough(t);
-      if (not close_enough) continue;
+    if (_minStrawHitDt > 0.) {
+      // minStrawHitDt serves as a flag to store only hits of interest
+      // if it is > 0, store hits above the energy threshold or close to any timecluster
+      // if negative (and this is the default) , store all hits
+      if (sh->energyDep() < _minEDep) {
+                                        // subtract T(full drift) / 2
+        bool close_enough = closeEnough(t-20);
+        if (not close_enough) continue;
+      }
     }
     
     int pln = sh->strawId().plane();
@@ -1212,9 +1221,11 @@ int mu2e::MakeDigiNtuple::fillCH() {
   for (int i=0; i<_ncombohits; i++) {
     const mu2e::ComboHit* ch = &_chc->at(i);
     float corrected_time = ch->correctedTime();
-    if (_saveOnlyCloseHits) {
-      bool close_enough = closeEnough(corrected_time);
-      if (not close_enough) continue;
+    if (_minStrawHitDt > 0) {
+      if (ch->energyDep() < _minEDep) {
+        bool close_enough = closeEnough(corrected_time);
+        if (not close_enough) continue;
+      }
     }
     
     int pln = ch->strawId().plane();

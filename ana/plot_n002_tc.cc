@@ -154,6 +154,10 @@ int plot_n002_tc::BookHistograms(TFolder* Folder) {
   title = std::format("plane dT = T(i)-T(i-1) vs plane",prefix);
   fBook->HBook2F(fHist->h_dt05_36,name.data(),title.data(),200,-200,200,36,0,36,Folder);
 
+  name  = std::format("dt_min");
+  title = std::format("SH min DT from the closest TC",prefix);
+  fBook->HBook1F(fHist->h_dt_min,name.data(),title.data(),200,-500,500,Folder);
+
   return 0;
 }
 
@@ -256,7 +260,7 @@ void plot_n002_tc::Loop(int NEvents) {
       n05[i] = 0;
     }
     
-    // if conly "close" hits are stored, the number of hits in the list is less than the total
+    // if only "close" hits are stored, the number of hits in the list is less than the total
     // number of hits reconstructed in the event
     int nsh = fEvent->sh->GetEntriesFast();
     for (int i=0; i<nsh; i++) {
@@ -326,7 +330,23 @@ void plot_n002_tc::Loop(int NEvents) {
         fPanelDt[i] = fPanelDt[i]/(fPanelNh[i]+1.e-12);
       }
     }
+    // for each straw hit (SH) find the closest time cluster adn plot residuals
+    // use this distribution to deide on the hit rejection policy
 
+    
+    for (int i=0; i<nsh; i++) {
+      DaqStrawHit*  sh = fEvent->Sh(i);
+      float dt_min = 1e6;
+      
+      for (int itc=0; itc<fEvent->ntc; itc++) {
+        auto tc = fEvent->Tc(itc);
+        float dt = sh->time - tc->t0;
+        if (fabs(dt) < fabs(dt_min)) {
+          dt_min = dt; // can be of any sign
+        }
+      }
+      fHist->h_dt_min->Fill(dt_min);
+    }
 //-----------------------------------------------------------------------------
 // prep done, now fill non-residual histograms
 //-----------------------------------------------------------------------------

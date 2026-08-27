@@ -1,6 +1,9 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
 # added initial version of the calorimeter calibrations
+# v102: fix TrkDeleyPanel
+# v103: text version of the CRVTime cid=301
+# v104: correct CRV time, use _302 (latest for now)
 #------------------------------------------------------------------------------
 # services.DbService : @local::DbEmpty
 services.DbService : {
@@ -13,14 +16,35 @@ services.DbService : {
     textFile : [ 
                 "Offline/TrackerConditions/data/TrkPanelMap.txt",           ## use "DB"
                 
-                "PassN/Tracker/currentcalib.txt",                         ## tracker all, Richie
+                # "PassN/Tracker/currentcalib.txt",                         ## tracker all, Richie
+                "daqana/calibrations/Richie/TrkAlignPanel.txt",             ## split by table name
+                "daqana/calibrations/Richie/TrkAlignPlane.txt",             ## split by table name
+                "daqana/calibrations/Richie/TrkAlignStraw.txt",             ## split by table name
+                "daqana/calibrations/Richie/TrkAlignTracker.txt",           ## split by table name
+
+                # "daqana/calibrations/Richie/TrkDelayPanel.txt",           ## split by table name
+                "daqana/rundb/124000/124111/TrkDelayPanel_124111_v2.txt",   ##
+
+                "daqana/calibrations/Richie/TrkDelayRStraw.txt",            ## split by table name
+
+                "daqana/calibrations/Richie/TrkPanelStatus.txt",            ## split by table name
+                "daqana/calibrations/Richie/TrkPlaneStatus.txt",            ## split by table name
+
+                "daqana/calibrations/Richie/TrkPreampStraw.txt",            ## split by table name
+
+                "daqana/calibrations/Richie/TrkStrawStatusLong.txt",        ## split by table name
+                "daqana/calibrations/Richie/TrkStrawStatusShort.txt",       ## split by table name
                 
-                # "daqana/rundb/123000/123680/TrkDelayPanel_123680_v1.txt",   ## corrected based on run 123098
+                
+                # "daqana/rundb/124000/124155/TrkDelayPanel_124680_v1.txt",   ## corrected based on run 123098
                 # "daqana/calibrations/TrkPreampStraw_v0.txt",                ## based on pulse injections runs 122968-122976
                 # "daqana/calibrations/TrkDelayRStraw.txt"   ,
                  
-                 "daqana/rundb/123000/123680/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
-                 "daqana/rundb/123000/123680/CaloTimeCalib_20260804.txt"    ## calo timing, Paolo - all zeroes
+                 "daqana/rundb/124000/124155/CaloRecoTable_20260731.txt",   ## calo energy, Paolo
+                "daqana/rundb/124000/124155/CaloTimeCalib_20260804.txt",    ## calo timing, Paolo - all zeroes
+
+                
+                "daqana/rundb/124000/124111/CRVTime_cid_302.txt"            ##  CRV
                 ]
 }
 #------------------------------------------------------------------------------
@@ -30,7 +54,7 @@ services.ProditionsService.trackerPanelMap.useDb          : true
 services.ProditionsService.trackerPanelMap.verbose        : 0
 
 services.ProditionsService.alignedTracker.useDb           : false ## true        ## false
-services.ProditionsService.alignedTracker.verbose         : 0 ## 1  ## not yet
+services.ProditionsService.alignedTracker.verbose         : 1
 
 services.ProditionsService.trackerStatus.Settings.useDb   : false ## true
 services.ProditionsService.trackerStatus.Settings.verbose : 0
@@ -52,6 +76,8 @@ services.ProditionsService.calCalib.useDb                 : true
 # calibration constants : CRV
 #------------------------------------------------------------------------------
 services.ProditionsService.crvStatus.useDb                : true
+
 services.ProditionsService.crvCalib.useDb                 : true
+services.ProditionsService.crvCalib.verbose               : 0
 
 services.ProditionsService.crvPhotonYield.useDb           : false

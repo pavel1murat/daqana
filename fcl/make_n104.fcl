@@ -6,7 +6,7 @@
 #   CRV    : digis+pulses+coincidence clusters
 #
 # to reduce the ntuple size, only hits within 500 ns from any time cluster are stored
-# see saveOnlyCloseHits : true
+# see minStrawHitDt > 0
 # that gives an order of magnitude reduction in size
 #
 # Usage: mu2e -c daqana/fcl/make_n104.fcl -s <input art file> [-n 10]
@@ -121,7 +121,7 @@ physics : {
                         ## "bit21:1"
                        ]
             
-            saveOnlyCloseHits : true
+            minStrawHitDt : 80
        }
     }
 

@@ -7,6 +7,7 @@
 
 class DaqCrvDigi : public TObject {
 public:
+  int    _ns;
   int    sbid;
   int    tdc;
   int    nzs;
@@ -15,7 +16,7 @@ public:
   int    roc;
   int    feb;
   int    ch;
-  //  std::vector<uint16_t> adc;
+  std::vector<uint16_t> adc;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -23,13 +24,13 @@ public:
   DaqCrvDigi(int ns);
   virtual ~DaqCrvDigi();
 
-  int   ns() { return -1; } // return adc.size(); }
+  int   ns() { return adc.size(); }
   
   int     Init(int Ns);
 
   virtual void Clear(const char* Opt) override ;
 
-  ClassDefOverride(DaqCrvDigi,1);
+  ClassDefOverride(DaqCrvDigi,2);
 };
 
 #endif

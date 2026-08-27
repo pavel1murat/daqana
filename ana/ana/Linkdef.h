@@ -19,4 +19,6 @@
 #pragma link C++  class   fit_dt01;
 #pragma link C++  class   fit_dt01::fit_results_t;
 
+#pragma link C++  function   check_split;
+
 #endif

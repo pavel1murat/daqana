@@ -7,6 +7,9 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
@@ -16,15 +19,8 @@
 // Header file for the classes stored in the TTree if any.
 #include "daqana/obj/DaqEvent.hh"
 
-// #include "TObject.h"
-// #include "daqana/obj/DaqStrawDigi.hh"
-// #include "daqana/obj/DaqStrawHit.hh"
-// #include "daqana/obj/DaqComboHit.hh"
-// #include "daqana/obj/DaqTimeCluster.hh"
-// #include "daqana/obj/DaqTrack.hh"
-// #include "daqana/obj/DaqTrkStrawHit.hh"
-// #include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/TrkPanelMap_t.hh"
+#include "daqana/obj/CrvChannelMap_t.hh"
 
 #include "ana/ana/booking.hh"
 
@@ -62,9 +58,11 @@ public :
   struct CrvIndex_t {
     int sel  {-1};
     int sbid {-1};
-    int roc  {-1};                           // 0-17
-    int feb  {-1};                           // 
-    int ch   {-1};                            // 
+    int sipm {-1};
+    int och  {-1};                           // offline channel - 4*sbid+sipm
+    int roc  {-1};                           // 1-18 ??? 
+    int feb  {-1};                           // 1-24 in offline domain
+    int ch   {-1};                           // channel within the FEB (0-63)
   };
   
   struct RunData_t {
@@ -86,9 +84,12 @@ public :
   };
 
   struct CrvpHist_t {
-    TH1F* h_ch;
-    TH1F* h_feb;
+    TH1F* h_ph;
+    TH1F* h_npes;
+    TH1F* h_time;
     TH1F* h_dt;
+    TH1F* h_feb;
+    TH1F* h_ch;
     TH2F* h_dt_vs_feb;
   };
 
@@ -96,14 +97,14 @@ public :
     ChannelHist_t ch[64];
     CrvpHist_t*   crvp;               // for the whole FEB
     TH1F*         h_sbid;
-    TH1F*         h_dt;
+    TH2F*         h_ch_vs_dt;
   };
   
   struct RocHist_t {
     CrvpHist_t*   crvp;               // for the whole ROC
     FebHist_t*    feb [30];
     TH1F*         h_sbid;
-    TH2F*          h_feb_vs_dt;
+    TH2F*         h_feb_vs_dt;
   };
   
   struct Hist_t {
@@ -114,6 +115,7 @@ public :
     TH2F*       h_feb_vs_ch;
     TH2F*       h_dt_vs_sbid;
     TH2F*       h_feb_vs_sbid[2];       // one per ROC
+    TH1F*       h_och;                  // occupancy offline channel
   };
 
 //-----------------------------------------------------------------------------
@@ -126,7 +128,9 @@ public :
   
   Booking*       fBook;
 
-  TrkPanelMap_t* fTpm;
+  TrkPanelMap_t*   fTpm;
+  
+  CrvChannelMap_t* fCcm;
 
   int            fRunNumber;
 
@@ -140,6 +144,9 @@ public :
   DaqEvent*       fEvent;               // #include "daqana_nt_format.hh"
   TClonesArray*   fSh;
   TClonesArray*   fTc;
+
+  fit_result_t     fFr[10][25];
+  fit_result_t*    fFrRef;
 
   // float           t05 [36];
   // int             n05 [36];
@@ -169,7 +176,14 @@ public :
   int              BookRocHistograms  (RocHist_t*   Hist, CrvIndex_t* Index, TFolder* Folder);
   int              BookHistograms     (Hist_t*      Hist, TFolder* Folder);
 
-  int              FillHistograms       ();
+  int              FillCrvpHistograms  (CrvpHist_t* Hist, DaqCrvRecoPulse* Crvp);
+  int              FillHistograms      ();
+
+  int              FitHistogram        (TH1* Hist, fit_result_t* Fp, float XMin = 1, float XMax = -1, int NMin = 100);
+  
+                                        // if TMax > TMin, use them as limits, otherwise determine them automatically
+  int              FitFebTimeOffsets   (float TMin = 1., float TMax = -1.);
+  int              PrintTimeCorrections();
 
   int              ResetHistograms();
   int              SaveHistograms (const char* Filename);

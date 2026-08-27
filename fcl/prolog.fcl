@@ -125,7 +125,8 @@ daqana : {
             minNSegments      : 0
             vDrift            : 61.3e-3  ## mm/ns
             tOffset           : 0.       ## by default, no drift offsets
-            saveOnlyCloseHits : false
+            minEDep           : 0.5e-3   ##
+            minStrawHitDt     : -1.      ## by default, don't cut
         }
 
         StationAna: { module_type: StationAna
