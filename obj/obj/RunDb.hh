@@ -24,6 +24,7 @@ public:
     int   cfo_rate;                     // event rate, Hz
     int   trigger_rate;                 // event rate to disk, Hz
     float ew_length;                    // event window length, sec
+    int   max_ewtag;                    // max event window tag
     int   ref_channel;                  // for pulse injection runs
     int   pulsed_channel[12];           // assume one per 8
     int   plane_flag[36];               // 

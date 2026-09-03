@@ -71,3 +71,4 @@ cfo_rate     = 10000.0       # CFO HB rate, Hz
 ew_length    = 100.0e-6      # event window, sec
 trigger_rate = 475.0         # rate to disk, Hz, approx (from the DL log)
 dt_crv_trk   = 535.0         # ns, to be subtracted from CRV pulse
+max_ewtag    = 216000000     # max event window tag (no exact, for histogramming)

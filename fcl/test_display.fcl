@@ -16,7 +16,8 @@ END_PROLOG
 
 ## #include "daqana/fcl/calibration_set_v0.fcl"
 
-#include "daqana/rundb/123000/123680/calibration_set_123680_v1.fcl"
+# display doesn't need any calibrations
+## #include "daqana/rundb/123000/123680/calibration_set_123680_v1.fcl"
 
 process_name : Display
 

@@ -2,8 +2,9 @@
 * ------------------------------------------------------------------------------
 * assuming Offline is cloned locally
 *
-* Ralf: CRV channel maps: https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
-* CRV channel map: file:../../Offline/CRVConditions/data/extracted_v04.txt
+* CRV channel map:                                                           
+- in Offline: file:../../Offline/CRVConditions/data/extracted_v04.txt
+- posted to docdb by Ralf: https://mu2e-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=54534
 * CRV extracted in Mu2e geometry:
   file:../../Offline/Mu2eG4/geom/geom_common_extracted.txt
   file:../../Offline/Mu2eG4/geom/crv_counters_extracted_v04.txt
@@ -28,7 +29,11 @@
 |--------+------+--------+--------+--------+-----+--------+-------+--------+-------------|
 #+TBLFM: $10=$6*$7*$9::$8=$6*$7::
 - total number of channels: 256+256+4*8 = 512+32 = 544
-* need to use 
+* CRV digitizer module:
+- source:        file:../../Offline/CRVResponse/src/CrvDigitizer_module.cc
+- configuration (check prolog.fcl for last version):
+  file:../../Offline/CRVResponse/fcl/prolog.fcl
+  file:../../Offline/CRVResponse/fcl/prolog_v12.fcl::/CrvDigi/
 * ROCs #1 and #4 (links 0 and 3)                                                
 
 - ROC#1 : FEBs : 1-24

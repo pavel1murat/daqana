@@ -11,12 +11,13 @@ public:
   int     nhits ;
   float   t0    ;
   float   chi2  ;
+  int     ndof  ;
   
   DaqTrack();
 
   virtual ~DaqTrack();
 
-  ClassDefOverride(DaqTrack,1);
+  ClassDefOverride(DaqTrack,2);
 };
 
 #endif

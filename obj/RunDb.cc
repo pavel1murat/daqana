@@ -63,6 +63,7 @@ int RunDb::GetRunInfo(int RunNumber, RunDb::Data_t* RunInfo) {
       RunInfo->cfo_rate     = tbl["cfo_rate"     ].value_or(0.0); // to mark undefined
       RunInfo->ew_length    = tbl["ew_length"    ].value_or(0.0); // to mark undefined
       RunInfo->trigger_rate = tbl["trigger_rate" ].value_or(0.0); // to mark undefined
+      RunInfo->max_ewtag    = tbl["max_ewtag"    ].value_or(0.0); // to mark undefined
 
       if (RunInfo->run_type == e_PULSE_INJECTION) {
         // for pulse injection runs need to know pulsed channels, normally, one out of eight

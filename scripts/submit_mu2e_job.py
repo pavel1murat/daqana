@@ -144,37 +144,50 @@ class SubmitJob:
         job_fcl      = f'{fcl_job_stub}.{pid}.fcl';
         logger.debug(f'000:template_fcl:{template_fcl} job_fcl:{job_fcl}');
 #------------------------------------------------------------------------------
+# calibratioons
 # overrides, calib: 'v1'
 # if calib_run is not specified, use calibrations from daqana/fcl,
 #                                     otherwise - from daqana/rundb/XXXXXX/${calib_run}
 #------------------------------------------------------------------------------
         overrides_cmd = ''
         if (args.calib_ver):
-            overrides_cmd  = f' | sed s/calibration_set_v0/calibration_set_{args.calib_ver}/'
-            # overrides_cmd += ' | sed s/s\{...\}r\{..\}\{.\}/s\{1\}r\{2\}'+f'{args.calib_set}/'
+            ver = args.calib_ver
+            # if the calibration version is specified, replace version
+            # remember that to appear within the f-string, the backslash needs to be doubled
+            if (ver == 'latest'):
+                # calib_run has to be specified
+                # read the latest calibration version, it will propagate to the file name as 'r100'
+                subdir = args.calib_run[0:3]+'000'
+                fn     = os.environ.get('SPACK_ENV')+f'/daqana/rundb/{subdir}/{args.calib_run}/aaa_latest'
+                ver    = open(fn).readlines()[0].strip()
+                
+            overrides_cmd = f'sed -E "s|(calibration_set_).*(\.fcl)|\\1{ver}\\2|"'
 
         if (args.calib_run):
             subdir = args.calib_run[0:3]+'000'
             if (overrides_cmd != ''):
-                overrides_cmd  += f' | sed s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!'
+                overrides_cmd  += f' | sed -E "s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!"'
             else:
-                overrides_cmd  = f' | sed s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!'
+                overrides_cmd  = f'sed -E "s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!"'
 
         print(f'cmd:{overrides_cmd}')
-#------------------------------------------------------------------------------
-# redefinitions --> appends 
-#------------------------------------------------------------------------------
-        os.system(f'cat {template_fcl} {overrides_cmd}                                             >  {output_dir}/{job_fcl}')
-        os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
-        os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
-        os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
 
         if (args.dry_run):
+            # just print the fcl replacement to the screen
+            os.system(f'cat {template_fcl} | {overrides_cmd}');
             return
 #        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_set}n000.%06r_%06s.art\\"'
 #        print(f'0011:x:{x}')
 #        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
+
 #------------------------------------------------------------------------------
+# process redefinitions and appends 
+#------------------------------------------------------------------------------
+        os.system(f'cat {template_fcl} | {overrides_cmd}                                           >  {output_dir}/{job_fcl}')
+        os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
+        os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
+        os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
+#-------v----------------------------------------------------------------------
 # form the input file list
 #-------v----------------------------------------------------------------------
         input_file_list=None

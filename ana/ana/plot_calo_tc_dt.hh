@@ -31,6 +31,7 @@ public :
     kNStations         = 18,
     kNPlanes           = 36,
     kNPanelsPerStation = 12,
+    kMaxNChannels      = 2720,
   };
 
 //-----------------------------------------------------------------------------
@@ -45,21 +46,21 @@ public :
 //-----------------------------------------------------------------------------
 // data structures
 //-----------------------------------------------------------------------------
-  struct Index_t {
+  struct TrkIndex_t {
     int sel;
-    int slot;                           // 0-17
-    int plane;                          // offline
-    int panel;                          // offline
-    int pnl12;                          // panel index within the station (0-11)
+    int slot;                 // 0-17
+    int plane;                // offline
+    int panel;                // offline
+    int pnl12;                // panel index within the station (0-11)
     int mnid;
     int ch;
   };
   
-  struct CaloIndex_t {
+  struct CalIndex_t {
     int sel   {-1};
     int crate {-1};
     int disk  {-1};
-    int cid   {-1};                           // channel within the FEB (0-63)
+    int cid   {-1};                   //
   };
   
   struct RunData_t {
@@ -67,11 +68,30 @@ public :
     int n_pulsed_channels;
     int pulsed_channel[96];             // only n_pulsed_clannels are used
   };
+
+  struct calc_param_t {
+    float                     dtmin_tc;           // from the closest TC
+    DaqTimeCluster*           tc;
+    float                     dtmin_crvc;     // from the closest CRVC
+    DaqCrvCoincidenceCluster* crvc;
+    float                     dtmin_trk;                // from the closest track
+    DaqTrack*                 trk;                      // closest track
+  };
+                                                  // for now, a placeholder
+  struct trk_param_t {
+    int                       intime;
+    float                     dtmin_tc;           // from the closest TC
+    DaqCaloCluster*           calc;               // closest
+    float                     dtmin_calc;         // from the closest CALC
+    DaqTimeCluster*           tc;
+    float                     dtmin_crvc;     // from the closest CRVC
+    DaqCrvCoincidenceCluster* crvc;
+  };
     
 //-----------------------------------------------------------------------------
 // histogram structures
 //-----------------------------------------------------------------------------
-  struct CrvcHist_t {
+  struct CalhHist_t {
     TH1F* h_dt;
   };
   
@@ -80,8 +100,24 @@ public :
     TH1F* h_dt;
   };
 
+  struct CalcHist_t {
+    TH1F*         h_edep;
+    TH1F*         h_dt_tc;
+    TH1F*         h_dt_crvc;
+    TH2F*         h_dt_crvc_vs_dt_tc;
+  };
+  
+  struct TrkHist_t {
+    TH1F*         h_nhits;
+    TH1F*         h_chi2d;
+    TH1F*         h_t0;
+    TH1F*         h_dt_crvc;
+    TH1F*         h_dt_calc;
+    TH1F*         h_dt_tc;
+  };
+  
   struct DiskHist_t {
-    BoardHist_t*  board[30];
+    // BoardHist_t*  board[30];
     TH1F*         h_ch;
     TH2F*         h_board_vs_dt;
   };
@@ -89,7 +125,12 @@ public :
   struct Hist_t {
     DiskHist_t* disk[2];                // 2 disks
     TH2F*       h_dt_vs_sipmid;
-    TH1F*       h_cid;                  // occupancy offline channel
+    TH1F*       h_sipmid;               // occupancy offline channel
+    TH2F*       h_n2_vs_n1;
+    TH1F*       h_ntrk[2];
+    CalhHist_t* calh   [100];
+    CalcHist_t* calc   [100];
+    TrkHist_t*  trk    [100];
   };
 
 //-----------------------------------------------------------------------------
@@ -106,21 +147,26 @@ public :
   
   CalChannelMap_t* fCalCm;
 
-  int            fRunNumber;
+  int              fRunNumber;
 
-  int            fMaxEvent;             // for X-axis truncation
-  int            fNEvents;
+  int              fMaxEvent;             // for X-axis truncation
+  int              fNEvents;
   
-  TTree          *fChain;               //! pointer to the analyzed TTree or TChain
-  Int_t           fCurrent;             //!current Tree number in a TChain
+  TTree            *fChain;               //! pointer to the analyzed TTree or TChain
+  Int_t            fCurrent;             //!current Tree number in a TChain
 
                                         // will the same directory work ?
-  DaqEvent*       fEvent;               // #include "daqana_nt_format.hh"
+  DaqEvent*        fEvent;               // #include "daqana_nt_format.hh"
   // TClonesArray*   fSh;
   // TClonesArray*   fTc;
 
-  // fit_result_t     fFr[10][25];
-  // fit_result_t*    fFrRef;
+  fit_result_t     fFr[kMaxNChannels];
+  fit_result_t*    fFrRef;
+
+  int              fNCalh10[2];
+
+  std::vector<calc_param_t> fListOfCalcParam;
+  std::vector<trk_param_t>  fListOfTrkParam;
 
   // float           t05 [36];
   // int             n05 [36];
@@ -144,11 +190,17 @@ public :
 
   void             Loop          (int NEvents = -1);
 
+  int              BookCalcHistograms (CalcHist_t*   Hist, CalIndex_t* Index, TFolder* Folder);
   int              BookCalhHistograms (CalhHist_t*   Hist, CalIndex_t* Index, TFolder* Folder);
   int              BookDiskHistograms (DiskHist_t*   Hist, CalIndex_t* Index, TFolder* Folder);
+  int              BookTrkHistograms  (TrkHist_t*    Hist, TrkIndex_t* Index, TFolder* Folder);
   int              BookHistograms     (Hist_t*      Hist, TFolder* Folder);
 
-  int              FillDiskHistograms (DiskHist_t* Hist, DaqCalHit* Calh);
+  int              CalculateMissingParameters();
+
+  int              FillCalcHistograms (CalcHist_t* Hist, DaqCaloCluster* Calc, calc_param_t* Cp);
+  int              FillDiskHistograms (DiskHist_t* Hist, DaqCaloRecoDigi* Calrd);
+  int              FillTrkHistograms  (TrkHist_t*  Hist, DaqTrack*        Trk, trk_param_t* Tp);
   int              FillHistograms     ();
 
   int              FitHistogram       (TH1* Hist, fit_result_t* Fp, float XMin = 1, float XMax = -1, int NMin = 100);

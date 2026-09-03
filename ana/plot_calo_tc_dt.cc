@@ -16,6 +16,8 @@
 #include "TRACE/tracemf.h"
 #define TRACE_NAME "plot_calo_tc_dt"
 
+// #include "daqana/obj/DaqEvent.hh"
+
 //-----------------------------------------------------------------------------
 plot_calo_tc_dt::plot_calo_tc_dt(int RunNumber, const char* Fn) :
   TNamed(Form("run_%06d_plot_calo_tc_dt",RunNumber),Form("run_%06d_plot_calo_tc_dt",RunNumber)),
@@ -57,7 +59,7 @@ plot_calo_tc_dt::plot_calo_tc_dt(int RunNumber, const char* Fn) :
 
   fTpm       = TrkPanelMap_t::Instance(RunNumber);
   
-  fCalCcm    = CalChannelMap_t::Instance(RunNumber);
+  fCalCm     = CalChannelMap_t::Instance();
   
   fBook      = new Booking(fRunFolder);
 
@@ -90,6 +92,9 @@ plot_calo_tc_dt::plot_calo_tc_dt(int RunNumber, int SubrunNumber, const char* La
   }
 
   fRunNumber = RunNumber;
+
+  fCalCm->Init(RunNumber);
+
   fEvent     = nullptr;
 //-----------------------------------------------------------------------------
 // pulsed channels
@@ -137,14 +142,47 @@ plot_calo_tc_dt::~plot_calo_tc_dt() {
 
 
 //-----------------------------------------------------------------------------
-int plot_calo_tc_dt::BookCrvcHistograms(CrvcHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
+int plot_calo_tc_dt::BookCalcHistograms(CalcHist_t* Hist, CalIndex_t* Index, TFolder* Folder) {
 
-  std::string prefix = std::format("run:{:06d} sel:{:02d}",fRunNumber,Index->sel);
+  std::string prefix = std::format("run:{:06d} sel:{} disk:{:02d} crate:{}",
+                                   fRunNumber,Index->sel, Index->disk, Index->crate);
   std::string name, title;
 
-  name  = "dt";
-  title = std::format("{} : dt",prefix);
-  fBook->HBook1F(Hist->h_dt,name.data(),title.data(),1000,-1000,1000,Folder);   // in us...
+  name  = "edep";
+  title = std::format("{} : edep",prefix);
+  fBook->HBook1F(Hist->h_edep,name.data(),title.data(),100,0,1000,Folder);   // in MeV
+
+  name  = "dt_tc";
+  title = std::format("{} : dt TC",prefix);
+  fBook->HBook1F(Hist->h_dt_tc,name.data(),title.data(),100,-100,100,Folder);   // in ns...
+
+  name  = "dt_crvc";
+  title = std::format("{} : dt CRVC",prefix);
+  fBook->HBook1F(Hist->h_dt_crvc,name.data(),title.data(),100,-100,100,Folder);   // in ns...
+
+  name  = "dt_crvc_vs_dt_tc";
+  title = std::format("{} : dt CRVC vs dt TC",prefix);
+  fBook->HBook2F(Hist->h_dt_crvc_vs_dt_tc,name.data(),title.data(),100,-100,100,100,-100,100,Folder);   // in ns...
+
+  // name  = "feb";
+  // name  = "npes";
+  // title = std::format("{} : npes",prefix);
+  // fBook->HBook1F(Hist->h_npes,name.data(),title.data(),100,0,500,Folder);   // in us...
+
+  // name  = "time";
+  // title = std::format("{} : time",prefix);
+  // fBook->HBook1F(Hist->h_time,name.data(),title.data(),100,0,1.e5,Folder);   // in us...
+
+  // title = std::format("{} : feb",prefix);
+  // fBook->HBook1F(Hist->h_feb,name.data(),title.data(),100,0,100,Folder);   // in us...
+
+  // name  = "ch";
+  // title = std::format("{} : ch",prefix);
+  // fBook->HBook1F(Hist->h_ch,name.data(),title.data(),2000,0,2000,Folder);   // in us...
+
+  // name  = "dt_vs_feb";
+  // title = std::format("{} : dt vs feb",prefix);
+  // fBook->HBook2F(Hist->h_dt_vs_feb,name.data(),title.data(),100,0,100,1000,-1000,1000,Folder);   // in us...
 
   return 0;
 }
@@ -156,33 +194,33 @@ int plot_calo_tc_dt::BookCalhHistograms(CalhHist_t* Hist, CalIndex_t* Index, TFo
                                    fRunNumber,Index->sel, Index->disk, Index->crate);
   std::string name, title;
 
-  name  = "ph";
-  title = std::format("{} : ph",prefix);
-  fBook->HBook1F(Hist->h_ph,name.data(),title.data(),100,0,1000,Folder);   // in us...
+  // name  = "ph";
+  // title = std::format("{} : ph",prefix);
+  // fBook->HBook1F(Hist->h_ph,name.data(),title.data(),100,0,1000,Folder);   // in us...
 
-  name  = "npes";
-  title = std::format("{} : npes",prefix);
-  fBook->HBook1F(Hist->h_npes,name.data(),title.data(),100,0,500,Folder);   // in us...
+  // name  = "npes";
+  // title = std::format("{} : npes",prefix);
+  // fBook->HBook1F(Hist->h_npes,name.data(),title.data(),100,0,500,Folder);   // in us...
 
-  name  = "time";
-  title = std::format("{} : time",prefix);
-  fBook->HBook1F(Hist->h_time,name.data(),title.data(),100,0,1.e5,Folder);   // in us...
+  // name  = "time";
+  // title = std::format("{} : time",prefix);
+  // fBook->HBook1F(Hist->h_time,name.data(),title.data(),100,0,1.e5,Folder);   // in us...
 
-  name  = "dt";
-  title = std::format("{} : dt",prefix);
-  fBook->HBook1F(Hist->h_dt,name.data(),title.data(),1000,-1000,1000,Folder);   // in us...
+  // name  = "dt";
+  // title = std::format("{} : dt",prefix);
+  // fBook->HBook1F(Hist->h_dt,name.data(),title.data(),1000,-1000,1000,Folder);   // in us...
 
-  name  = "feb";
-  title = std::format("{} : feb",prefix);
-  fBook->HBook1F(Hist->h_feb,name.data(),title.data(),100,0,100,Folder);   // in us...
+  // name  = "feb";
+  // title = std::format("{} : feb",prefix);
+  // fBook->HBook1F(Hist->h_feb,name.data(),title.data(),100,0,100,Folder);   // in us...
 
-  name  = "ch";
-  title = std::format("{} : ch",prefix);
-  fBook->HBook1F(Hist->h_ch,name.data(),title.data(),2000,0,2000,Folder);   // in us...
+  // name  = "ch";
+  // title = std::format("{} : ch",prefix);
+  // fBook->HBook1F(Hist->h_ch,name.data(),title.data(),2000,0,2000,Folder);   // in us...
 
-  name  = "dt_vs_feb";
-  title = std::format("{} : dt vs feb",prefix);
-  fBook->HBook2F(Hist->h_dt_vs_feb,name.data(),title.data(),100,0,100,1000,-1000,1000,Folder);   // in us...
+  // name  = "dt_vs_feb";
+  // title = std::format("{} : dt vs feb",prefix);
+  // fBook->HBook2F(Hist->h_dt_vs_feb,name.data(),title.data(),100,0,100,1000,-1000,1000,Folder);   // in us...
 
   return 0;
 }
@@ -193,23 +231,23 @@ int plot_calo_tc_dt::BookCalhHistograms(CalhHist_t* Hist, CalIndex_t* Index, TFo
 //-----------------------------------------------------------------------------
 // by FEB: 32 scintillation bars per FEB 
 //-----------------------------------------------------------------------------
-int plot_calo_tc_dt::BookDiskHistograms(DiskHist_t* Hist, CrvIndex_t* Index, TFolder* Folder) {
+int plot_calo_tc_dt::BookDiskHistograms(DiskHist_t* Hist, CalIndex_t* Index, TFolder* Folder) {
 
   // std::string prefix = std::format("");
   // std::string name, title;
 
   // Index_t index;
 
-  std::string prefix = std::format("run:{:06d} roc:{:02d}",fRunNumber,Index->roc);
-  std::string name, title;
+  // std::string prefix = std::format("run:{:06d} roc:{:02d}",fRunNumber,Index->roc);
+  // std::string name, title;
 
-  name  = "sbid";
-  title = std::format("{} : SBID",prefix);
-  fBook->HBook1F(Hist->h_sbid,name.data(),title.data(),1500,0,1500,Folder);
+  // name  = "sbid";
+  // title = std::format("{} : SBID",prefix);
+  // fBook->HBook1F(Hist->h_sbid,name.data(),title.data(),1500,0,1500,Folder);
 
-  name  = "feb_vs_dt";
-  title = std::format("{} : FEB vs_dt",prefix);
-  fBook->HBook2F(Hist->h_feb_vs_dt,name.data(),title.data(),1000,-1000,1000,30,0,30,Folder);
+  // name  = "feb_vs_dt";
+  // title = std::format("{} : FEB vs_dt",prefix);
+  // fBook->HBook2F(Hist->h_feb_vs_dt,name.data(),title.data(),1000,-1000,1000,30,0,30,Folder);
 
   // name  = "feb_vs_ch";
   // title = std::format("{} : FEB vs CH",prefix);
@@ -234,30 +272,75 @@ int plot_calo_tc_dt::BookDiskHistograms(DiskHist_t* Hist, CrvIndex_t* Index, TFo
 }
 
 //-----------------------------------------------------------------------------
+int plot_calo_tc_dt::BookTrkHistograms(TrkHist_t* Hist, TrkIndex_t* Index, TFolder* Folder) {
+
+  std::string prefix = std::format("run:{:06d} sel:{}",fRunNumber,Index->sel);
+  std::string name, title;
+
+  name  = "nhits";
+  title = std::format("{} : nhits",prefix);
+  fBook->HBook1F(Hist->h_nhits,name.data(),title.data(),100,0,100,Folder);   // in MeV
+
+  name  = "chi2d";
+  title = std::format("{} : chi2/ndod",prefix);
+  fBook->HBook1F(Hist->h_chi2d,name.data(),title.data(),100,0,20,Folder);   // in ns...
+
+  name  = "t0";
+  title = std::format("{} : t0",prefix);
+  fBook->HBook1F(Hist->h_t0,name.data(),title.data(),500,0,2.5e6,Folder);   // in ns...
+
+  name  = "dt_tc";
+  title = std::format("{} : dt TC",prefix);
+  fBook->HBook1F(Hist->h_dt_tc,name.data(),title.data(),400,-100,100,Folder);   // in ns...
+
+  name  = "dt_calc";
+  title = std::format("{} : dt CALC",prefix);
+  fBook->HBook1F(Hist->h_dt_calc,name.data(),title.data(),400,-100,100,Folder);   // in ns...
+
+  name  = "dt_crvc";
+  title = std::format("{} : dt CRVC",prefix);
+  fBook->HBook1F(Hist->h_dt_crvc,name.data(),title.data(),400,-100,100,Folder);   // in ns...
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 int plot_calo_tc_dt::BookHistograms(Hist_t* Hist, TFolder* Folder) {
 
   // std::string prefix = std::format("");
   // std::string name, title;
 
-  CrvIndex_t index;
+  CalIndex_t index;
 
   std::string prefix = std::format("run:{:06d}",fRunNumber);
   std::string name, title;
 
-  name  = "dt_vs_cid";
+  name  = "dt_vs_sipmid";
   title = std::format("{} : dt vs crystal ID",prefix);
-  fBook->HBook2F(Hist->h_dt_vs_cid,name.data(),title.data(),1500,0,1500,400,0,2000,Folder);
+  fBook->HBook2F(Hist->h_dt_vs_sipmid,name.data(),title.data(),3000,0,3000,1000,-1000,1000,Folder);
 
-  name  = "cid";
-  title = std::format("{} : crystal ID",prefix);
-  fBook->HBook1F(Hist->h_cid,name.data(),title.data(),1500,0,1500,Folder);
+  name  = "sipmid";
+  title = std::format("{} : Sipm ID",prefix);
+  fBook->HBook1F(Hist->h_sipmid,name.data(),title.data(),3000,0,3000,Folder);
+
+  name  = "n2_vs_n1";
+  title = std::format("{} : N1:N1 calh E>10",prefix);
+  fBook->HBook2F(Hist->h_n2_vs_n1,name.data(),title.data(),20,0,20,20,0,20,Folder);
+
+  name  = "ntrk_0";
+  title = std::format("{} : ntrk[0]",prefix);
+  fBook->HBook1F(Hist->h_ntrk[0],name.data(),title.data(),10,0,10,Folder);
+
+  name  = "ntrk_1";
+  title = std::format("{} : ntrk[1]",prefix);
+  fBook->HBook1F(Hist->h_ntrk[1],name.data(),title.data(),10,0,10,Folder);
 //-----------------------------------------------------------------------------
 // calorimeter hits 
 //-----------------------------------------------------------------------------
   int book_calh_histset[10];
   int n_calh_histsets(10);
 
-  for (int i=0; i<n_crvp_histsets; i++) { book_crvp_histset[i] = 0; }
+  for (int i=0; i<n_calh_histsets; i++) { book_calh_histset[i] = 0; }
 
   book_calh_histset[0] = 1;             // all
 
@@ -272,25 +355,63 @@ int plot_calo_tc_dt::BookHistograms(Hist_t* Hist, TFolder* Folder) {
   }
 
 //-----------------------------------------------------------------------------
-// by ROC, links 0 and 3 --> rocs #1 and #4
+// CALC: calorimeter clusters 
 //-----------------------------------------------------------------------------
-  int book_roc_histset[10];
-  int n_roc_histsets(10);
+  int book_calc_histset[100];
+  int n_calc_histsets(100);
 
-  for (int i=0; i<n_roc_histsets; i++) { book_roc_histset[i] = 0; }
+  for (int i=0; i<n_calc_histsets; i++) { book_calc_histset[i] = 0; }
 
-  book_roc_histset[1] = 1;
-  book_roc_histset[2] = 1;
-  book_roc_histset[4] = 1;
+  book_calc_histset[0] = 1;             // all
+  book_calc_histset[1] = 1;             // all DISK 0
+  book_calc_histset[2] = 1;             // all DISK 1
+  book_calc_histset[3] = 1;             // |dt_tc| < 30, all 
+  book_calc_histset[4] = 1;             // |dt_tc| < 30, DISK 0
+  book_calc_histset[5] = 1;             // |dt_tc| < 30, DISK 1
+  book_calc_histset[6] = 1;             // |dt_tc| < 30, |dt_crvc| < 30, all
+  book_calc_histset[7] = 1;             // |dt_tc| < 30, |dt_crvc| < 30, DISK 0
+  book_calc_histset[8] = 1;             // |dt_tc| < 30, |dt_crvc| < 30, DISK 1
 
-  for (int i=0; i<n_roc_histsets; i++) {
-    if (book_roc_histset[i] == 0) continue;
-    std::string folder_name = std::format("roc_{:02d}",i);
+  int sel_disk[100];
+  sel_disk[1] = 0;
+  sel_disk[2] = 1;
+  sel_disk[4] = 0;
+  sel_disk[5] = 1;
+
+  for (int i=0; i<n_calc_histsets; i++) {
+    if (book_calc_histset[i] == 0) continue;
+    std::string folder_name = std::format("calc_{:02d}",i);
     TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
     if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
-    Hist->roc[i] = new RocHist_t();
-    index.roc = i;
-    BookRocHistograms(Hist->roc[i],&index,fol);
+    Hist->calc[i] = new CalcHist_t();
+    index.sel  = i;
+    index.disk = sel_disk[i];
+    BookCalcHistograms(Hist->calc[i],&index,fol);
+  }
+//-----------------------------------------------------------------------------
+// Trk: tracks 
+//-----------------------------------------------------------------------------
+  TrkIndex_t trk_index;
+
+  // std::string prefix = std::format("run:{:06d}",fRunNumber);
+  int book_trk_histset[100];
+  int n_trk_histsets(100);
+
+  for (int i=0; i<n_trk_histsets; i++) { book_trk_histset[i] = 0; }
+
+  book_trk_histset[0] = 1;             // all
+  book_trk_histset[1] = 1;             // in-time tracks
+  book_trk_histset[2] = 1;             // in-time tracks DISK0
+  book_trk_histset[3] = 1;             // in-time tracks DISK1
+
+  for (int i=0; i<n_trk_histsets; i++) {
+    if (book_trk_histset[i] == 0) continue;
+    std::string folder_name = std::format("trk_{:02d}",i);
+    TFolder* fol = (TFolder*) Folder->FindObject(folder_name.data());
+    if (! fol) fol = Folder->AddFolder(folder_name.data(),folder_name.data());
+    Hist->trk[i]   = new TrkHist_t();
+    trk_index.sel  = i;
+    BookTrkHistograms(Hist->trk[i],&trk_index,fol);
   }
 
   return 0;
@@ -319,13 +440,45 @@ void plot_calo_tc_dt::Init(TTree *tree) {
 //-----------------------------------------------------------------------------
 // need to optimize the filling time
 //-----------------------------------------------------------------------------
-int plot_calo_tc_dt::FillCrvpHistograms(CrvpHist_t* Hist, DaqCrvRecoPulse* Crvp) {
+int plot_calo_tc_dt::FillCalcHistograms(CalcHist_t* Hist, DaqCaloCluster* Calc, calc_param_t* Cp) {
   // filling histograms: plot time differences between
-  Hist->h_ph->Fill(Crvp->ph);
-  Hist->h_npes->Fill(Crvp->npes);
-  Hist->h_time->Fill(Crvp->time);
-  Hist->h_feb->Fill(Crvp->feb);
-  Hist->h_ch->Fill(Crvp->ch);
+  
+  Hist->h_edep->Fill(Calc->edep);
+  Hist->h_dt_tc->Fill(Cp->dtmin_tc);
+  Hist->h_dt_crvc->Fill(Cp->dtmin_crvc);
+  Hist->h_dt_crvc_vs_dt_tc->Fill(Cp->dtmin_tc,Cp->dtmin_crvc);
+  
+  // Hist->h_npes->Fill(Crvp->npes);
+  // Hist->h_time->Fill(Crvp->time);
+  // Hist->h_feb->Fill(Crvp->feb);
+  // Hist->h_ch->Fill(Crvp->ch);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// need to optimize the filling time
+//-----------------------------------------------------------------------------
+int plot_calo_tc_dt::FillDiskHistograms(DiskHist_t* Hist, DaqCaloRecoDigi* Calrd) {
+  // filling histograms: plot time differences between
+  // Hist->h_ph->Fill(Crvp->ph);
+  // Hist->h_npes->Fill(Crvp->npes);
+  // Hist->h_time->Fill(Crvp->time);
+  // Hist->h_feb->Fill(Crvp->feb);
+  // Hist->h_ch->Fill(Crvp->ch);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int plot_calo_tc_dt::FillTrkHistograms(TrkHist_t* Hist, DaqTrack* Trk, trk_param_t* Tp) {
+  // filling histograms: plot time differences between
+  
+  Hist->h_nhits->Fill(Trk->nhits);
+  Hist->h_chi2d->Fill(Trk->chi2/Trk->ndof);
+  Hist->h_t0->Fill(Trk->t0);
+  Hist->h_dt_tc->Fill(Tp->dtmin_tc);
+  Hist->h_dt_calc->Fill(Tp->dtmin_calc);
+  Hist->h_dt_crvc->Fill(Tp->dtmin_crvc);
+  
   return 0;
 }
 
@@ -337,68 +490,81 @@ int plot_calo_tc_dt::FillHistograms() {
 
   //  Index_t index;
   
-  for (int i2=0; i2<fEvent->ncrvp; i2++) {
-    DaqCrvRecoPulse*  crvp = fEvent->Crvp(i2);
-
-    // this is a global histogram
-    fHist->h_feb_vs_ch->Fill(crvp->ch,crvp->feb);
-                                        // have two histograms - one per roc , to color them
-                                        // ROCs 1 and 2 --> hists 0 and 1
-    fHist->h_feb_vs_sbid[crvp->roc-1]->Fill(crvp->sbid,crvp->feb);
-    
-    fHist->h_sbid->Fill(crvp->sbid);
-    fHist->roc[crvp->roc]->h_sbid->Fill(crvp->sbid);
-    fHist->roc[crvp->roc]->feb[crvp->feb]->h_sbid->Fill(crvp->sbid);
-    int och = crvp->OfflineChID();
-    fHist->h_och->Fill(och);
-//-----------------------------------------------------------------------------
-// CRVP[0] : all pulses
-//-----------------------------------------------------------------------------
-    FillCrvpHistograms(fHist->crvp[0],crvp);
-  }
 //-----------------------------------------------------------------------------
 // double-nested loops start here
 //-----------------------------------------------------------------------------
-  for (int i=0; i<fEvent->ntc; i++) {
-    DaqTimeCluster*  tc = fEvent->Tc(i);
+  for (int i1=0; i1<fEvent->ncalrd; i1++) {
+    DaqCaloRecoDigi*  calrd = fEvent->Calrd(i1);
 
-    for (int i2=0; i2<fEvent->ncrvc; i2++) {
-      DaqCrvCoincidenceCluster*  crvc = fEvent->Crvc(i2);
-      float dt = crvc->time-tc->t0;
-      
-      fHist->crvc[0]->h_dt->Fill(dt);
+    // find closest time cluster
+    float dtmin = 1.e6;
+    for (int i2=0; i2<fEvent->ntc; i2++) {
+      DaqTimeCluster*  tc = fEvent->Tc(i2);
+      if (tc->nsh < 8) continue;
+
+      float dt       = calrd->time-tc->t0;
+      if (fabs(dt) < dtmin) {
+        dtmin = dt;
+      }
     }
+    fHist->h_dt_vs_sipmid->Fill(calrd->sipmid,dtmin);
+    fHist->h_sipmid->Fill(calrd->sipmid);
+  }
+  
+  fHist->h_n2_vs_n1->Fill(fNCalh10[0],fNCalh10[1]);
 
-    for (int i2=0; i2<fEvent->ncrvp; i2++) {
-      DaqCrvRecoPulse*  crvp = fEvent->Crvp(i2);
-      float dt       = crvp->time-tc->t0;
-      //int feb = crvp->feb;
+//-----------------------------------------------------------------------------
+// fill cluster histograms
+//-----------------------------------------------------------------------------
+  int n_good_tc = 0;
+  
+  for (int i=0; i<fEvent->ncalc; i++) {
+    DaqCaloCluster* calc     = fEvent->Calc(i);
+    calc_param_t*   calc_par = &fListOfCalcParam[i];
+    FillCalcHistograms(fHist->calc[0],calc,calc_par);
+    if (calc->disk == 0) FillCalcHistograms(fHist->calc[1],calc,calc_par);
+    else                 FillCalcHistograms(fHist->calc[2],calc,calc_par);
 
-      CrvpHist_t* hr = fHist->crvp[0];
+    if (fabs(calc_par->dtmin_tc) < 30) {
+      FillCalcHistograms(fHist->calc[3],calc,calc_par);
+      if (calc->disk == 0) FillCalcHistograms(fHist->calc[4],calc,calc_par);
+      else                 FillCalcHistograms(fHist->calc[5],calc,calc_par);
+
+      if (fabs(calc_par->dtmin_crvc) < 30) {
+        FillCalcHistograms(fHist->calc[6],calc,calc_par);
+        if (calc->disk == 0) FillCalcHistograms(fHist->calc[7],calc,calc_par);
+        else                 FillCalcHistograms(fHist->calc[8],calc,calc_par);
+
+        if (calc->edep > 20) {
+          n_good_tc += 1;
+        }
+      }
+    }
+  }
+//-----------------------------------------------------------------------------
+// fill track histograms
+//-----------------------------------------------------------------------------
+  fHist->h_ntrk[0]->Fill(fEvent->ntrk);
+  if (n_good_tc > 0) {
+    fHist->h_ntrk[1]->Fill(fEvent->ntrk);
+  }
+
+  for (int i=0; i<fEvent->ntrk; i++) {
+    
+   
+    DaqTrack* trk = fEvent->Trk(i);
+    trk_param_t* tp = &fListOfTrkParam[i];
+    FillTrkHistograms(fHist->trk[0],trk,tp);
+    if (tp->intime) {
       
-      hr->h_dt->Fill(dt);
-      fHist->h_dt_vs_sbid->Fill(crvp->sbid,dt);
-
-      RocHist_t* roc_hr = fHist->roc[crvp->roc];
-      roc_hr->h_feb_vs_dt->Fill(dt,crvp->feb);
-
-      FebHist_t* feb_hr = fHist->roc[crvp->roc]->feb[crvp->feb];
-      // feb_hr->h_dt->Fill(dt);
-      feb_hr->h_ch_vs_dt->Fill(dt,crvp->ch);
-
-      if (fEvent->ntc == 1) {
-        if      (fabs(dt - 530) < 30) {
-//-----------------------------------------------------------------------------
-// CRVP[1] : first peak
-//-----------------------------------------------------------------------------
-          FillCrvpHistograms(fHist->crvp[1],crvp);
-        }
-        else if (fabs(dt - 590) < 30) {
-//-----------------------------------------------------------------------------
-// CRVP[2] : second peak
-//-----------------------------------------------------------------------------
-          FillCrvpHistograms(fHist->crvp[2],crvp);
-        }
+      FillTrkHistograms(fHist->trk[1],trk,tp);
+      if (tp->calc->disk == 0) {
+        std::cout << std::format("in-time disk0: run:srn:evt : {:6}:{:06}:{}\n",fEvent->run,fEvent->srn,fEvent->evn);
+        FillTrkHistograms(fHist->trk[2],trk,tp);
+      }
+      else {
+        std::cout << std::format("in-time disk1: run:srn:evt : {:6}:{:06}:{}\n",fEvent->run,fEvent->srn,fEvent->evn);
+        FillTrkHistograms(fHist->trk[3],trk,tp);
       }
     }
   }
@@ -417,6 +583,149 @@ Long64_t plot_calo_tc_dt::LoadTree(Long64_t entry) {
       fCurrent = fChain->GetTreeNumber();
    }
    return centry;
+}
+
+//-----------------------------------------------------------------------------
+int plot_calo_tc_dt::CalculateMissingParameters() {
+
+  fNCalh10[0] = 0;
+  fNCalh10[1] = 0;
+
+  fListOfCalcParam.clear();
+  if (fEvent->ncalc > 0) fListOfCalcParam.resize(fEvent->ncalc);
+  
+  fListOfTrkParam.clear();
+  if (fEvent->ntrk > 0) fListOfTrkParam.resize(fEvent->ntrk);
+  
+  for (int i1=0; i1<fEvent->ncalh; i1++) {
+    DaqCaloHit*  calh = fEvent->Calh(i1);
+
+    if (calh->edep > 10) {
+      int disk = calh->Disk();
+      fNCalh10[disk] += 1;
+    }
+  }
+ 
+//-----------------------------------------------------------------------------
+// extra parameters of the calorimeter clusters
+//-----------------------------------------------------------------------------
+  for (int i1=0; i1<fEvent->ncalc; i1++) {
+    DaqCaloCluster*  calc = fEvent->Calc(i1);
+
+    calc_param_t& cp = fListOfCalcParam[i1];
+//-----------------------------------------------------------------------------
+// determine the closest time cluster
+//-----------------------------------------------------------------------------
+    cp.dtmin_tc = 1.e6;
+    cp.tc       = nullptr;
+    // determine the closest time cluster
+    for (int i2=0; i2<fEvent->ntc; i2++) {
+      DaqTimeCluster* tc = fEvent->Tc(i2);
+      float dt = calc->time-tc->t0;
+      if (fabs(dt) < fabs(cp.dtmin_tc)) {
+        cp.dtmin_tc = dt;
+        cp.tc       = tc;
+      }
+    }
+//-----------------------------------------------------------------------------
+// determine the closest CRV coincidence
+//-----------------------------------------------------------------------------
+    cp.dtmin_crvc = 1.e6;
+    cp.crvc       = nullptr;
+
+    float crv_time_offset = 0; // 21. // today
+    
+    for (int i2=0; i2<fEvent->ncrvc; i2++) {
+      DaqCrvCoincidenceCluster* crvc = fEvent->Crvc(i2);
+      float dt = calc->time-(crvc->time-crv_time_offset);
+      if (fabs(dt) < fabs(cp.dtmin_crvc)) {
+        cp.dtmin_crvc = dt;
+        cp.crvc       = crvc;
+      }
+    }
+//------------------------------;-----------------------------------------------
+// determine the closest track
+//-----------------------------------------------------------------------------
+    cp.dtmin_trk = 1.e6;
+    cp.trk       = nullptr;
+
+    for (int i2=0; i2<fEvent->ntrk; i2++) {
+      DaqTrack* trk = fEvent->Trk(i2);
+      
+      float dt = calc->time-trk->t0;
+      if (fabs(dt) < fabs(cp.dtmin_trk)) {
+        cp.dtmin_trk = dt;
+        cp.trk       = trk;
+      }
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// extra track parameters
+//-----------------------------------------------------------------------------
+  for (int i1=0; i1<fEvent->ntrk; i1++) {
+    DaqTrack*  trk = fEvent->Trk(i1);
+
+    trk_param_t* tp = &fListOfTrkParam[i1];
+//-----------------------------------------------------------------------------
+// determine the closest time cluster
+//-----------------------------------------------------------------------------
+    tp->dtmin_tc = 1.e6;
+    tp->tc       = nullptr;
+    tp->intime   = 0;
+    
+    // find the closest time cluster
+    for (int i2=0; i2<fEvent->ntc; i2++) {
+      DaqTimeCluster* tc = fEvent->Tc(i2);
+      float dt = trk->t0-tc->t0;
+      if (fabs(dt) < fabs(tp->dtmin_tc)) {
+        tp->dtmin_tc = dt;
+        tp->tc       = tc;
+      }
+    }
+//-----------------------------------------------------------------------------
+// determine the closest CRV coincidence
+//-----------------------------------------------------------------------------
+    tp->dtmin_crvc = 1.e6;
+    tp->crvc       = nullptr;
+
+    float crv_time_offset = 0.; // 21; // today
+    
+    for (int i2=0; i2<fEvent->ncrvc; i2++) {
+      DaqCrvCoincidenceCluster* crvc = fEvent->Crvc(i2);
+      float dt = trk->t0-(crvc->time-crv_time_offset);
+      if (fabs(dt) < fabs(tp->dtmin_crvc)) {
+        tp->dtmin_crvc = dt;
+        tp->crvc       = crvc;
+      }
+    }
+//------------------------------;-----------------------------------------------
+// determine the closest calorimeter cluster
+//-----------------------------------------------------------------------------
+    tp->dtmin_calc = 1.e6;
+    tp->calc       = nullptr;
+
+    for (int i2=0; i2<fEvent->ncalc; i2++) {
+      DaqCaloCluster* calc = fEvent->Calc(i2);
+      
+      float dt = trk->t0-calc->time;
+      if (fabs(dt) < fabs(tp->dtmin_calc)) {
+        tp->dtmin_calc = dt;
+        tp->calc       = calc;
+      }
+    }
+
+    if ((fabs(tp->dtmin_tc  ) <  30) and
+        (fabs(tp->dtmin_calc) <  30) and
+        (fabs(tp->dtmin_crvc) <  30) and
+        (tp->calc->edep       >= 20) and
+        (trk->nhits           >= 10)
+        ) {
+      tp->intime = 1;
+    }
+  }
+
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -445,6 +754,10 @@ void plot_calo_tc_dt::Loop(int NEvents) {
     if (fEvent->evn > fMaxEvent) {
       fMaxEvent = fEvent->evn;
     }
+//-----------------------------------------------------------------------------
+// calculate missing parameters
+//-----------------------------------------------------------------------------
+    CalculateMissingParameters();
 //-----------------------------------------------------------------------------
 // prep done, now fill non-residual histograms
 //-----------------------------------------------------------------------------
@@ -479,7 +792,7 @@ int plot_calo_tc_dt::SaveHistograms(const char* Filename) {
 //-----------------------------------------------------------------------------
 // Ip1, Ip2 
 //-----------------------------------------------------------------------------
-int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float XMax, int NMin) {
+int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float XMax, int MinSum) {
 
   //  fit_result_t* fr = &fFr[Ip2][Ip1];
 
@@ -495,7 +808,8 @@ int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float
   int nbins     = Hist->GetNbinsX();
   int integral  = Hist->Integral(1,nbins);
       
-  if (integral < NMin) {
+  if (integral < MinSum) {
+    std::cout << std::format("ERROR: integral:{} < {}. BAIL OUT\n",integral,MinSum);
     return -1;
   }
 
@@ -511,7 +825,10 @@ int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float
     }
   }
 
-  if (qmax < 3) return -2;
+  if (qmax < 3) {
+    std::cout << std::format("ERROR: qmax:{} < 3. BAIL OUT\n",qmax);
+    return -2;
+  }
 
   // estimate integral of the expected gaussian
 
@@ -551,23 +868,26 @@ int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float
     if ((iplus > nbins) and (iminus < 0)) break;
   }
 
-  if (sum < 100) return -3;
+  if (sum < MinSum) {
+    std::cout << std::format("ERROR: sum:{} < {}. BAIL OUT\n",sum,MinSum);
+    return -3;
+  }
 
   float t0 = Hist->GetBinCenter(imax);
   
   // for some reason, "sq" is required for tfr be defined
-  float tmin{t0-30}, tmax{t0+30};
+  float tmin{t0-50}, tmax{t0+50};
   if (XMax > XMin) {
     tmin = XMin;
     tmax = XMax;
   }
   
-  TFitResultPtr tfr = Hist->Fit("gaus","sq","",tmin,tmax);
+  TFitResultPtr tfr = Hist->Fit("gaus","sql","",tmin,tmax);
   
   if ((! tfr->IsValid()) or tfr->IsEmpty()) {
     // assume tha all indices are in the name/title
     std::cout << std::format("# FIT ERROR: Hist->name:{} Hist->title:{}\n",Hist->GetName(),Hist->GetTitle());
-    return -1;
+    return -4;
   }
 
   Fr->chi2dof = tfr->Chi2()/tfr->Ndf();
@@ -591,80 +911,36 @@ int plot_calo_tc_dt::FitHistogram(TH1* Hist, fit_result_t* Fr, float XMin, float
 */
 int plot_calo_tc_dt::FitTimeOffsets(float TMin, float TMax) {
 
-//   for (int i=1; i<3; i++) {
-//     TH2F* h2 = fHist->roc[i]->h_feb_vs_dt;
+  TH2F* h2 = fHist->h_dt_vs_sipmid;
+
+  int nch = kMaxNChannels;
+  for (int i=0; i<nch; i++) {
     
-//     // fit Y-slices, use Ralf's integers
-//     for (int j=1; j<25; j++) {
-//       std::string hpname = std::format("hpx_{:02d}",j);
-//       TH1D* hp = h2->ProjectionX(hpname.data(),j+1,j+1);
-//       fit_result_t* fr = &fFr[i][j];
-//       FitHistogram(hp,fr,TMin,TMax,100);
-//     }
-//   }
+    std::string hpname = std::format("hpx_{:04d}",i);
+    TH1D* hp = h2->ProjectionY(hpname.data(),i+1,i+1);
+    fit_result_t* fr = &fFr[i];
+    FitHistogram(hp,fr,TMin,TMax,10);
+  }
   
-//   // done fitting, print results
+  // done fitting, write results
 
-//   std::cout << std::format("# roc  feb   fit(crvp.time-tc.t0) dT(i-0)    sigma_i       chi2dof\n");
+  std::ofstream os("CaloTimeCalib_corr.txt");
+
+  os << std::format("TABLE CalTimeCalib {}\n",fRunNumber);
+  os << std::format("# corrections to  CalTimeCalib cid= XXX, to be subtracted \n");
+  os << std::format("# sipmid     dT      sigma      chi2 \n");
   
-// // find the first converged fit
-
-//   fFrRef = nullptr;
-
-//   bool ref_ch_found(false);
-  
-//   for (int i=1; i<3; i++) {
-//     for (int j=1; j<25; j++) {
-//       if (fFr[i][j].chi2dof > 0) {
-//         fFrRef = &fFr[i][j];
-//         std::cout << std::format("reference channel: roc:{:2} feb:{:2} dt0:{:8.3f}\n",i,j,fFrRef->p[1]);
-//         ref_ch_found = true;
-//         break;
-//       }
-//     }
-//     if (ref_ch_found) break;
-//   }
-
-//   for (int i=1; i<3; i++) {
-//     for (int j=1; j<25; j++) {
-//       fit_result_t* fr = &fFr[i][j] ;
-//       float dt(0);
-//       if (fr->chi2dof > 0) {
-//         dt = fr->p[1]-fFrRef->p[1];
-//       }
-//       std::cout << std::format(" {:2d} {:4d}      {:9.3f}      {:9.3f}   {:9.3f}    {:9.3f}\n",
-//                                i,j,fr->p[1],dt,fr->p[2],fr->chi2dof);
-//     }
-//   }
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-// corrections are aimed to align in time all FEBs with FEB[1][1]
-// to be called AFTER FitFebTimeOffset - that defines fFrRef
-//------------------------------------------------------------------------------
-int plot_calo_tc_dt::PrintTimeCorrections() {
-  
-  // std::ofstream os("CrvTime_corr.txt");
-
-  // float dt0 = fFrRef->p[1];  // roc=1 feb=1
-
-  // for (int i=0; i<2304; i++) {
+  for (int i=0; i<nch; i++) {
     
-  //   CrvChannelMap_t::Data_t* dat = fCcm->ch_data_by_offline(i);
+    // to do no harm if no fit, dt should be initialized to zero 
+    float dt{0}; 
+    if (fFr[i].chi2dof > 0) {
+      dt = fFr[i].p[1];
+    }
 
-  //   float dt{0};
-  //   if (dat != nullptr) {
-  //     if (fFr[dat->roc][dat->feb].chi2dof > 0) {
-  //       // dont correct FEBs with no fit
-  //       dt = fFr[dat->roc][dat->feb].p[1] - dt0; // should be initialized to zero
-  //     }
-  //   }
-
-  //   os << std::format("{:5}   {:8.3f}\n",i,dt);
-  // }
-
-  // os.close();
+    os << std::format("{:5}   {:8.3f}  {:8.3f}  {:8.3f}\n",i,dt,fFr[i].p[2],fFr[i].chi2dof);
+  }
+  os.close();
   
   return 0;
 }

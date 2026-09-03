@@ -11,11 +11,11 @@ public:
   uint8_t  disk;                         // disk
   uint8_t  split;                        // 
   short    size;
-  float    time;                            // N(digis)
+  float    time;                         // N(digis)
   float    sigt;
   float    edep;
   float    sige;
-  float    x;                           // coordinates of the COG
+  float    x;                            // coordinates of the COG
   float    y;
   float    z;
 //-----------------------------------------------------------------------------

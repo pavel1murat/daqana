@@ -24,6 +24,8 @@ ROOT_GENERATE_DICTIONARY(${dict}
   plot_n002_tc.hh
   plot_n006_time_res.hh
   plot_crv_tc_dt.hh
+  plot_calo_tc_dt.hh
+  plot_sh.hh
   booking.hh
   check_split.hh
   fit_dt01.hh
@@ -39,6 +41,8 @@ add_library(${lib} SHARED
   plot_n002_tc.cc
   plot_n006_time_res.cc
   plot_crv_tc_dt.cc
+  plot_calo_tc_dt.cc
+  plot_sh.cc
   fit_dt01.cc
   check_split.cc
   ${dict}.cxx

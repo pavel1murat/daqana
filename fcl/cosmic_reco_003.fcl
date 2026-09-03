@@ -5,7 +5,7 @@
 #   CRV    : CRVD+CRVP+CRVC
 #   CALO   : CALD+CALRD+CALH+CALC
 #
-# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
+# Usage: mu2e -c daqana/fcl/cosmic_reco_003.fcl -s <input art file> [-n 10]
 # 
 # hopefully, prolog variables below are not used
 # intentionally use v0 calibrations
@@ -52,11 +52,24 @@ outputs:  {
     defaultOutput :  {
         module_type   :   RootOutput
         fileName      :   "make_n003.art"
-
-#        outputCommands: [
-#                         "drop *_*_*_*",
-#                         "keep *_*_*_*"
-#                        ]
+        outputCommands :  [
+                          "drop *_*_*_*",
+                          @sequence::Reconstruction.GeneralProducts,
+                          @sequence::Reconstruction.HighRecoProducts,
+                          @sequence::Reconstruction.MidRecoProducts,
+                          "keep mu2e::TimeClusters_*_*_*",
+                          "keep *_makeSH_*_*",
+                          "keep *_DummyLumiInfo_*_*",
+                          "keep *_TriggerResults_*_*",
+                          "keep mu2e::CrvRecoPulses_*_*_*",
+                          "keep mu2e::CrvDigis_*_*_*",
+                          "keep mu2e::CrvDAQerrors_*_*_*",
+                          "keep *_eventHeaderFromCFOFragment_*_*",
+                          "keep mu2e::CrvCoincidenceClusters_*_*_*",
+                          "keep mu2e::CrvStatus_*_*_*",
+                          "drop artdaq::*_*_*_*" ,
+                          "drop mu2e::CrvDigis_*_NZS_*"
+                         ]
     }
 }
 
@@ -113,6 +126,7 @@ physics : {
         }
 
         CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
+            deltaTime :  10          ## ns, default : 2ns....
         }
 
         CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
@@ -191,7 +205,7 @@ physics : {
            , LineFinder, KKLine                                    ## track reco
           ]
 
-    e1 : [ MakeDigiNtuple ] ## , defaultOutput ] ## , defaultOutput ]
+    e1 : [ defaultOutput ] ## MakeDigiNtuple ] ## , defaultOutput ]
     # e1 : []
 
     trigger_paths  : [ p2 ]
@@ -200,7 +214,8 @@ physics : {
 #------------------------------------------------------------------------------
 # _extracted.fcl/.txt below is important
 #------------------------------------------------------------------------------
-services.TFileService.fileName   :   "nts.mu2e.cosmics.kpp00s000r000n008.%06r_%06s.root"
+services.TFileService.fileName   : "/dev/null" ## "nts.mu2e.cosmics.kpp00s000r000n008.%06r_%06s.root"
+outputs.defaultOutput.fileName   : "rec.mu2e.cosmics.kpp00s000r001n000.%06r_%06s.art"
 
 services.scheduler.wantSummary                  : true
 
@@ -212,6 +227,7 @@ services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
 services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted.txt"
 #include "Offline/CRVReco/fcl/epilog_extracted.fcl"
 
+# debugging options
 # services.DbService.verbose                                : 10
 # services.ProditionsService.calCalib.verbose               : 100
 # services.ProditionsService.crvCalib.verbose               : 100

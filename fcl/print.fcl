@@ -19,8 +19,9 @@ physics :{
 
         printModule : { module_type : PrintModule
             #      genParticlePrinter           : { verbose : 1              }
-            #      caloRecoDigiPrinter          : { verbose : 1              }
-            #      caloClusterPrinter           : { verbose : 1 eCut :  10.0 }
+            caloRecoDigiPrinter          : { verbose : 1              }
+            caloHitPrinter               : { verbose : 1              }
+            caloClusterPrinter           : { verbose : 1 eCut :  1.0  }
             crvRecoPulsePrinter          : { verbose : 1              }
             crvCoincidenceClusterPrinter : { verbose : 1              }
             #      helixSeedPrinter             : { verbose : 1              }

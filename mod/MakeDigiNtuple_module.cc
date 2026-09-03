@@ -504,7 +504,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _nstrawdigis = _sdc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: StrawDigiCollection:{:s} is not available. Bail out\n",
+      print_(e_ERROR,std::format("StrawDigiCollection:{:s} is not available. Bail out\n",
                                  _sdCollTag.encode().data()));
       return -1;
     }
@@ -514,7 +514,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _sdawfc = sdawfch.product();
     }
     else {
-      print_(e_WARNING,std::format("WARNING: StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("StrawDigiADCWaveformCollection:{:s} is not available. Bail out\n",
                                    _sdCollTag.encode().data()));
       return -1;
     }
@@ -530,7 +530,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _nstrawhits = _shc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: StrawHitCollection:{:s} is not available. Bail out\n",_shCollTag.encode().data()));
+      print_(e_ERROR,std::format("StrawHitCollection:{:s} is not available. Bail out\n",_shCollTag.encode().data()));
       return -1;
     }
   }
@@ -545,7 +545,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntimeclusters = _tcc->size();
     }
     else {
-      print_(e_WARNING,std::format("WARNING: TimeClusterCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("TimeClusterCollection:{:s} is not available. Bail out\n",
                        _tcCollTag.encode().data()));
       return -1;
     }
@@ -562,7 +562,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
         _ncombohits    = _chc->size();
       }
       else {
-        print_(e_WARNING,std::format("WARNING: ComboHitCollection:{:s} is not available. Bail out\n",
+        print_(e_WARNING,std::format("ComboHitCollection:{:s} is not available. Bail out\n",
                                      _shCollTag.encode().data()));
         return -1;
       }
@@ -581,7 +581,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ntracks = _ksc->size();
     }
     else {
-      print_(e_WARNING,std::format("WARNING: KalSeedCollection:{:s} is not available. Bail out\n",
+      print_(e_WARNING,std::format("KalSeedCollection:{:s} is not available. Bail out\n",
                          _ksCollTag.encode().data()));
       return -1;
     }
@@ -599,7 +599,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncald = _caldc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CaloDigiCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("CaloDigiCollection:{:s} not found.\n",
                          _caldCollTag.encode().data()));
     }
   }
@@ -614,7 +614,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncalrd = _calrdc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CaloRecoDigiCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("CaloRecoDigiCollection:{:s} not found.\n",
                          _calrdCollTag.encode().data()));
     }
   }
@@ -629,7 +629,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncalh = _calhc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CaloHitCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("CaloHitCollection:{:s} not found.\n",
                          _calhCollTag.encode().data()));
     }
   }
@@ -644,7 +644,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncalc = _calcc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CaloClusterCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("CaloClusterCollection:{:s} not found.\n",
                          _calcCollTag.encode().data()));
     }
   }
@@ -661,7 +661,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvd = _crvdc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CrvDigiCollection:{:s} not found.\n",
+      print_(e_ERROR,std::format("CrvDigiCollection:{:s} not found.\n",
                          _crvdCollTag.encode().data()));
     }
   }
@@ -676,7 +676,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvp = _crvpc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CrvRecoPulseCollection:{:s} not found\n",
+      print_(e_ERROR,std::format("CrvRecoPulseCollection:{:s} not found\n",
                          _crvpCollTag.encode().data()));
     }
   }
@@ -691,7 +691,7 @@ int mu2e::MakeDigiNtuple::getData(const art::Event& ArtEvent) {
       _ncrvc = _crvcc->size();
     }
     else {
-      print_(e_ERROR,std::format("ERROR: CrvCoincidenceClusterCollection:{:s} not found\n",
+      print_(e_ERROR,std::format("CrvCoincidenceClusterCollection:{:s} not found\n",
                          _crvcCollTag.encode().data()));
     }
   }
@@ -996,7 +996,7 @@ int mu2e::MakeDigiNtuple::fillFragments() {
 // do it only for the current data format (runs > 107236)
 //-----------------------------------------------------------------------------
         if (frag->dataSizeBytes() <= sizeof(DTCLib::DTC_SubEventHeader)) {
-          std::string msg = std::format("ERROR: fragment:{} data size:{} < DTC_SubEventHeader.size:{}. SKIP FRAGMENT",
+          std::string msg = std::format("fragment:{} data size:{} < DTC_SubEventHeader.size:{}. SKIP FRAGMENT",
                                         ifrag,frag->dataSizeBytes(),sizeof(DTCLib::DTC_SubEventHeader));
           print_(e_DEBUG,msg);
           continue;
@@ -1437,6 +1437,7 @@ int mu2e::MakeDigiNtuple::fillTrk() {
     nt_trk->nhits    = ks->nHits();
     nt_trk->chi2     = ks->chisquared();
     nt_trk->t0       = ks->t0().t0();
+    nt_trk->ndof     = ks->nDOF();
   }
   
   return 0;
