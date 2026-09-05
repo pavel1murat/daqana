@@ -1425,12 +1425,15 @@ int mu2e::MakeDigiNtuple::calculateMissingTrkParameters() {
 }
 
 //-----------------------------------------------------------------------------
+// use parameters  of segment #1
+//-----------------------------------------------------------------------------
 int mu2e::MakeDigiNtuple::fillTrk() {
 
   calculateMissingTrkParameters();
 
   for (int itrk=0; itrk<_ntracks; itrk++) {
     const mu2e::KalSeed* ks = &_ksc->at(itrk);
+    const mu2e::KalSegment* seg = &ks->segments()[1];
    
     DaqTrack* nt_trk = new ((*_event->trk)[itrk]) DaqTrack();
 
@@ -1438,6 +1441,13 @@ int mu2e::MakeDigiNtuple::fillTrk() {
     nt_trk->chi2     = ks->chisquared();
     nt_trk->t0       = ks->t0().t0();
     nt_trk->ndof     = ks->nDOF();
+    nt_trk->x0       = seg->position3().x();
+    nt_trk->y0       = seg->position3().y();
+    nt_trk->z0       = seg->position3().z();
+    double tmom      = seg->mom();
+    nt_trk->nx       = seg->momentum3().x()/tmom;
+    nt_trk->ny       = seg->momentum3().y()/tmom;
+    nt_trk->nz       = seg->momentum3().z()/tmom;
   }
   
   return 0;

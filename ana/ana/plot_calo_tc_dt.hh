@@ -32,6 +32,8 @@ public :
     kNPlanes           = 36,
     kNPanelsPerStation = 12,
     kMaxNChannels      = 2720,
+
+    kMaxTrkHistSets    = 100,
   };
 
 //-----------------------------------------------------------------------------
@@ -80,12 +82,22 @@ public :
                                                   // for now, a placeholder
   struct trk_param_t {
     int                       intime;
+    int                       intime_calc;
+    int                       intime_crvc;
     float                     dtmin_tc;           // from the closest TC
     DaqCaloCluster*           calc;               // closest
     float                     dtmin_calc;         // from the closest CALC
+    float                     dx_calc;
+    float                     dy_calc;
     DaqTimeCluster*           tc;
-    float                     dtmin_crvc;     // from the closest CRVC
+    float                     dtmin_crvc;         // from the closest CRVC
     DaqCrvCoincidenceCluster* crvc;
+    float                     dxdz;
+    float                     dydz;
+    float                     xcrv;
+    float                     zcrv;
+    float                     dx_crvc;
+    float                     dz_crvc;
   };
     
 //-----------------------------------------------------------------------------
@@ -114,6 +126,18 @@ public :
     TH1F*         h_dt_crvc;
     TH1F*         h_dt_calc;
     TH1F*         h_dt_tc;
+    TH1F*         h_dx_calc;
+    TH1F*         h_dy_calc;
+    TH2F*         h_dx_calc_vs_dxdz;
+    TH2F*         h_dy_calc_vs_dydz;
+    TH1F*         h_dxdz;
+    TH1F*         h_dydz;
+    TH1F*         h_xcrv;
+    TH1F*         h_zcrv;
+    TH1F*         h_dx_crvc;
+    TH1F*         h_dz_crvc;
+    TH2F*         h_dx_crvc_vs_dxdy;
+    TH2F*         h_dz_crvc_vs_dzdy;
   };
   
   struct DiskHist_t {
@@ -130,7 +154,7 @@ public :
     TH1F*       h_ntrk[2];
     CalhHist_t* calh   [100];
     CalcHist_t* calc   [100];
-    TrkHist_t*  trk    [100];
+    TrkHist_t*  trk    [kMaxTrkHistSets];
   };
 
 //-----------------------------------------------------------------------------
@@ -194,9 +218,10 @@ public :
   int              BookCalhHistograms (CalhHist_t*   Hist, CalIndex_t* Index, TFolder* Folder);
   int              BookDiskHistograms (DiskHist_t*   Hist, CalIndex_t* Index, TFolder* Folder);
   int              BookTrkHistograms  (TrkHist_t*    Hist, TrkIndex_t* Index, TFolder* Folder);
-  int              BookHistograms     (Hist_t*      Hist, TFolder* Folder);
+  int              BookHistograms     (Hist_t*       Hist, TFolder*    Folder);
 
-  int              CalculateMissingParameters();
+  int              CalculateMissingParameters   ();
+  int              CalculateMissingTrkParameters();
 
   int              FillCalcHistograms (CalcHist_t* Hist, DaqCaloCluster* Calc, calc_param_t* Cp);
   int              FillDiskHistograms (DiskHist_t* Hist, DaqCaloRecoDigi* Calrd);

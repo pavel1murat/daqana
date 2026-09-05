@@ -113,6 +113,7 @@ physics : {
         }
 
         CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
+            deltaTime :  10          ## ns, default : 2ns....
         }
 
         CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
@@ -145,7 +146,8 @@ physics : {
                          "123680:205:1-2040079","123680:205:2040081-100000000",
                          "123680:206-869:*",
                          "123680:870:1-8698085","123680:870:8698087-100000000",
-                         "123680:871-10000:*"
+                         "123680:871-10000:*",
+                         "123681-200000:*:*"
                         ]
         }
     }

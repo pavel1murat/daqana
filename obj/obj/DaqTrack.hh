@@ -8,16 +8,22 @@
 
 class DaqTrack : public TObject {
 public:
-  int     nhits ;
-  float   t0    ;
-  float   chi2  ;
-  int     ndof  ;
+  int     nhits;
+  float   t0   ;
+  float   chi2 ;
+  int     ndof ;
+  float   x0   ;
+  float   y0   ;
+  float   z0   ;
+  float   nx   ;
+  float   ny   ;
+  float   nz   ;
   
   DaqTrack();
 
   virtual ~DaqTrack();
 
-  ClassDefOverride(DaqTrack,2);
+  ClassDefOverride(DaqTrack,3);
 };
 
 #endif
