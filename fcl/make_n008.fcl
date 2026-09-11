@@ -63,6 +63,7 @@ outputs:  {
 physics : {
     
     producers : {
+        @table::CrvRecoPackage.producers
         
         CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
             diagLevel     : 0 ## 10
@@ -70,7 +71,13 @@ physics : {
             # useSubsystem0 : false
         }
 
-        @table::CrvRecoPackage.producers
+        CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
+            # globalDt : 486.  ## run XXX <T(CRV)-T(tracker)>
+            globalDt : 551.    ## run "1236801: (TRK+CAL+CRV)  <T(CRV)-T(tracker)>
+        }
+
+        CrvCoincidenceClusterFinder : { @table::CrvRecoPackage.producers.CrvCoincidenceClusterFinder
+        }
         
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
             SpillType         : 0       ## offspill
@@ -83,7 +90,6 @@ physics : {
             debugMode        : 0 ## 1
             debugBits        : ["bit0:1"]
             saveWaveforms    : true
-            # dtcHeaderPresent : false
             keyOnMnid        : true ## true    ## default:false
         }
         
@@ -114,14 +120,6 @@ physics : {
 
         CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
             deltaTime :  10          ## ns, default : 2ns....
-        }
-
-        CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
-            # globalDt : 486.  ## run XXX <T(CRV)-T(tracker)>
-            globalDt : 551.    ## run "1236801: (TRK+CAL+CRV)  <T(CRV)-T(tracker)>
-        }
-
-        CrvCoincidenceClusterFinder : { @table::CrvRecoPackage.producers.CrvCoincidenceClusterFinder
         }
         
         LineFinder : { @table::CosmicReco.LineFinder

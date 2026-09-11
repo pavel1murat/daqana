@@ -29,10 +29,10 @@ ch.setLevel(logging.INFO)
 # Formatter with timestamps
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)d:%(funcName)s]: %(message)s',
                               datefmt='%Y-%m-%d %H:%M:%S')
-# fh.setFormatter(formatter)
+fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
-# logger.addHandler(fh)
+logger.addHandler(fh)
 logger.addHandler(ch)
 
 class SubmitJob:
@@ -89,6 +89,7 @@ class SubmitJob:
         parser.add_argument('-n','--nevents'    , type=int, default=None, help="Path to the configuration file")
         parser.add_argument('--nfiles'          , type=int, default=None, help="N(files) to process")
         parser.add_argument('--nskip'           , type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
         parser.add_argument('-r','--run_number' , type=int, default=None, help="Path to the configuration file")
         parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
         parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
@@ -161,20 +162,24 @@ class SubmitJob:
                 fn     = os.environ.get('SPACK_ENV')+f'/daqana/rundb/{subdir}/{args.calib_run}/aaa_latest'
                 ver    = open(fn).readlines()[0].strip()
                 
-            overrides_cmd = f'sed -E "s|(calibration_set_).*(\.fcl)|\\1{ver}\\2|"'
+            overrides_cmd = f' | sed -E "s|(calibration_set_).*(\.fcl)|\\1{ver}\\2|"'
 
         if (args.calib_run):
             subdir = args.calib_run[0:3]+'000'
-            if (overrides_cmd != ''):
-                overrides_cmd  += f' | sed -E "s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!"'
-            else:
-                overrides_cmd  = f'sed -E "s!fcl/calibration_set!rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}!"'
+            overrides_cmd  += f' | sed -E "s|fcl/calibration_set|rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}|"'
 
-        print(f'cmd:{overrides_cmd}')
+        if (args.odsid):
+            # substiture IDSID in the output file name...
+            overrides_cmd += f' | sed -E "s|_odsid_|{args.odsid}|"'
+
+        # pipe ('|') is a part of overrides_cmd
+        overrides_cmd = f'cat {template_fcl} {overrides_cmd}'
+        
+        logger.info(f'overrides_cmd:{overrides_cmd}')
 
         if (args.dry_run):
             # just print the fcl replacement to the screen
-            os.system(f'cat {template_fcl} | {overrides_cmd}');
+            os.system(overrides_cmd);
             return
 #        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_set}n000.%06r_%06s.art\\"'
 #        print(f'0011:x:{x}')
@@ -183,7 +188,7 @@ class SubmitJob:
 #------------------------------------------------------------------------------
 # process redefinitions and appends 
 #------------------------------------------------------------------------------
-        os.system(f'cat {template_fcl} | {overrides_cmd}                                           >  {output_dir}/{job_fcl}')
+        os.system(f'{overrides_cmd}                                                                >  {output_dir}/{job_fcl}')
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
         os.system(f'echo "#  overrides by submit_mu2e_job.py"                                      >> {output_dir}/{job_fcl}')  
         os.system(f'echo "#----------------------------------------------------------------------" >> {output_dir}/{job_fcl}')
@@ -221,8 +226,6 @@ class SubmitJob:
             logger.info(f'input_file_list:{input_file_list}')
 #------------------------------------------------------------------------------
 # use the name of the first file in the list to define the log file name - TODO
-#-------v----------------------------------------------------------------------
-#------------------------------------------------------------------------------
 # form the command to execute
 #-------v----------------------------------------------------------------------
 

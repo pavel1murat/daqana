@@ -65,11 +65,11 @@ public :
     int ch   {-1};                           // channel within the FEB (0-63)
   };
   
-  struct RunData_t {
-    int run_number;
-    int n_pulsed_channels;
-    int pulsed_channel[96];             // only n_pulsed_clannels are used
-  };
+  // struct RunData_t {
+  //   int run_number;
+  //   int n_pulsed_channels;
+  //   int pulsed_channel[96];             // only n_pulsed_clannels are used
+  // };
     
 //-----------------------------------------------------------------------------
 // histogram structures
