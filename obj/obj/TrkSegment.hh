@@ -1,11 +1,12 @@
+//-----------------------------------------------------------------------------
+// TrkSegment: a track segment reconstructed in a single panel
+//-----------------------------------------------------------------------------
 #ifndef __daqana_mod_TrkSegment_hh_
 #define __daqana_mod_TrkSegment_hh_
 #include <format>
+
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/TrackerGeom/inc/Panel.hh"
-
-// #include "daqana/obj/ComboHitData_t.hh"
-
 //-----------------------------------------------------------------------------
 // representation of a 2D hit used in the segment fit
 //-----------------------------------------------------------------------------
@@ -63,7 +64,6 @@ struct SegmentHit {
 
 };
 
-
 //-----------------------------------------------------------------------------
 class TrkSegment {
 public:
@@ -93,28 +93,27 @@ public:
     kSubsegmentBit     = 0x0008,
   };
 
-  static double const  fgRStraw;
+  static int              fgDebugMode;
+  static double const     fgRStraw;        // straw radius
 
-  mu2e::Panel*         fTrkPanel;
-  int                  fMask;           // 0: OK
-  int                  fPlane;
-  int                  fPanel;
-  int                  fNTransitions;
-  int                  fNGoodHits;                  // total number of good hits
-  int                  fNghl[2];                    // # good hits in each layer
-  int                  fNmhl[2];                    // # of straws w/o hits in each layer
+  mu2e::Panel*            fTrkPanel;
+  int                     fMask;           // 0: OK
+  int                     fPlane;
+  int                     fPanel;
+  int                     fNTransitions;
+  int                     fNGoodHits;               // total number of good hits
+  int                     fNghl[2];                 // # good hits in each layer
+  int                     fNmhl[2];                 // # of straws w/o hits in each layer
                                                     // SegmentHit replaces Point2D
   std::vector<SegmentHit> fListOfHits;              // initialization (from a time cluster) in the ntuple making code
-  double               fXMean;
-  double               fYMean;
-  double               fTMean;                      // <t-tprop>
-  int                  fIhit[2];                    // indices of the two hits corresponding to the layer transition
+  double                  fXMean;
+  double                  fYMean;
+  double                  fTMean;                   // <t-tprop>
+  int                     fIhit[2];                 // indices of the two hits corresponding to the layer transition
                                                     // fits
-  Par_t                fTangentLine;
-  Par_t                fPar4;                       // best parameters after a 4-point fit
-  Par_t                fPar;                        // best fit parameters
-
-  static int           fgDebugMode;
+  Par_t                   fTangentLine;
+  Par_t                   fPar4;                    // best parameters after a 4-point fit
+  Par_t                   fPar;                     // best fit parameters
 
   TrkSegment(int Plane = -1, int Panel = -1);
   ~TrkSegment() { }

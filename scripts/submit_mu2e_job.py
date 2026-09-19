@@ -159,14 +159,14 @@ class SubmitJob:
                 # calib_run has to be specified
                 # read the latest calibration version, it will propagate to the file name as 'r100'
                 subdir = args.calib_run[0:3]+'000'
-                fn     = os.environ.get('SPACK_ENV')+f'/daqana/rundb/{subdir}/{args.calib_run}/aaa_latest'
+                fn     = os.environ.get('SPACK_ENV')+f'/rundb/{subdir}/{args.calib_run}/aaa_latest'
                 ver    = open(fn).readlines()[0].strip()
                 
             overrides_cmd = f' | sed -E "s|(calibration_set_).*(\.fcl)|\\1{ver}\\2|"'
 
         if (args.calib_run):
             subdir = args.calib_run[0:3]+'000'
-            overrides_cmd  += f' | sed -E "s|fcl/calibration_set|rundb/{subdir}/{args.calib_run}/calibration_set_{args.calib_run}|"'
+            overrides_cmd  += f' | sed -E "s|fcl/calibration_set|{subdir}/{args.calib_run}/calibration_set_{args.calib_run}|"'
 
         if (args.odsid):
             # substiture IDSID in the output file name...

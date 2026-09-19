@@ -7,17 +7,17 @@
 class SegmentFit {
 public:
 
-  static int fgDebugMode;
-  static int fgDebugBits[100];
+  static int  fgDebugMode;
+  static int  fgDebugBits[100];
 
   TrkSegment* fSegment;                 // cached segment
 
   //  Par_t      fP0;
 
-  LsqSums2   fSxy;
-  LsqSums2   fSxs;
-  LsqSums2   fSys;
-  LsqSums2   fSts;
+  LsqSums2    fSxy;
+  LsqSums2    fSxs;
+  LsqSums2    fSys;
+  LsqSums2    fSts;
 
   SegmentFit(TrkSegment* Seg);
   ~SegmentFit();
@@ -67,12 +67,12 @@ public:
   }
                                         // for debugging/validation
 
-  double DChi2Da  (double A, double B, double Tau);
-  double DChi2Db  (double A, double B, double Tau);
-  double DChi2Dtau(double A, double B, double Tau);
+  double      DChi2Da  (double A, double B, double Tau);
+  double      DChi2Db  (double A, double B, double Tau);
+  double      DChi2Dtau(double A, double B, double Tau);
 
-  int    Fit(int NIterations, int DoCleanup, const TrkSegment::Par_t* Pin, TrkSegment::Par_t* Par);
-  int    Init();
+  int         Fit(int NIterations, int DoCleanup, const TrkSegment::Par_t* Pin, TrkSegment::Par_t* Par);
+  int         Init();
                                         // find the segment line parameters using two seed hits and two edge hits
   int         DefineDriftDirections(const TrkSegment::Par_t* Pin = nullptr);
   int         CalculateLsqSums();

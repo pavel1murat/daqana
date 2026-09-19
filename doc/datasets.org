@@ -1,0 +1,4 @@
+#+startup:fold
+
+* kpp00s000rxxxn008 : Stntuple/test/make_det_002.fcl with 'latest' calibrations
+* vst00s000rxxxn008 : Stntuple/test/make_det_002.fcl with 'latest' calibrations
