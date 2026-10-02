@@ -84,7 +84,7 @@ class SubmitJob:
         parser.add_argument("--diag_level"      , type=int, default=0,    help="Path to the configuration file")
         parser.add_argument("--dry-run"         , action='store_true',    help="dry run, if specified")
         parser.add_argument('-c',"--fcl"        , default=None,           help="Path to the configuration file")
-        parser.add_argument('-e',"--first_event", type=int, default=None, help="Path to the configuration file")
+        parser.add_argument('-e',"--first_event", default=None,           help="event ID of the first event to process")
         parser.add_argument('--idsid'           , default=None,           help="input dataset ID")
         parser.add_argument('-n','--nevents'    , type=int, default=None, help="Path to the configuration file")
         parser.add_argument('--nfiles'          , type=int, default=None, help="N(files) to process")
@@ -159,7 +159,7 @@ class SubmitJob:
                 # calib_run has to be specified
                 # read the latest calibration version, it will propagate to the file name as 'r100'
                 subdir = args.calib_run[0:3]+'000'
-                fn     = os.environ.get('SPACK_ENV')+f'/rundb/{subdir}/{args.calib_run}/aaa_latest'
+                fn     = os.environ.get('RUNDB_DIR')+f'/rundb/{subdir}/{args.calib_run}/aaa_latest'
                 ver    = open(fn).readlines()[0].strip()
                 
             overrides_cmd = f' | sed -E "s|(calibration_set_).*(\.fcl)|\\1{ver}\\2|"'
@@ -180,7 +180,7 @@ class SubmitJob:
         if (args.dry_run):
             # just print the fcl replacement to the screen
             os.system(overrides_cmd);
-            return
+#            return
 #        x = f'outputs.defaultOutput.fileName: \\"rec.mu2e.trk.vst00s000r01{args.calib_set}n000.%06r_%06s.art\\"'
 #        print(f'0011:x:{x}')
 #        os.system(f'echo {x}                                                                       >> {output_dir}/{job_fcl}')
@@ -249,7 +249,15 @@ class SubmitJob:
             cmd  = f'cd $WORK_DIR; source $WORK_DIR/.source_me ;'
             cmd += f' cd {output_dir}; mu2e -c {job_fcl}' # fcl file is in the output_dif
         
-            if (args.Source     ): cmd += f' -S {args.Source}'
+            if (args.Source):
+                #
+                input_file_list=f'/tmp/submit_mu2e_job_input.{args.run_number}.txt.{os.getpid()}'
+                if (args.nfiles):
+                    os.system(f'cat {args.Source} | head -n {args.nfiles} > {input_file_list}')
+                else:
+                    os.system(f'cp {args.Source} {input_file_list}')
+                    
+                cmd += f' -S {input_file_list}'
             else:
                 if (args.source     ): cmd += f' -s {args.source}'
                 else                 : cmd += f' -S {input_file_list}'
@@ -271,7 +279,14 @@ class SubmitJob:
                 os.system(f'echo "input file list:"                        >> {output_dir}/{logfile}')
                 os.system(f'cat  {input_file_list}                         >> {output_dir}/{logfile}')
                 os.system(f'echo "---------------------------------------" >> {output_dir}/{logfile}')
-               
+
+            if (args.dry_run):
+                os.system(f'echo input_file_list:{input_file_list}')
+                return
+            
+#------------------------------------------------------------------------------       
+# finally, execute the command (if not dry_run)
+#------------------------------------------------------------------------------       
             p   = subprocess.Popen(cmd,
                                    executable="/bin/bash",
                                    shell=True,
