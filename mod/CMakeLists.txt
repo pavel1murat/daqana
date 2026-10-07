@@ -97,6 +97,16 @@ cet_build_plugin(StationAna art::module LIBRARIES REG
   ROOT::Gui
 )
 
+target_include_directories(mod_StationAna_module     PRIVATE ${Stntuple_INCLUDE_DIR})
+target_include_directories(mod_FileCatalog_module    PRIVATE ${Stntuple_INCLUDE_DIR})
+target_include_directories(mod_TrkFragmentAna_module PRIVATE ${Stntuple_INCLUDE_DIR})
+target_include_directories(mod_FragmentAna_module    PRIVATE ${Stntuple_INCLUDE_DIR})
+
+target_link_directories(mod_StationAna_module PRIVATE      "${Stntuple_LIBRARY_DIR}")
+target_link_directories(mod_TrkFragmentAna_module PRIVATE  "${Stntuple_LIBRARY_DIR}")
+target_link_directories(mod_FileCatalog_module PRIVATE     "${Stntuple_LIBRARY_DIR}")
+target_link_directories(mod_FragmentAna_module PRIVATE     "${Stntuple_LIBRARY_DIR}")
+
 cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
   # daqana::mod
   daqana_obj

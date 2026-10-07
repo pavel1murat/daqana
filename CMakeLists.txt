@@ -21,14 +21,15 @@ cet_set_compiler_flags(
 #------------------------------------------------------------------------------
 find_package(Offline           10.00.00 REQUIRED)
 find_package(Stntuple          25.04.21 REQUIRED)
+find_package(tomlplusplus      REQUIRED)
 
 message("---------- daqana: PRINT CMAKE VARIABLES " )
 # 
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#   message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+  message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
   
 # if (DEFINED ENV{MIDASSYS})
 #    message(-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=.$ENV{MIDASSYS}. )
@@ -37,8 +38,8 @@ message("---------- daqana: PRINT CMAKE VARIABLES " )
 #    message("-- P.Murat: no MIDASSYS")
 # endif()
 
-include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
-link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB} $ENV{SPACK_VIEW}/lib)
+#include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
+#link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB} $ENV{SPACK_VIEW}/lib)
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )

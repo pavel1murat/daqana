@@ -47,7 +47,8 @@ add_library(${lib} SHARED
 )
 add_library(daqana::obj ALIAS ${lib})
 
-target_link_libraries(${lib}   Offline::Mu2eUtilities ROOT::Core)
+target_link_libraries(${lib}   Offline::Mu2eUtilities ROOT::Core tomlplusplus::tomlplusplus)
+target_include_directories(${lib} PRIVATE ${tomlplusplus_INCLUDE_DIR})
 
 cet_add_compiler_flags(-g -O0)
 
