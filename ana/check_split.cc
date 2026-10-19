@@ -4,11 +4,11 @@
 #include <iostream>
 #include "TH1D.h"
 #include "daqana/obj/DaqEvent.hh"
-#include "ana/plot_crv_tc_dt.hh"
-#include "ana/check_split.hh"
+// #include "daqanaana/plot_crv_tc_dt.hh"
+#include "daqana/ana/check_split.hh"
 
 //-----------------------------------------------------------------------------
-int check_split(int Shift = 0) {
+int check_split(int Shift) {
 
   DaqEvent*       e1(nullptr);               // #include "daqana_nt_format.hh"
   DaqEvent*       e2(nullptr);               // #include "daqana_nt_format.hh"
@@ -19,8 +19,8 @@ int check_split(int Shift = 0) {
   TTree* t1 = (TTree*) f1->Get("/MakeDigiNtuple/digis");
   TTree* t2 = (TTree*) f2->Get("/MakeDigiNtuple/digis");
   
-  int rc1 = t1->SetBranchAddress("evt",&e1);
-  int rc2 = t2->SetBranchAddress("evt",&e2);
+  /* int rc1 = */ t1->SetBranchAddress("evt",&e1);
+  /* int rc2 = */ t2->SetBranchAddress("evt",&e2);
   // std::cout << rc1 << " " << rc2 << std::endl;
 
   //  t1->Print();
@@ -34,7 +34,7 @@ int check_split(int Shift = 0) {
   for (Long64_t i=2; i<n-2; ++i) {
     // std::cout << "001 emoe" << std::endl;
     
-    int nb1 = t1->GetEntry(i  );
+    /*int nb1 = */  t1->GetEntry(i  );
     // std::cout << "0011 evn1:" << e1->evn << " nb1: " << nb1 << std::endl;
     
     // std::cout << "002 emoe" << std::endl;

@@ -22,7 +22,7 @@
 #include "daqana/obj/TrkPanelMap_t.hh"
 #include "daqana/obj/CrvChannelMap_t.hh"
 
-#include "ana/ana/booking.hh"
+#include "daqana/ana/booking.hh"
 
 class plot_crv_tc_dt: public TNamed {
 public :

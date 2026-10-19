@@ -48,7 +48,7 @@
 
 
 //-----------------------------------------------------------------------------
-plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn = 0) : TNamed(Name,Name), fChain(0) {
+plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn) : TNamed(Name,Name), fChain(0) {
 
   std::string dir("/data/mu2e/mu2etrk/datasets/vst00s000r000n001"); 
   
@@ -73,8 +73,8 @@ plot_n001_sd::plot_n001_sd(const char* Name, int RunNumber, const char* Fn = 0) 
 //-----------------------------------------------------------------------------
 // pulsed channels
 //-----------------------------------------------------------------------------
-  RunData_t rd;
-  rd.run_number        = 122629;
+//  RunData_t rd;
+  // rd.run_number        = 122629;
   //  rd.ref_channel       = 13;
 
   fRefChannel          = 21;
@@ -201,7 +201,7 @@ void plot_n001_sd::fill_histograms() {
     
     int pln = sdi->plane();
     int pnl = sdi->panel();
-    int ich = sdi->straw();
+    //    int ich = sdi->straw();
 
     float ti = sdi->tdc0*5./256*1.e-3;
     fHist.h_tdc0->Fill(ti);

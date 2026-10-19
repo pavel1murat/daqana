@@ -216,17 +216,17 @@ void plot_n001_noise::Loop(int NEvents) {
 
   std::cout << std::format("nentries:{}\n",nentries);
 
-  Long64_t nbytes = 0, nb = 0;
+  // Long64_t nbytes = 0, nb = 0;
 
   int nev = NEvents;
   if (NEvents <= 0) nev = nentries;
 
   //
   std::vector<noise_t>* pdat;
-  noise_t* dr;                          // data record
+  // noise_t* dr;                          // data record
 
   int first_event(-1);
-  int index;
+  // int index;
   
   for (int jentry=0; jentry<nev; jentry++) {
     Long64_t ientry = LoadTree(jentry);
@@ -234,7 +234,7 @@ void plot_n001_noise::Loop(int NEvents) {
 
     if (first_event == -1) {
       first_event = (fEvent->evn/1000)*1000;
-      index = 0;
+      // index = 0;
     }
     
     for (int i=0; i<fEvent->nsdtot; i++) {
@@ -251,7 +251,7 @@ void plot_n001_noise::Loop(int NEvents) {
         pdat          = fDat[sd->mnid];
       }
                                         // last element
-      dr = &pdat->back();
+      // dr = &pdat->back();
       // one data point - per 1000 events
       /*
       current_index = (fEvent->evn-first_event)/1000;

@@ -20,6 +20,7 @@ root [3] x->PrintHistograms(0); // no threshold
 root [4] x->PrintHistograms(1); // occupancies for hits above 0.5 keV
 x->SaveHist("pulse_injection_120807_120808.hist");
 */
+#include <cmath>
 #include "ana/plot_sh.hh"
 
 #include "TPaveStats.h"

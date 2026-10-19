@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <format>
-#include "toml++/toml.hpp"
+// #include "toml++/toml.hpp"
 #include "daqana/obj/TrkPanelMap_t.hh"
 
 TrkPanelMap_t* TrkPanelMap_t::fgInstance(nullptr);
@@ -12,7 +12,8 @@ TrkPanelMap_t::TrkPanelMap_t(int RunNumber) {
   fRunNumber = RunNumber;
     // initialize
                                         // assume using spack
-  std::string fn = std::format("{}/daqana/calibrations/TrkPanelMap.toml",getenv("SPACK_ENV"));
+  // std::string fn = std::format("{}/daqana/calibrations/TrkPanelMap.toml",getenv("SPACK_ENV"));
+  /*
   toml::table tbl = toml::parse_file(fn);
     
   auto maps = tbl["TrkPanelMap"].as_array();
@@ -49,6 +50,7 @@ TrkPanelMap_t::TrkPanelMap_t(int RunNumber) {
       }
     }
   }
+  */
 }
 
 //-----------------------------------------------------------------------------

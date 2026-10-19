@@ -247,6 +247,8 @@ class SubmitJob:
             logfile=f'log.mu2e.{input_dsid}.{fcl_job_stub}.{run_number}.log' ;
 
             cmd  = f'cd $WORK_DIR; source $WORK_DIR/.source_me ;'
+            cmd += f' if [ -f $WORK_DIR/.rootrc ] ; then cp $WORK_DIR/.rootrc {output_dir}/.; fi ;'
+            cmd += f' if [ -f $WORK_DIR/rootlogon.C ] ; then cp $WORK_DIR/rootlogon.C {output_dir}/.; fi;'
             cmd += f' cd {output_dir}; mu2e -c {job_fcl}' # fcl file is in the output_dif
         
             if (args.Source):

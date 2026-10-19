@@ -242,7 +242,7 @@ int plot_n001_pin::FillHistograms() {
   for (int i=0; i<fEvent->nsdtot; i++) {
     DaqStrawDigi* sd = (DaqStrawDigi*) fEvent->sd->UncheckedAt(i);
 
-    int ch    = sd->straw();
+    // int ch    = sd->straw();
     int plane = sd->plane();
     int panel = sd->panel();
 

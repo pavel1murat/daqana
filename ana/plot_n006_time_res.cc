@@ -218,7 +218,7 @@ int plot_n006_time_res::LoadEvent(int Run, int Subrun, int Event) {
   Long64_t nbytes = 0, nb = 0;
 
   for (int jentry=0; jentry<nentries; jentry++) {
-    Long64_t ientry = LoadTree(jentry);
+    //Long64_t ientry = LoadTree(jentry);
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ((fEvent->run == Run) && (fEvent->srn == Subrun) and (fEvent->evn == Event)) {
       found = 1;

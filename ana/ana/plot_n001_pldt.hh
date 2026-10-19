@@ -26,7 +26,7 @@
 // #include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/TrkPanelMap_t.hh"
 
-#include "ana/ana/booking.hh"
+#include "daqana/ana/booking.hh"
 
 class plot_n001_pldt: public TNamed {
 public :
@@ -135,6 +135,7 @@ public :
   DaqEvent*       fEvent;               // #include "daqana_nt_format.hh"
   TClonesArray*   fSd;
 
+  float           dt05[36];            // ???
   float           t05 [36];
   float           dtpl[36];
   int             n05 [36];

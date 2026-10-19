@@ -27,7 +27,7 @@
 #include "daqana/obj/TrkPanelMap_t.hh"
 #include "daqana/obj/RunDb.hh"
 
-#include "ana/ana/booking.hh"
+#include "daqana/ana/booking.hh"
 
 class plot_n001_occup: public TNamed {
 public :

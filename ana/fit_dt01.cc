@@ -87,7 +87,7 @@ int fit_dt01::fit_histogram(TH1F* Hist, fit_result_t* Frr) {
 // thr_hv, thr_cal, gain are not used by the reconstruction
 // pin: pulse injection
 //-----------------------------------------------------------------------------
-int fit_dt01::fit_msh(int FirstRun, int Panel1=0, int Panel2=12, int PrintLevel=1) {
+int fit_dt01::fit_msh(int FirstRun, int Panel1, int Panel2, int PrintLevel) {
 
   fit_result_t fr[2][6][96]; 
 
@@ -162,7 +162,7 @@ int fit_dt01::fit_msh(int FirstRun, int Panel1=0, int Panel2=12, int PrintLevel=
 // Panel - offline numbering (0-215)
 // RunNumber : array of 8 run numbers
 //-----------------------------------------------------------------------------
-int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, int Panel, int PrintLevel=1) {
+int fit_dt01::fit_pin(const char* Fn, int* RunNumber, int SlotLo, int SlotHi, int Panel, int PrintLevel) {
 
   // const char* pnl_name[12] = { "MN261", "MN248", "MN224", "MN262", "MN273", "MN276",
   //                              "MN253", "MN101", "MN219", "MN213", "MN235", "MN247"
@@ -295,8 +295,8 @@ int fit_dt01::fit_cosmics(int RunNumber, int Slot, int Panel, int Channel, const
   for (int slot=slot_lo; slot<slot_hi+1; slot++) {
     for (int pnl12=panel_lo; pnl12<panel_hi+1; pnl12++) {
 
-      int panel = pnl12 % 6;
-      int plane = 2*slot+(pnl12 / 6);
+      // int panel = pnl12 % 6;
+      // int plane = 2*slot+(pnl12 / 6);
       
       // TrkPanelMap_t::Data_t* tpmd = tpm->panel_data_by_offline(plane,panel);
                                                           
@@ -315,7 +315,7 @@ int fit_dt01::fit_cosmics(int RunNumber, int Slot, int Panel, int Channel, const
         int panel_index   = 12*slot+pnl12;
         fit_result_t* frr = &fFr[panel_index][ich];
         frr->ich          = ich;
-        int rc            = fit_histogram(h_clone,frr);
+        /* int rc            = */ fit_histogram(h_clone,frr);
         // delete h_clone;
       }
     }

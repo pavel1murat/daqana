@@ -26,7 +26,7 @@
 // #include "daqana/obj/DaqSegment.hh"
 #include "daqana/obj/TrkPanelMap_t.hh"
 
-#include "ana/ana/booking.hh"
+#include "daqana/ana/booking.hh"
 
 class plot_n001_sd: public TNamed {
 public :

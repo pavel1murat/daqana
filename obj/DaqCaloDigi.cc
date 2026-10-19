@@ -20,7 +20,7 @@ int DaqCaloDigi::Init(int Ns) {
     _ns = Ns;
     wf.resize(Ns);
   }
-  return 0;
+  return rc;
 }
 
 //-----------------------------------------------------------------------------

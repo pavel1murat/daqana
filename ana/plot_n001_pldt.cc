@@ -5,7 +5,7 @@
   //
   x->SaveHist("pulse_injection_120807_120808.hist");
 */
-#include "ana/plot_n001_pldt.hh"
+#include "daqana/ana/plot_n001_pldt.hh"
 
 #include "TPaveStats.h"
 #include "TStyle.h"
@@ -377,7 +377,7 @@ void plot_n001_pldt::Loop(int NEvents) {
   fNEvents  = nev;
   fMaxEvent = -1;
 
-  int current_event = -1;
+  //   int current_event = -1;
   for (int jentry=0; jentry<nev; jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;

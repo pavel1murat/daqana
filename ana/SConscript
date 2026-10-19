@@ -11,7 +11,6 @@ Import('stntuple_helper')
 def local_build():
     local_env = daqana_env.Clone()
 
-    babarlibs = local_env['BABARLIBS']
     rootlibs  = local_env['ROOTLIBS']
 
     if ( not ("EG" in rootlibs)): rootlibs.insert(rootlibs.index("Physics")+1,"EG");
@@ -20,18 +19,15 @@ def local_build():
 
     helper.handle_dictionaries();
 
-    libs      = [ 
+    libs      = [
+                  'daqana_obj',
                   'Stntuple_loop',
                   'Stntuple_base',
                   'Stntuple_val',
-#
-                  'mu2e_CalPatRec',
-                  'mu2e_TrkReco',
-                  'mu2e_TrkHitReco',
                   'mu2e_TrackerConditions',
-                  'mu2e_Mu2eBTrk',
+                  # 'mu2e_Mu2eBTrk',
                   'mu2e_GeometryService',
-                  'mu2e_ConditionsService',
+        # 'mu2e_ConditionsService',
                   'mu2e_Mu2eUtilities',
                   'mu2e_GeneralUtilities',
                   'mu2e_CaloCluster',
@@ -39,13 +35,11 @@ def local_build():
                   'mu2e_CRVResponse',
                   'mu2e_MCDataProducts',
                   'mu2e_RecoDataProducts',
-                  'mu2e_BTrkData',
-                  'mu2e_BFieldGeom',
+                  # 'mu2e_BFieldGeom',
                   'mu2e_DataProducts',
                   # 'mu2e_Mu2eInterfaces',
                   'mu2e_DbService',
                   'mu2e_DbTables',
-                  babarlibs,
                   'art_Framework_Core',
                   'art_Framework_Principal',
                   'art_Framework_Services_Registry',
