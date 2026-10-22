@@ -249,7 +249,6 @@ void mu2e::FragmentAna::print_fragment(const artdaq::Fragment* Frag) {
 void mu2e::FragmentAna::beginRun(const art::Run&  ArtRun) {
 }
 
-
 //-----------------------------------------------------------------------------
 int mu2e::FragmentAna::analyze_dtc_fragment(const artdaq::Fragment* Frag) {
   int rc(0);
@@ -503,24 +502,6 @@ void mu2e::FragmentAna::analyze(const art::Event& event) {
 
   if (_debugMode and _debugBit[0]) print_(e_INFO,std::format("-- END: ewt:0x{:08x}",ewt0));
 }
-
-
-// //-----------------------------------------------------------------------------
-// uint16_t mu2e::FragmentAna::parse_minnesota_label(std::string label){
-//     if ((label.size() != 5) || (label[0] != 'M') || (label[1] != 'N')){
-//         std::string msg = "invalid minnesota label: " + label;
-//         throw cet::exception("FragmentAna") << msg << std::endl;
-//     }
-//     std::string substr = label.substr(2, 3);
-//     unsigned int parsed;
-//     int scanned = sscanf(substr.c_str(), "%u", &parsed);
-//     if (scanned != 1){
-//       std::string msg = "failed to parse minnesota label: " + label;
-//       throw cet::exception("FragmentAna") << msg << std::endl;
-//     }
-//     uint16_t rv = static_cast<uint16_t>(parsed);
-//     return rv;
-// }
 
 // ======================================================================
 

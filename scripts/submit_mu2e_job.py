@@ -203,7 +203,7 @@ class SubmitJob:
             print(f'args.data_dir:{args.data_dir}')
             
             if (args.data_dir):
-                cmd  = f"ls -al {args.data_dir}/{args.idsid}/* | awk '{{print $9}}'"   ## list all raw files
+                cmd  = f"ls -al {args.data_dir}/* | awk '{{print $9}}'"   ## list all raw files
             else:
                 cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"   ## list all raw files
                 
