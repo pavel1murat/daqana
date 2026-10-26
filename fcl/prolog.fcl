@@ -36,6 +36,18 @@ daqana : {
             minNTcCrvcMatches : 0
             fillHistograms    : false
         }
+        
+        TrkCrvFilter: { module_type:TrkCrvFilter
+            ksCollTag    : "KKLine"
+            crvcCollTag  : "CrvCoincidenceClusterFinder"
+            tcCollTag    : "SimpleTimeCluster"
+            minNCrvc     : 0
+            minNTrkHits  : 10
+            minNTrk      : 0
+            minNTcHits   : 10
+            maxTcCrvcDt  : 1000  ## ns
+            minNGoodTc   : 0
+        }
     }
     analyzers : {
 #------------------------------------------------------------------------------

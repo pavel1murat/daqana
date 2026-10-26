@@ -1,0 +1,16 @@
+# reduces the file size for sparse datasets
+# run on stripped dataset
+#include "Stntuple/fcl/stntuple.fcl"
+
+source: {module_type : RootInput
+    compactEventRanges : true
+}
+
+
+physics : {
+    output    : [ "defaultOutput" ]
+    end_paths : [ output ]  ## defined in Stntuple/fcl/stntuple_tables.fcl
+}
+
+
+outputs.defaultOutput.fileName : "raw.mu2e.kpp00s001r104n000.filter_trk_crv_comp.%06r_%06s.art"
