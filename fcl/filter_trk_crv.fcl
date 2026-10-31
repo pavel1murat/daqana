@@ -63,7 +63,7 @@ physics : {
         }
 
         CaloRecoDigiMaker : { @table::CaloReco.CaloRecoDigiMaker
-            globalDt : 1572.     ## 
+            # globalDt : 1572.     ## 
         }
 
         CaloHitMaker      : { @table::CaloReco.CaloHitMaker
@@ -85,7 +85,7 @@ physics : {
         
         CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
             # globalDt : 486.  ## run XXX <T(CRV)-T(tracker)>
-            globalDt : 551.    ## run "1236801: (TRK+CAL+CRV)  <T(CRV)-T(tracker)>
+            # globalDt : 551.    ## run "1236801: (TRK+CAL+CRV)  <T(CRV)-T(tracker)>
         }
 
         CrvCoincidenceClusterFinder: @local::CrvCoincidenceClusterFinder
@@ -118,12 +118,10 @@ physics : {
 
         TrkCrvFilter : { @table::daqana.filters.TrkCrvFilter
             tcCollTag       : "TimeCluster"
-            minNCrvc        : 2
-            minNTrkHits     : 15
-            minNTrk         : 0
             minNTcHits      : 20
-            maxTcCrvcDt     : 500
             minNGoodTc      : 1
+            maxTcCrvcDt     : 500
+            minNGoodCrvc    : 2
         }
     }
     

@@ -1,4 +1,9 @@
 #+startup:fold
 
-* kpp00s000rxxxn008 : Stntuple/test/make_det_002.fcl with 'latest' calibrations
-* vst00s000rxxxn008 : Stntuple/test/make_det_002.fcl with 'latest' calibrations
+| DSID              | type | input DSID        | job   | FCL                            | comments                   |
+|-------------------+------+-------------------+-------+--------------------------------+----------------------------|
+| kpp00s001r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_crv.fcl   |                            |
+| kpp00s002r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_calc.fcl  |                            |
+|-------------------+------+-------------------+-------+--------------------------------+----------------------------|
+| kpp00s000rxxxn008 | stn  | kpp00s000000n000  | nt    | Stntuple/test/make_det_002.fcl | with 'latest' calibrations |
+| kpp00s000r104n013 | stn  | kpp00s000000n000  | nt    | Stntuple/test/make_det_003.fcl |                            |

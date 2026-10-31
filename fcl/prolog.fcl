@@ -38,15 +38,25 @@ daqana : {
         }
         
         TrkCrvFilter: { module_type:TrkCrvFilter
-            ksCollTag    : "KKLine"
-            crvcCollTag  : "CrvCoincidenceClusterFinder"
-            tcCollTag    : "SimpleTimeCluster"
-            minNCrvc     : 0
-            minNTrkHits  : 10
-            minNTrk      : 0
-            minNTcHits   : 10
-            maxTcCrvcDt  : 1000  ## ns
-            minNGoodTc   : 0
+            ksCollTag     : "KKLine"
+            calcCollTag   : "CaloClusterMaker"
+            crvcCollTag   : "CrvCoincidenceClusterFinder"
+            tcCollTag     : "SimpleTimeCluster"
+
+            selectionType : "undefined"  ## "tc+calc" / "tc+crvc" / "calo-only"
+            
+            minNTrkHits   : 10
+            minNTrk       : 0
+            
+            maxDt         : 1000  ## ns
+
+            minNTcHits    : 10
+            minNGoodTc    : 0
+            
+            minNGoodCrvc  : 0
+            
+            minCalcEnergy : 20   ## MeV
+            minNGoodCalc  : 0
         }
     }
     analyzers : {

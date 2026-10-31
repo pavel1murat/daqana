@@ -85,25 +85,16 @@ cet_build_plugin(StationAna art::module LIBRARIES REG
   artdaq-core-mu2e::Data
   ROOT::Hist ROOT::Tree ROOT::Core ROOT::RIO ROOT::Gui
 )
-cet_build_plugin(TrkCrvFilter art::module LIBRARIES REG
-  Stntuple_mod Stntuple_print Stntuple_geom Stntuple_obj Stntuple_base
-  Offline::RecoDataProducts
-  art_root_io::TFileService_service
-  artdaq-core-mu2e::Data
-  ROOT::Hist ROOT::Tree ROOT::Core ROOT::RIO ROOT::Gui
-)
 
 target_include_directories(mod_StationAna_module     PRIVATE ${Stntuple_INCLUDE_DIR})
 target_include_directories(mod_FileCatalog_module    PRIVATE ${Stntuple_INCLUDE_DIR})
 target_include_directories(mod_TrkFragmentAna_module PRIVATE ${Stntuple_INCLUDE_DIR})
 target_include_directories(mod_FragmentAna_module    PRIVATE ${Stntuple_INCLUDE_DIR})
-target_include_directories(mod_TrkCrvFilter_module   PRIVATE ${Stntuple_INCLUDE_DIR})
 
 target_link_directories(mod_StationAna_module     PRIVATE ${Stntuple_LIBRARY_DIR})
 target_link_directories(mod_TrkFragmentAna_module PRIVATE ${Stntuple_LIBRARY_DIR})
 target_link_directories(mod_FileCatalog_module    PRIVATE ${Stntuple_LIBRARY_DIR})
 target_link_directories(mod_FragmentAna_module    PRIVATE ${Stntuple_LIBRARY_DIR})
-target_link_directories(mod_TrkCrvFilter_module   PRIVATE ${Stntuple_INCLUDE_DIR})
 
 cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
   # daqana::mod
