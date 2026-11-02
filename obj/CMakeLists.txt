@@ -8,10 +8,10 @@ set(dict   "${PROJECT_NAME}_${subpkg}_dict")
 set(lib    "${PROJECT_NAME}_${subpkg}"     )
 
 include_directories(
-  $ENV{SPACK_VIEW}/include
-  $ENV{ROOTSYS}/include/root
+  # $ENV{SPACK_VIEW}/include
+  # $ENV{ROOTSYS}/include/root
   ${CMAKE_CURRENT_SOURCE_DIR}/${subpkg}
-  $ENV{SPACK_ENV}/${PROJECT_NAME} 
+  ${PROJECT_SOURCE_DIR}
 )
 
 # link_directories($ENV{ROOTSYS}/lib)

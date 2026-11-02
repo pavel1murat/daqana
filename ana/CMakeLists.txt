@@ -10,8 +10,8 @@ set(lib    "${PROJECT_NAME}_${subpkg}"     )
 include_directories(
   $ENV{SPACK_VIEW}/include
   $ENV{ROOTSYS}/include/root
-  ${CMAKE_CURRENT_SOURCE_DIR}/${subpkg}
-  $ENV{SPACK_ENV}/${PROJECT_NAME} 
+  ${CMAKE_CURRENT_SOURCE_DIR}/${subpkg}         # for ROOT_GENERATE_DICTIONARY
+  ${PROJECT_SOURCE_DIR}
 )
 
 # link_directories($ENV{ROOTSYS}/lib)
