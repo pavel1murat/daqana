@@ -102,7 +102,11 @@ class SubmitJob:
             if (not muse_work_dir):
                 logger.error('--idsid needs $MUSE_WORK_DIR, samdfc/ is a subdirectory of it')
                 sys.exit(1)
-            args.Source = os.path.join(muse_work_dir, 'samdfc', f'{args.idsid}.files')
+            # books are subdirectories of samdfc: samdfc/$book/$idsid.files, samdfc/$idsid.files without a book
+            samdfc_dir = os.path.join(muse_work_dir, 'samdfc')
+            if (args.book):
+                samdfc_dir = os.path.join(samdfc_dir, args.book)
+            args.Source = os.path.join(samdfc_dir, f'{args.idsid}.files')
 #------------------------------------------------------------------------------
 # form the input file list, input_dsid and run number come from it
 #------------------------------------------------------------------------------
