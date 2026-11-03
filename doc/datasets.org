@@ -1,9 +1,14 @@
 #+startup:fold
 
-| DSID              | type | input DSID        | job   | FCL                            | comments                   |
-|-------------------+------+-------------------+-------+--------------------------------+----------------------------|
-| kpp00s001r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_crv.fcl   |                            |
-| kpp00s002r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_calc.fcl  |                            |
-|-------------------+------+-------------------+-------+--------------------------------+----------------------------|
-| kpp00s000rxxxn008 | stn  | kpp00s000000n000  | nt    | Stntuple/test/make_det_002.fcl | with 'latest' calibrations |
-| kpp00s000r104n013 | stn  | kpp00s000000n000  | nt    | Stntuple/test/make_det_003.fcl |                            |
+| DSID              | type | input DSID        | job   | FCL                             | comments                                   |
+|-------------------+------+-------------------+-------+---------------------------------+--------------------------------------------|
+| kpp00s001r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_crv.fcl    |                                            |
+| kpp00s002r104n000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_calc.fcl   |                                            |
+| kpp00s003r1xxn000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_tc_only.fcl   |                                            |
+| kpp00s004r1xxn000 | reco | kpp00s000r000n000 | strip | daqana/fcl.filter_calc_only.fcl | at least one cluster > 20 MeV in each disk |
+|-------------------+------+-------------------+-------+---------------------------------+--------------------------------------------|
+| kpp00s000rxxxn002 | stn  | kpp00s000r000n000 | nt    | Stntuple/test/md_r108_n002.fcl  | straw hits only , close hits only          |
+| kpp00s000rxxxn007 | stn  | kpp00sxxxrxxxn000 | nt    | Stntuple/test/md_r108_n007.fcl  | everything possible to store, large        |
+|-------------------+------+-------------------+-------+---------------------------------+--------------------------------------------|
+| kpp00s000rxxxn008 | stn  | kpp00s000r000n000 | nt    | Stntuple/test/make_det_002.fcl  | with 'latest' calibrations                 |
+| kpp00s000r104n013 | stn  | kpp00s000r000n000 | nt    | Stntuple/test/make_det_003.fcl  |                                            |

@@ -119,7 +119,7 @@ physics : {
         DaqanaFilter : { @table::daqana.filters.DaqanaFilter
             tcCollTag       : "TimeCluster"
             selectionType   : "tc_calc"
-            minNTcHits      : 20
+            minNTcHits      : 10
             minNGoodTc      : 1
             minCalcEnergy   : 20    ## MeV
             minNGoodCalc    : 1

@@ -245,24 +245,28 @@ namespace mu2e {
     tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
     calc_coll_ = event.getValidHandle<CaloClusterCollection>(calcCollTag_);
 
-    size_t n_good_tc   = 0;
-    size_t n_good_calc = 0;
+    size_t n_good = 0;
     for (auto const& tc : *tc_coll_) {
       // these are combo hits
       if (not tc_is_good(tc)) continue;
 
-      n_good_tc++;
+      size_t n_good_calc = 0;
       for (auto const& calc: *calc_coll_) {
         if (calc.energyDep() > minCalcEnergy_) continue;
 
         float dt = tc.t0().t0()-calc.time();
         if (fabs(dt) < maxDt_) {
-          ++n_good_calc;
+          // "good" combination found
+          n_good_calc++;
         }
+      }
+
+      if (n_good_calc >= minNGoodCalc_) {
+        n_good++;
       }
     }
 
-    passed = (n_good_tc>= minNGoodTc_) and (n_good_calc >= minNGoodCrvc_);
+    passed = (n_good >= minNGoodTc_); 
     
     return passed;
   }
@@ -274,22 +278,26 @@ namespace mu2e {
     tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
     crvc_coll_ = event.getValidHandle<CrvCoincidenceClusterCollection>(crvcCollTag_);
 
-    size_t n_good_tc   = 0;
-    size_t n_good_crvc = 0;
+    size_t n_good   = 0;
     for (auto const& tc : *tc_coll_) {
-      // these are combo hits
+      // these are the combo hits
       if (not tc_is_good(tc)) continue;
 
-      n_good_tc++;
+      size_t n_good_crvc = 0;
+
       for (auto const& crvc: *crvc_coll_) {
         float tc_crvc_dt = tc.t0().t0()-crvc.GetStartTime();
         if (fabs(tc_crvc_dt) < maxDt_) {
           ++n_good_crvc;
         }
       }
+      // number of CRV clusters within the window
+      if (n_good_crvc >= minNGoodCrvc_) {
+        n_good++;
+      }
     }
 
-    passed = (n_good_tc>= minNGoodTc_) and (n_good_crvc >= minNGoodCrvc_);
+    passed = (n_good >= minNGoodTc_);
     
     return passed;
   }
@@ -328,7 +336,7 @@ namespace mu2e {
       passed = select_tc_calc(event);
     }
     else if (selectionType_ == "tc_crvc") {
-      passed = select_tc_calc(event);
+      passed = select_tc_crvc(event);
     }
     else if (selectionType_ == "tc_only") {
       passed = select_tc_only(event);

@@ -1,179 +1,201 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# make digi ntuple with: a) straw hits and b) time clusters  (NO DIGIS)
+# make_det_001: ALL TRACKER HITS
 #
-# Usage: mu2e -c daqana/fcl/make_digi_ntuple.fcl -s <input art file> [-n 10]
-# 
-# hopefully, prolog variables below are not used
-# calibration_set_v1 already has TrkDelayPanel calibrated with time clusters
-#-----------------------------------------------------------------------------
+# p0 : ntupling only, assumes input being the reconstruction output
+# p1 : default reconstruction path
+# p2 : read and ntuple (use with RootInput to ntuple MDC'2018 files)
+# p3 : path to debug the TPR and CPR reconstruction paths separately
+# p4 : read, reconstruct, run event display : MuHitDisplayDeMHDar
+#
+# 2026-10-05 PM: data and MC geometries for the moment are different
+#------------------------------------------------------------------------------
 BEGIN_PROLOG
-TRIGGER_PATHS : [ p1 ]
+  bgHitFiles                  : @nil
+  INPUT_MODULE @protect_ignore: RootInput
+  TRIGGER_PATH @protect_ignore: "t0"                  ## filtering 
+  PROCESS_NAME @protect_ignore: TrkCrvFilter
 END_PROLOG
-
-#include "Offline/fcl/minimalMessageService.fcl"
-#include "Offline/fcl/standardServices.fcl"
 
 #include "Stntuple/fcl/stntuple_prologs.fcl"
 #include "daqana/fcl/prolog.fcl"
-#------------------------------------------------------------------------------
-# prologs end here
-#------------------------------------------------------------------------------
 #include "Stntuple/fcl/stntuple_templates.fcl"
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "daqana/rundb/123000/123680/calibration_set_123680_v1.fcl"
+## #include "daqana/rundb/124000/124155/calibration_set_v103.fcl"
+#include "rundb/latest/calibration_set_v104.fcl"
 
-services.ProditionsService.crvPhotonYield.useDb : false
-services.ProditionsService.crvStatus.useDb      : false
-services.ProditionsService.crvCalib.useDb       : false
-
-services.TimeTracker : {}
-
-services.message.destinations.log.categories.MAKE_SD: {
-    # reportEvery :  1
-    limit       : 1000   # -1
-}
-
-process_name : DaqanaFilter
-
-source : {
-    module_type : RootInput
-    fileNames   : @nil
-
-    # firstEvent  : 500
-    maxEvents   : -1
-    #   inputCommands: ["keep *",
-    #                   "drop *Mu2eEventHeader*_*_*_*"]
-}
-
-outputs:  {
-    defaultOutput :  {
-        module_type   :   RootOutput
-        fileName      :   "trk_fragment_ana.art"
-        SelectEvents  : [ p1 ]
-        outputCommands: [
-                         "keep *_*_*_*",
-                         "drop *_*_*_DaqanaFilter"  # drop everything created by this job
-                        ]
-    }
-}
+process_name : @local::PROCESS_NAME
 
 physics : {
-    
-    producers : {
-       CrvDigi :  { module_type   : CrvDigisFromArtdaqFragmentsFEBII
-            diagLevel     : 1 ## 10
-            # useSubsystem0 : false
-        }
-
-        @table::CrvRecoPackage.producers
-
+    producers  : { @table::Reconstruction.producers
+        
         EWMProducer: { @table::CommonMC.DigiProducers.EWMProducer
-            SpillType:          0   ## offspill
-            RecoFromMCTruth: false  ## default
-            RecoFromMCTruthErr: 0   ## default
-            InitialPhaseShift:  0   ## optional, set it to zero just in case
+            SpillType         : 0       ## offspill
+            RecoFromMCTruth   : false   ## default
+            RecoFromMCTruthErr: 0       ## default
+            InitialPhaseShift : 0       ## optional, set it to zero just in case
         }
-
+        
         makeSD: { @table::DAQ.producers.makeSD
-            diagLevel     :  0 ## 10
-            saveWaveforms :  true
+            debugMode        : 0 ## 1
+            debugBits        : ["bit0:1"]
+            saveWaveforms    : true
         }
         
         makeSH: { @table::TrkHitReco.producers.makeSH }
         
-        makePH : { @table::TrkHitReco.producers.makePH
-            ComboHitCollection    : "makeSH"
-            EventWindowMarker     : "EWMProducer"
-            StrawHitSelectionBits : [ ]                 ## "EnergySelection", "TimeSelection", "RadiusSelection"]
-            StrawHitMask          : ["Dead"]
-            MaxDt                 : 45 # ns
-            UseTOT                : false               ## true
-            MaxWireDistDiffPull   : 10.                 ## 5.0
-            MaxDS                 : 10                  ## 3
-            UError                : 20.                 ## 10.0 # mm
-            MinimumTime           : 0                   ## 410.0 # ns
-            MaximumTime           : 300000              ## 1700.0 # ns
-            MinimumEnergy         : 0.00000             ## 0.0001 # MeV
-            MaximumEnergy         : 0.006               ## 0.0045 # MeV
-            MinimumRadius         : 300.                ## 380.0 # mm
-            MaximumRadius         : 1000.               ## 700.0 # mm
-            MinimumNHits          : 1
-            MaximumNHits          : 1                   ## 8
-            CheckWres             : false               ## true
-            Unsorted              : false               ## VST data are readout by panel
-        }
-
-        TZClusterFinder : { @table::CalPatRec.producers.TZClusterFinder
-            diagLevel                  : 0
-            debugLevel                 : 0
-            printFrequency             : 1000
-            runDisplay                 : 0
-            useCCs                     : 1
-            recoverCCs                 : 1
-            chCollLabel                : "makeSH" ## "makePH" ## "flagPH"
-            tcCollLabel                : "TimeClusterFinderDe"
-            ccCollLabel                : "CaloClusterMaker"
-            hitBkgBits                 : ["Noisy","Dead","Background"]
-            radSelect                  : 0        ## 1
-            chunkSep                   : 5
-            chunkWindow                : 500.0    ## 20.0
-            chunkThresh                : 5        ## 3
-            combineWindow              : 500.0    ## 30.0
-            maxCombineSep              : 2500.0
-            chunkFitThresh             : 5
-            recoverWindow              : 50.0
-            clusterThresh              : 5        ## 15
-            minCaloSize                : 2
-            minCaloEnergy              : 50.0
-            caloDtMax                  : 30.0
-            doRefine                   : 1        ## 0
-        }
-
-        SimpleTimeCluster : { @table::CosmicReco.SimpleTimeCluster
+        TimeCluster : { @table::CosmicReco.SimpleTimeCluster
             minNStrawHits : 4
             minNPanels    : 1
-            TimeWindow    : 400
-            TimeStep      : 30
+            TimeWindow    : 160 ## assume running with correct calibrations ## 400
+            TimeStep      : 50
+            minEDep       : 0.5e-3
+            minNGoodHits  : 2
+        }
+        
+        CaloDigiMaker : { module_type:  CaloDigisFromDTCEvents
+            dataType     : 0
+            diagLevel    : 0
+            useOfflineID : true
+        }
+
+        CaloRecoDigiMaker : { @table::CaloReco.CaloRecoDigiMaker
+            # globalDt : 1572.     ## 
+        }
+
+        CaloHitMaker      : { @table::CaloReco.CaloHitMaker
+            time4Merge : 30.0   ## ns (default: 6)
+        }
+        
+        CaloProtoClusterMaker : { @table::CaloCluster.CaloProtoClusterMaker
+        }
+
+        CaloClusterMaker : { @table::CaloCluster.CaloClusterMaker
+            deltaTime :  10          ## ns, default : 2ns....
+        }
+        
+        CrvDigi :  {
+            module_type   : CrvDigisFromArtdaqFragmentsFEBII
+            diagLevel     : 0
+            useROC4asROC2 : true
+        }
+        
+        CrvRecoPulses : { @table::CrvRecoPackage.producers.CrvRecoPulses
+            # globalDt : 486.  ## run XXX <T(CRV)-T(tracker)>
+            # globalDt : 551.    ## run "1236801: (TRK+CAL+CRV)  <T(CRV)-T(tracker)>
+        }
+
+        CrvCoincidenceClusterFinder: @local::CrvCoincidenceClusterFinder
+        
+        LineFinder : { @table::CosmicReco.LineFinder
+            minPeak              : 8
+            NSteps               : 5
+            StepSize             : 0.25
+            TimeClusterCollection: "TimeCluster"
+        }
+
+        KKLine : { @table::Reconstruction.producers.KKLine   
+        }
+    }
+
+    filters    : { ## @table::stntuple.filters
+        EventIDFilter : { module_type: EventIDFilter
+            idsToMatch: [
+                         "123680:1-69:*",
+                         "123680:70:1-693386", "123680:70:693388-100000000",     ## skip event: 693387:CaloHitFastMaker
+                         "123680:71-74:*",
+                         "123680:75:1-747808", "123680:75:747810-100000000",     ## 123680:75:747809: CaloHitFastMaker
+                         "123680:76-204:*",
+                         "123680:205:1-2040079","123680:205:2040081-100000000",
+                         "123680:206-869:*",
+                         "123680:870:1-8698085","123680:870:8698087-100000000",
+                         "123680:871-10000:*"
+                        ]
+        }
+
+        DaqanaFilter : { @table::daqana.filters.DaqanaFilter
+            selectionType   : "tc_crvc"
+            tcCollTag       : "TimeCluster"
+            maxDt           : 500   ## ns
+            minNTcHits      :  15
+            minNGoodCrvc    :   2
+            minNGoodTc      :   1
         }
     }
     
-    filters   : {  @table::daqana.filters  }
-    
-    analyzers : {
-        MakeDigiNtuple : { @table::daqana.analyzers.MakeDigiNtuple
-            makeSD    : 0
-            makeSH    : 1
-            makeTC    : 1
-            makeTrk   : 0
-            tcCollTag : "SimpleTimeCluster"  ## "TZClusterFinder"  ## 
-        }
+    analyzers  : { @table::stntuple.analyzers 
+	StntupleMaker: { @table::stntuple.analyzers.StntupleMaker
+#------------------------------------------------------------------------------
+# comment out the hit section if don't need hits... by default, store close hits only
+#------------------------------------------------------------------------------
+            makeStrawHits      : 1
+            makeComboHits      : 1
+            storeCloseHitsOnly : false           ## true
+            minStrawHitEDep    : 0.0005          ## 0.5 keV
+            minStrawHitDt      : 80              ## ns
+            
+            # makeCaloClusters   : 1
+            makeCaloHits       : 1
+            makeCaloDigis      : 1
+            makeCaloRecoDigis  : 1
+            
+            makeCrvDigis       : 1
+            makeCrvPulses      : 1
+	    makeCrvClusters    : 1  ## default: 0
+
+            makeTimeClusters   : 1
+            makeStraightTracks : 1
+            trackCollTag       : [ "KKLine" ]
+
+            timeClusterCollTag   : [ "TimeCluster"      ]
+            timeClusterBlockName : [ "TimeClusterBlock" ]
+
+            chCollTag            : "makeSH"
+	}
     }
+    
+    @table::stntuple.paths    ## defined in Stntuple/fcl/stntuple_tables.fcl
 
-    # p1 : [ EWMProducer, makeSD, makeSH ]
-    p1 : [ EWMProducer, makeSD, makeSH, SimpleTimeCluster
-           , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder      ## CRV reco
-           , DaqanaFilter ]                                           ## TZClusterFinder ]
+    t0       : [ # EventIDFilter,
+                EWMProducer
+                , makeSD, makeSH, TimeCluster                           ## tracker
+                , CaloDigiMaker, CaloRecoDigiMaker, CaloHitMaker        ## calorimeter
+                , CaloProtoClusterMaker, CaloClusterMaker
+                , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder   ## CRV
+                # , LineFinder, KKLine                                    ## track reco
+                , DaqanaFilter
+               ]
+        
+    trigger_paths : [ "t0" ]
+    
+    output        : [ defaultOutput ]                   # [defaultOutput]/[]
 
-    e0 : []
-    # e1 : [ MakeDigiNtuple ] ## , defaultOutput ]
-    e1 : [ defaultOutput ]
-
-    trigger_paths  : [ p1 ]   ## p1
-    end_paths      : [ e1 ]
+    end_paths     : [ output ]  ## defined in Stntuple/fcl/stntuple_tables.fcl
+ 
 }
-#------------------------------------------------------------------------------
-# 
-#------------------------------------------------------------------------------
-physics.filters.DaqanaFilter.tcCollTag         : "SimpleTimeCluster"
-physics.filters.DaqanaFilter.minNTimeClusters  : 1
-physics.filters.DaqanaFilter.minEDep           : 0.0005  ## 0.5 keV (gas amplification included)
-physics.filters.DaqanaFilter.requireCrvc       : true
-physics.filters.DaqanaFilter.minNTcCrvcMatches : 1
 
-physics.filters.DaqanaFilter.fillHistograms    : true
+services.TFileService.fileName           : "hst.mu2e.kpp00s001r104n000.filter_trk_crv.%06r_%06s.root"  ## "/dev/null" ##
 
-services.TFileService.fileName                 : "hst.mu2e.trk.vst00s001r000n000.%06r_%06s.root"
-outputs.defaultOutput.fileName                 : "raw.mu2e.trk.vst00s002r000n000.%06r_%06s.root"
+outputs.defaultOutput.fileName           : "raw.mu2e.kpp00s001r104n000.filter_trk_crv.%06r_%06s.art"
+outputs.defaultOutput.SelectEvents       : [ "t0" ]
+# outputs.defaultOutput.dropMetaData       : "ALL"
+outputs.defaultOutput.outputCommands     : [
+                                            "keep *_*_*_*",
+                                            "drop *_*_*_TrkCrvFilter"
+                                           ]
+
+physics.producers.KKLine.KKFitSettings.UseCaloCluster : false
+physics.analyzers.InitStntuple.SelectEvents: [ "t0" ]     ## keep only events that passed t0
+
+services.message.destinations.log.categories.ArtReport.reportEvery : 1
+services.message.destinations.log.categories.ArtReport.limit       : 1000
+services.message.destinations.log.categories.ArtReport.timespan    : 300
+
+services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
+services.GeometryService.inputFile : "Stntuple/fcl/geom_common_extracted_data.txt"
+#include "Offline/CRVReco/fcl/epilog_extracted.fcl"
+#----------------------------------------------------------------------
+#  overrides by submit_mu2e_job.py
+#----------------------------------------------------------------------

@@ -7,7 +7,7 @@
 # --fcl        : template fcl file
 #------------------------------------------------------------------------------
 import subprocess, datetime, socket
-import sys, argparse, glob, os, shlex
+import sys, argparse, glob, os, shlex, re
 import logging
 
 #------------------------------------------------------------------------------
@@ -199,9 +199,13 @@ class SubmitJob:
         input_dsid = args.idsid
         run_number = args.run_number
 
-        if (input_dsid is None and args.source):
-            # input file defined, assume Mu2e naming conventions
-            input_dsid = os.path.basename(args.source).split('.')[2]
+        if (args.source):
+            # single input file: the dataset ID comes from its Mu2e standard name
+            dsid_from_file = self.dsid_from_name(args.source)
+            if (input_dsid is not None and input_dsid != dsid_from_file):
+                logger.error(f'--idsid={input_dsid} does not match the dataset ID {dsid_from_file} of {args.source}')
+                sys.exit(1)
+            input_dsid = dsid_from_file
         if (run_number is None and args.source):
             run_number = os.path.basename(args.source).split('.')[4]
 
@@ -223,6 +227,16 @@ class SubmitJob:
             return input_dsid, run_number, None
 
         return input_dsid, run_number, self.raw_files(args)
+
+#------------------------------------------------------------------------------
+# Mu2e standard name: type.user.dsid.job.run_subrun.format, returns dsid
+#------------------------------------------------------------------------------
+    def dsid_from_name(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) != 6 or not re.fullmatch(r'\d+_\d+', fields[4])):
+            logger.error(f'{path} is not a Mu2e standard file name (type.user.dsid.job.run_subrun.format)')
+            sys.exit(1)
+        return fields[2]
 
 #------------------------------------------------------------------------------
 # field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
@@ -265,6 +279,13 @@ class SubmitJob:
             cmd += ' | sed -E ' + q(f's|(histFileName *: *"nts\\.mu2e\\.)[^.]+(\\.)|\\1{input_dsid}\\2|')
         else:
             logger.warning('no input dataset ID, histFileName is left unchanged')
+
+        # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+        if (args.run_number is not None):
+            with open(template_fcl, encoding="utf-8") as f:
+                if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
 
         if (args.calib_ver):
             ver = args.calib_ver
