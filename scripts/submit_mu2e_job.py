@@ -56,6 +56,7 @@ class SubmitJob:
         parser.add_argument('--idsid'           , default=None,           help="input dataset ID")
         parser.add_argument('-n','--nevents'    , type=int, default=None, help="N(events) to process")
         parser.add_argument('--nfiles'          , type=int, default=None, help="N(files) to process")
+        parser.add_argument('-f','--files'      , default=None,           help="range N1-N2 of files in the input list to process (1-based, inclusive)")
         parser.add_argument('--nskip'           , type=int, default=None, help="unused")
         parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
         parser.add_argument('-r','--run_number' , type=int, default=None, help="run number")
@@ -209,9 +210,20 @@ class SubmitJob:
         if (run_number is None and args.source):
             run_number = os.path.basename(args.source).split('.')[4]
 
+        if (args.files and not args.Source):
+            logger.error('--files needs an input file list (--Source or --idsid)')
+            sys.exit(1)
+
         if (args.Source):
             with open(args.Source, encoding="utf-8") as f:
                 lines = f.readlines()
+            if (args.files):
+                # --files N1-N2: the files numbered N1..N2 in the input list, counting from 1
+                first, last = self.parse_file_range(args.files)
+                if (last > len(lines)):
+                    logger.error(f'--files {args.files}: the input list {args.Source} has only {len(lines)} files')
+                    sys.exit(1)
+                lines = lines[first-1:last]
             if (args.run_number is not None):
                 lines = [line for line in lines if self.has_run(line, args.run_number)]
             if (not lines):
@@ -227,6 +239,16 @@ class SubmitJob:
             return input_dsid, run_number, None
 
         return input_dsid, run_number, self.raw_files(args)
+
+#------------------------------------------------------------------------------
+# --files N1-N2: returns (N1, N2), 1-based inclusive
+#------------------------------------------------------------------------------
+    def parse_file_range(self,text):
+        m = re.fullmatch(r'\s*(\d+)\s*-\s*(\d+)\s*', text)
+        if (m is None or int(m.group(1)) < 1 or int(m.group(2)) < int(m.group(1))):
+            logger.error(f'--files {text}: expected N1-N2 with 1 <= N1 <= N2')
+            sys.exit(1)
+        return int(m.group(1)), int(m.group(2))
 
 #------------------------------------------------------------------------------
 # Mu2e standard name: type.user.dsid.job.run_subrun.format, returns dsid
