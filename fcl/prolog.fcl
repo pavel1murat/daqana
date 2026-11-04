@@ -41,7 +41,8 @@ daqana : {
             minNGoodCrvc  : 0
             
             minCalcEnergy : 20   ## MeV
-            minNGoodCalc  : 0
+            minCalcSize   :  1   ## MeV
+            minNGoodCalc  :  0
         }
     }
     analyzers : {

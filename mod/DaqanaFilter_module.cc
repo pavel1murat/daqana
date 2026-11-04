@@ -44,7 +44,8 @@ namespace mu2e {
 
       // calorimeter cluster (CALC) selection
       fhicl::Atom<float>         minCalcEnergy{Name("minCalcEnergy"), Comment("Minimum CALC energy")};
-      fhicl::Atom<unsigned>      minNGoodCalc {Name("minNGoodCalc" ), Comment("Minimum number of calo clusters")};
+      fhicl::Atom<int>           minCalcSize  {Name("minCalcSize"  ), Comment("Minimum CALC size (ncrystals)")};
+      fhicl::Atom<int>           minNGoodCalc {Name("minNGoodCalc" ), Comment("Minimum number of calo clusters")};
 
       // muon stub (CRVC) selection - no real cuts 
       fhicl::Atom<unsigned>      minNGoodCrvc {Name("minNGoodCrvc" ), Comment("Minimum number of good CRVC")};
@@ -69,10 +70,11 @@ namespace mu2e {
     // std::string findComboHitCollTag(art::Event const& event, art::Handle<TimeClusterCollection> const& TcHandle);
     bool        filter             (art::Event& event) override;
     
-    bool select_calc_only(art::Event& event);
-    bool select_tc_calc  (art::Event& event);
-    bool select_tc_crvc  (art::Event& event);
-    bool select_tc_only  (art::Event& event);
+    bool filter_calc_only(art::Event& event);
+    bool filter_tc_calc  (art::Event& event);
+    bool filter_tc_crvc  (art::Event& event);
+    bool filter_tc_only  (art::Event& event);
+    bool filter_two_disks(art::Event& event);
 
     bool tc_is_good(const TimeCluster& Tc);
     
@@ -91,7 +93,8 @@ namespace mu2e {
     std::string   selectionType_;
     
     float         minCalcEnergy_;
-    unsigned      minNGoodCalc_;
+    int           minCalcSize_;
+    int           minNGoodCalc_;
 
     unsigned      minNGoodCrvc_;
 
@@ -124,7 +127,8 @@ namespace mu2e {
     , selectionType_{p().selectionType()}
 
     , minCalcEnergy_{p().minCalcEnergy()}
-    , minNGoodCalc_ {p().minNGoodCalc() }
+    , minCalcSize_  {p().minCalcSize  ()}
+    , minNGoodCalc_ {p().minNGoodCalc ()}
       
     , minNGoodCrvc_{p().minNGoodCrvc()}
       
@@ -181,7 +185,27 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // require at least one cluster above minCalcEnergy_ in each disk
 //-----------------------------------------------------------------------------
-  bool DaqanaFilter::select_calc_only(art::Event& event) {
+  bool DaqanaFilter::filter_calc_only(art::Event& event) {
+    bool passed  = false;
+
+    calc_coll_ = event.getValidHandle<CaloClusterCollection>(calcCollTag_);
+    int nCalc = calc_coll_->size();
+
+    int n_good_cl(0);
+    for (int i=0; i<nCalc; i++) {
+      const CaloCluster* c = &calc_coll_->at(i);
+      if (c->energyDep() < minCalcEnergy_) continue;
+      if (c->size     () < minCalcSize_  ) continue;
+      n_good_cl++;
+    }
+    passed = (n_good_cl > minNGoodCalc_);
+    return passed;
+  }
+
+//-----------------------------------------------------------------------------
+// require at least one cluster above minCalcEnergy_ in each disk
+//-----------------------------------------------------------------------------
+  bool DaqanaFilter::filter_two_disks(art::Event& event) {
     bool passed  = false;
 
     calc_coll_ = event.getValidHandle<CaloClusterCollection>(calcCollTag_);
@@ -191,10 +215,12 @@ namespace mu2e {
     for (int i1=0; i1<nCalc; i1++) {
       const CaloCluster* c1 = &calc_coll_->at(i1);
       if (c1->energyDep() < minCalcEnergy_) continue;
+      if (c1->size     () < minCalcSize_  ) continue;
 
       for (int i2=i1+1; i2<nCalc; i2++) {
         const CaloCluster* c2 = &calc_coll_->at(i2);
         if (c2->energyDep() < minCalcEnergy_) continue;
+        if (c2->size     () < minCalcSize_  ) continue;
             
         // clusters in different disks
         if (c1->diskID() == c2->diskID()) continue;
@@ -239,20 +265,23 @@ namespace mu2e {
 
   
 //-----------------------------------------------------------------------------
-  bool DaqanaFilter::select_tc_calc(art::Event& event) {
+  bool DaqanaFilter::filter_tc_calc(art::Event& event) {
     bool passed  = false;
     
-    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
     calc_coll_ = event.getValidHandle<CaloClusterCollection>(calcCollTag_);
+    ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
+    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
+
 
     size_t n_good = 0;
     for (auto const& tc : *tc_coll_) {
       // these are combo hits
       if (not tc_is_good(tc)) continue;
 
-      size_t n_good_calc = 0;
+      int n_good_calc = 0;
       for (auto const& calc: *calc_coll_) {
         if (calc.energyDep() > minCalcEnergy_) continue;
+        if (calc.size()      > minCalcSize_  ) continue;
 
         float dt = tc.t0().t0()-calc.time();
         if (fabs(dt) < maxDt_) {
@@ -272,11 +301,12 @@ namespace mu2e {
   }
     
 //-----------------------------------------------------------------------------
-  bool DaqanaFilter::select_tc_crvc(art::Event& event) {
+  bool DaqanaFilter::filter_tc_crvc(art::Event& event) {
     bool passed  = false;
     
-    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
+    ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
     crvc_coll_ = event.getValidHandle<CrvCoincidenceClusterCollection>(crvcCollTag_);
+    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
 
     size_t n_good   = 0;
     for (auto const& tc : *tc_coll_) {
@@ -305,9 +335,12 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // no need to get ChCollTag from FCL
 //-----------------------------------------------------------------------------
-  bool DaqanaFilter::select_tc_only(art::Event& event) {
+  bool DaqanaFilter::filter_tc_only(art::Event& event) {
     bool passed  = false;
     
+    ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
+    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
+
     size_t n_good_tc   = 0;
     for (auto const& tc : *tc_coll_) {
       if (not tc_is_good(tc)) continue;
@@ -326,20 +359,21 @@ namespace mu2e {
     //    size_t nTrk = 0;
 
     bool passed(false);
-    tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
-    ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
     
     if (selectionType_ == "calc_only") {
-      passed = select_calc_only(event);
+      passed = filter_calc_only(event);
     }
     else if (selectionType_ == "tc_calc") {
-      passed = select_tc_calc(event);
+      passed = filter_tc_calc(event);
     }
     else if (selectionType_ == "tc_crvc") {
-      passed = select_tc_crvc(event);
+      passed = filter_tc_crvc(event);
     }
     else if (selectionType_ == "tc_only") {
-      passed = select_tc_only(event);
+      passed = filter_tc_only(event);
+    }
+    else if (selectionType_ == "two_disks") {
+      passed = filter_two_disks(event);
     }
     else {
       TLOG(TLVL_ERROR) << std::format("unknown selection type:{}",selectionType_);

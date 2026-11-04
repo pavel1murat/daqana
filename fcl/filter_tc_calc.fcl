@@ -23,8 +23,7 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-## #include "daqana/rundb/124000/124155/calibration_set_v103.fcl"
-#include "rundb/latest/calibration_set_v104.fcl"
+#include "rundb/latest/calibration_set_v108.fcl"
 
 process_name : @local::PROCESS_NAME
 

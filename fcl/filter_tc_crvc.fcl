@@ -1,14 +1,6 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# make_det_001: ALL TRACKER HITS
-#
-# p0 : ntupling only, assumes input being the reconstruction output
-# p1 : default reconstruction path
-# p2 : read and ntuple (use with RootInput to ntuple MDC'2018 files)
-# p3 : path to debug the TPR and CPR reconstruction paths separately
-# p4 : read, reconstruct, run event display : MuHitDisplayDeMHDar
-#
-# 2026-10-05 PM: data and MC geometries for the moment are different
+# require just one CRVC - ...
 #------------------------------------------------------------------------------
 BEGIN_PROLOG
   bgHitFiles                  : @nil
@@ -120,7 +112,7 @@ physics : {
             tcCollTag       : "TimeCluster"
             maxDt           : 500   ## ns
             minNTcHits      :  15
-            minNGoodCrvc    :   2
+            minNGoodCrvc    :   1
             minNGoodTc      :   1
         }
     }
@@ -176,9 +168,9 @@ physics : {
  
 }
 
-services.TFileService.fileName           : "hst.mu2e.kpp00s001r104n000.filter_trk_crv.%06r_%06s.root"  ## "/dev/null" ##
+services.TFileService.fileName           : "hst.mu2e.kpp00s001r104n000.filter_tc_crvc.%06r_%06s.root"  ## "/dev/null" ##
 
-outputs.defaultOutput.fileName           : "raw.mu2e.kpp00s001r104n000.filter_trk_crv.%06r_%06s.art"
+outputs.defaultOutput.fileName           : "raw.mu2e.kpp00s001r104n000.filter_tc_crvc.%06r_%06s.art"
 outputs.defaultOutput.SelectEvents       : [ "t0" ]
 # outputs.defaultOutput.dropMetaData       : "ALL"
 outputs.defaultOutput.outputCommands     : [
