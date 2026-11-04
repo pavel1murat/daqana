@@ -217,15 +217,15 @@ class SubmitJob:
         if (args.Source):
             with open(args.Source, encoding="utf-8") as f:
                 lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
-            if (args.files):
-                # --files N1-N2: the files numbered N1..N2 in the input list, counting from 1
-                first, last = self.parse_file_range(args.files)
-                if (last > len(lines)):
-                    logger.error(f'--files {args.files}: the input list {args.Source} has only {len(lines)} files')
-                    sys.exit(1)
-                lines = lines[first-1:last]
             if (args.run_number is not None):
                 lines = [line for line in lines if self.has_run(line, args.run_number)]
+            if (args.files):
+                # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+                first, last = self.parse_file_range(args.files)
+                if (last > len(lines)):
+                    logger.error(f'--files {args.files}: only {len(lines)} files selected from {args.Source}')
+                    sys.exit(1)
+                lines = lines[first-1:last]
             if (not lines):
                 logger.error(f'no matching files in input file list {args.Source}')
                 sys.exit(1)
