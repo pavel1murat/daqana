@@ -216,7 +216,7 @@ class SubmitJob:
 
         if (args.Source):
             with open(args.Source, encoding="utf-8") as f:
-                lines = f.readlines()
+                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
             if (args.files):
                 # --files N1-N2: the files numbered N1..N2 in the input list, counting from 1
                 first, last = self.parse_file_range(args.files)
