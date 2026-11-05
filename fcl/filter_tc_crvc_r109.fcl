@@ -15,8 +15,7 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-## #include "daqana/rundb/124000/124155/calibration_set_v103.fcl"
-#include "rundb/latest/calibration_set_v104.fcl"
+#include "rundb/latest/calibration_set_v109.fcl"
 
 process_name : @local::PROCESS_NAME
 
@@ -168,9 +167,9 @@ physics : {
  
 }
 
-services.TFileService.fileName           : "hst.mu2e.kpp00s001r104n000.filter_tc_crvc.%06r_%06s.root"  ## "/dev/null" ##
+services.TFileService.fileName           : "hst.mu2e.kpp00s000r000n000.filter_tc_crvc_r109.%06r_%06s.root"  ## "/dev/null" ##
 
-outputs.defaultOutput.fileName           : "raw.mu2e.kpp00s001r104n000.filter_tc_crvc.%06r_%06s.art"
+outputs.defaultOutput.fileName           : "raw.mu2e.kpp00s000r000n000.filter_tc_crvc_r109.%06r_%06s.art"
 outputs.defaultOutput.SelectEvents       : [ "t0" ]
 # outputs.defaultOutput.dropMetaData       : "ALL"
 outputs.defaultOutput.outputCommands     : [
@@ -186,7 +185,7 @@ services.message.destinations.log.categories.ArtReport.limit       : 1000
 services.message.destinations.log.categories.ArtReport.timespan    : 300
 
 services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
-services.GeometryService.inputFile : "Stntuple/fcl/geom_common_extracted_data.txt"
+services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted_v06.txt"
 #include "Offline/CRVReco/fcl/epilog_extracted.fcl"
 #----------------------------------------------------------------------
 #  overrides by submit_mu2e_job.py

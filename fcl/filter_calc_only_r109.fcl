@@ -175,9 +175,9 @@ physics : {
  
 }
 
-services.TFileService.fileName       : "hst.mu2e.kpp00s000r104n000.filter_calc_only_r109.%06r_%06s.root"  ## "/dev/null" ##
+services.TFileService.fileName       : "hst.mu2e.kpp00s000r000n000.filter_calc_only_r109.%06r_%06s.root"  ## "/dev/null" ##
 
-outputs.defaultOutput.fileName       : "raw.mu2e.kpp00s000r104n000.filter_calc_only_r109.%06r_%06s.art"
+outputs.defaultOutput.fileName       : "raw.mu2e.kpp00s000r000n000.filter_calc_only_r109.%06r_%06s.art"
 outputs.defaultOutput.SelectEvents   : [ "t0" ]
 # outputs.defaultOutput.dropMetaData   : "ALL"
 outputs.defaultOutput.outputCommands : [
