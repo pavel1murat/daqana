@@ -39,6 +39,7 @@ daqana : {
             minNGoodTc    : 0
             
             minNGoodCrvc  : 0
+            minNCh        : 0
             
             minCalcEnergy : 20   ## MeV
             minCalcSize   :  1   ## MeV

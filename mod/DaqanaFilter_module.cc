@@ -40,12 +40,15 @@ namespace mu2e {
       fhicl::Atom<art::InputTag> tcCollTag    {Name("tcCollTag"  ), Comment("Tag of the TimeClusterCollection")};
       fhicl::Atom<art::InputTag> chCollTag    {Name("chCollTag"  ), Comment("Tag of the ComboHitCollection")};
 
-      fhicl::Atom<std::string>   selectionType{Name("selectionType"), Comment("selection type:tc_crvc/tc_calc/calc_only/tc_only")};
+      fhicl::Atom<std::string>   selectionType{Name("selectionType"), Comment("selection type:calc_only/nch/tc_crvc/tc_calc/tc_only")};
 
       // calorimeter cluster (CALC) selection
       fhicl::Atom<float>         minCalcEnergy{Name("minCalcEnergy"), Comment("Minimum CALC energy")};
       fhicl::Atom<int>           minCalcSize  {Name("minCalcSize"  ), Comment("Minimum CALC size (ncrystals)")};
       fhicl::Atom<int>           minNGoodCalc {Name("minNGoodCalc" ), Comment("Minimum number of calo clusters")};
+
+      // N(combo hits) selection
+      fhicl::Atom<int>           minNCh       {Name("minNCh"       ), Comment("Minimum number of combohits")};
 
       // muon stub (CRVC) selection - no real cuts 
       fhicl::Atom<unsigned>      minNGoodCrvc {Name("minNGoodCrvc" ), Comment("Minimum number of good CRVC")};
@@ -71,6 +74,7 @@ namespace mu2e {
     bool        filter             (art::Event& event) override;
     
     bool filter_calc_only(art::Event& event);
+    bool filter_nch      (art::Event& event);
     bool filter_tc_calc  (art::Event& event);
     bool filter_tc_crvc  (art::Event& event);
     bool filter_tc_only  (art::Event& event);
@@ -97,6 +101,7 @@ namespace mu2e {
     int           minNGoodCalc_;
 
     unsigned      minNGoodCrvc_;
+    int           minNCh_;
 
     unsigned      minNTrkHits_;
     unsigned      minNTrk_    ;
@@ -131,9 +136,11 @@ namespace mu2e {
     , minNGoodCalc_ {p().minNGoodCalc ()}
       
     , minNGoodCrvc_{p().minNGoodCrvc()}
+
+    , minNCh_      {p().minNCh()}
       
-    , minNTrkHits_{p().minNTrkHits()}
-    , minNTrk_   {p().minNTrk()}
+    , minNTrkHits_ {p().minNTrkHits()}
+    , minNTrk_     {p().minNTrk()}
       
     , minNTcHits_  {p().minNTcHits()  }
     , minNTcPlanes_{p().minNTcPlanes()}
@@ -301,6 +308,21 @@ namespace mu2e {
   }
     
 //-----------------------------------------------------------------------------
+//  look for pathologies, minNCh_ >> 1
+//-----------------------------------------------------------------------------
+  bool DaqanaFilter::filter_nch(art::Event& event) {
+    bool passed  = false;
+    
+    ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
+
+    int nch = ch_coll_->size();
+
+    passed = (nch >= minNCh_);
+    
+    return passed;
+  }
+  
+//-----------------------------------------------------------------------------
   bool DaqanaFilter::filter_tc_crvc(art::Event& event) {
     bool passed  = false;
     
@@ -362,6 +384,9 @@ namespace mu2e {
     
     if (selectionType_ == "calc_only") {
       passed = filter_calc_only(event);
+    }
+    else if (selectionType_ == "nch") {
+      passed = filter_nch(event);
     }
     else if (selectionType_ == "tc_calc") {
       passed = filter_tc_calc(event);
