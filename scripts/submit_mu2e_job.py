@@ -123,7 +123,12 @@ class SubmitJob:
         output_dir    = os.path.abspath(f'results/{formatted_now}.{fcl_job_stub}.{host}.{pid}')
         template_fcl  = os.path.abspath(args.fcl)
         job_fcl       = os.path.join(output_dir, f'{fcl_job_stub}.{pid}.fcl')
-        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{run_number}.log'
+        # the log file carries the rrrrrr_ssssss stub of the first input file, if it has one in the standard place
+        first_file = file_list.split('\n')[0].strip() if file_list else args.source
+        stub       = self.run_subrun_stub(first_file) if first_file else None
+        if (first_file and stub is None):
+            logger.warning(f'{first_file} has no rrrrrr_ssssss stub, the log file name uses the run number')
+        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
 #------------------------------------------------------------------------------
 # calibrations and overrides, see overrides_cmd
 #------------------------------------------------------------------------------
@@ -249,6 +254,15 @@ class SubmitJob:
             logger.error(f'--files {text}: expected N1-N2 with 1 <= N1 <= N2')
             sys.exit(1)
         return int(m.group(1)), int(m.group(2))
+
+#------------------------------------------------------------------------------
+# rrrrrr_ssssss stub (field 4 of a Mu2e standard name), None if the name does not have it
+#------------------------------------------------------------------------------
+    def run_subrun_stub(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) == 6 and re.fullmatch(r'\d{6}_\d{6}', fields[4])):
+            return fields[4]
+        return None
 
 #------------------------------------------------------------------------------
 # Mu2e standard name: type.user.dsid.job.run_subrun.format, returns dsid
