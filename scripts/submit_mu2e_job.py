@@ -120,7 +120,9 @@ class SubmitJob:
         now           = datetime.datetime.now()
         formatted_now = now.strftime("%Y-%m-%d-%H-%M")
         host          = socket.gethostname()
-        output_dir    = os.path.abspath(f'results/{formatted_now}.{fcl_job_stub}.{host}.{pid}')
+        # the input dataset ID, when there is one, goes between the date/time stub and the fcl stub
+        dsid_stub     = f'{input_dsid}.' if input_dsid else ''
+        output_dir    = os.path.abspath(f'results/{formatted_now}.{dsid_stub}{fcl_job_stub}.{host}.{pid}')
         template_fcl  = os.path.abspath(args.fcl)
         job_fcl       = os.path.join(output_dir, f'{fcl_job_stub}.{pid}.fcl')
         # the log file carries the rrrrrr_ssssss stub of the first input file, if it has one in the standard place
@@ -136,6 +138,7 @@ class SubmitJob:
         logger.info(f'overrides_cmd:{overrides}')
 
         if (args.dry_run):
+            logger.info(f'output_dir: {output_dir}')
             if (file_list is not None):
                 logger.info(f'input file list:\n{file_list}')
             else:
