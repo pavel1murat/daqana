@@ -8,7 +8,15 @@
 // _debugBit[2]: 
 // _debugBit[3]: one line EWT
 // ======================================================================
+#include <iostream>
+#include <format>
+
+#include <regex>
 #include <string>
+#include <format>
+
+#include <map>
+#include <memory>
 
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -35,16 +43,6 @@
 
 #include <artdaq-core/Data/Fragment.hh>
 #include <artdaq-core/Data/ContainerFragment.hh>
-
-#include <iostream>
-#include <format>
-
-#include <regex>
-#include <string>
-#include <format>
-
-#include <map>
-#include <memory>
 
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
 #include "Offline/TrackerConditions/inc/TrackerPanelMap.hh"

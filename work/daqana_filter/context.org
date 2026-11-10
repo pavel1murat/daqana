@@ -1,0 +1,19 @@
+#+title: Session Context
+
+* Work completed
+Modified =../../v001/daqana/mod/DaqanaFilter_module.cc= and =../../v001/daqana/fcl/prolog.fcl=.
+
+** DaqanaFilter changes
+- Added =TcPar_t= to store the minimum and maximum plane IDs observed in each time cluster, and a =std::vector<TcPar_t>= to hold these values.
+- In =tc_is_good=, compute a cluster's minimum and maximum hit plane IDs and append the result to the vector. The vector is cleared at the start of each time-cluster selection path (=tc_calc=, =tc_crvc=, and =tc_only=).
+- Added the FCL configuration parameters =minTcPlaneNumber= and =maxTcPlaneNumber=.
+- If =minTcPlaneNumber <= maxTcPlaneNumber=, require a time cluster's plane range to be fully contained in the configured range. Otherwise, this topology cut is disabled.
+- The parameters' defaults are specified in =daqana/fcl/prolog.fcl= only (per convention): =minTcPlaneNumber: 1000= and =maxTcPlaneNumber: -1=.
+- =TcPar_t= field names are =minTcPlaneNumber= and =maxTcPlaneNumber=, initialized to 1000 and -1 respectively.
+
+* Important files
+- Module: =../../v001/daqana/mod/DaqanaFilter_module.cc=
+- FCL defaults: =../../v001/daqana/fcl/prolog.fcl=
+
+* Validation
+No build or test was run during this session.

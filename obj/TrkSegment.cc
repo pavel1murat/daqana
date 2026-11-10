@@ -37,7 +37,6 @@ void TrkSegment::Clear(){
 //-----------------------------------------------------------------------------
 int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int UniquePlane, int Panel, int DoTransform) {
   int rc(0);
-
   
   int nhits(-1);
   if (ListOfHits) {
@@ -62,7 +61,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   std::vector<int> drs (nhits);
 //-----------------------------------------------------------------------------
 // find seed hits, ignore the very first and the very last pairs
-// in the befinning, set all hit flag bits to zero
+// in the beginning, set all hit flag bits to zero
 /// mu2e::StrawHitFlagDetail::dead : back-and-forth transition 
 //-----------------------------------------------------------------------------
   fNTransitions = 0;

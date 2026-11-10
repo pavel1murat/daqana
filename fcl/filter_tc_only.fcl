@@ -23,7 +23,7 @@ END_PROLOG
 #------------------------------------------------------------------------------
 # services.DbService and services.ProditionsService
 #------------------------------------------------------------------------------
-#include "rundb/latest/calibration_set_v108.fcl"
+#include "rundb/latest/calibration_set_v109.fcl"
 
 process_name : @local::PROCESS_NAME
 
@@ -118,9 +118,9 @@ physics : {
         DaqanaFilter : { @table::daqana.filters.DaqanaFilter
             tcCollTag       : "TimeCluster"
             selectionType   : "tc_only"
-            minNTcHits      : 20
-            minNTcPlanes    : -1
-            maxNTcPlanes    :  2   ## select only 1-plane time clusters
+            minNTcHits      : 10
+            minTcPlaneNumber: 30           ## station 15
+            maxTcPlaneNumber: 31
             minNGoodTc      :  1
         }
     }

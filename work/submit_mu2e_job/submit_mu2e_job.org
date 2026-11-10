@@ -1,0 +1,1486 @@
+:PROPERTIES:
+:GPTEL_MODEL: azure/gpt-6-luna
+:GPTEL_BACKEND: LiteLLM
+:GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
+:GPTEL_TOOLS: Agent Skill TodoWrite Grep Read Glob Write Insert Edit Mkdir Diagnostics WebFetch WebSearch Eval Bash
+:GPTEL_BOUNDS: ((tool (3239 3408 "call_gazn1q6MTC2N80sQQF7jVl7N") (3478 3619 "call_tndrKVxrieefYwxKsOmsVXZc") (3734 4747 "call_b5wmN5D395b1pjPnJEiDZ5Iu") (4844 5954 "call_Ekp3baHIo5tPFXL45d92wiW8") (6069 9887 "call_nkDeFICqvfIKo3bg5vSMqYwP") (9991 29964 "call_vslofLHsC0McqBLeDh147G2p") (30079 42799 "call_XxfEAvl6GORFXmrDOf3OHCVm") (42912 43073 "call_tToSwRrlgSqMpqkH9exSvZTk") (43188 43629 "call_CFzKGcHaZOA1v0WwjW4qiZhs") (43744 44181 "call_3iMsgQUst4TEansctY8KwLHM") (44296 44774 "call_GGGNp53OMIB9nYXTFTIo09WG") (44889 45499 "call_zALS0rnwR9pzA7uMI2Xdyg2i") (45614 45946 "call_7AHrWSKLD1AHL9n4QGOIDN80") (46061 46479 "call_1EQv737RtauIN62VtPg8o3B7") (46594 46994 "call_lQ41rgsfxGfGwStAJv9ZnSgp") (47109 47605 "call_VeTSoJY7J9UEWgv6p7yfUj7g") (47720 57032 "call_HNdv1NNtHvFXFm7KHeeUCqJX") (57147 57565 "call_FK4N3vOSNLzVZFzlyi0E1CkI") (57680 58137 "call_jIpxTOUjt6Yc6ALAIG1UCmMC") (58252 58715 "call_x4Di9jD2N1A8QxvcPGdcuOPO") (58830 59400 "call_TzHzYuYEAyJdQJuRiY5gNXQ4") (59515 59983 "call_cLnfaBMoRVSAAGglzNeZLZW5") (60098 60495 "call_jpoOoPHCdJDaotQO1c6U3XtJ") (60610 61684 "call_Lw8k5ZmNRKix8yiC15exzRzw") (61799 66993 "call_IryasUvMjZTyZtKpylMfRKgC") (67108 68171 "call_pTEHpff3flW1eCeR61RTCsCE") (68286 69080 "call_sYeAzmK15ZxPIn5OezGhkVOz") (69195 72197 "call_NeKaB8ESucywI9a1taut6UMX") (72312 72430 "call_dOXEL2iIyVnU0E04OeYGSXob") (72545 80984 "call_eQe29BS2mFpKbqDdni0tcvWH") (81099 81693 "call_nol7TX2KSRze0j2yPeCcITPL") (81808 82336 "call_IIjwFZcKsjcJI7OIQScxszGr") (82451 82569 "call_hneT5ozjJk0g9PDtM8GSM1te") (83120 90562 "call_pAn3sXgE2IAhce2MR6hVY1sq") (90677 91226 "call_C4nxwFkCJ2BTvFw2FbQp3bwA") (91341 91556 "call_JCKui7YoVo4wXQK9DMCNG2Ok")) (response (2605 2985) (82581 82955) (91568 91720)))
+:END:
+#+startup:fold
+* ------------------------------------------------------------------------------
+* script to be developed: file:../../scripts/submit_mu2e_job.py             
+- among other things, it forms the name of the job log file
+- if the names of the job input files are obey the Mu2e rules, the name the log file should have
+  in it a stub , representing the low run/ low subrun of number of all input events
+  check whether this is the case, but don't modify the code yet
+
+*** make sure that if the job configuration (.fcl) file has a parameter with =THistModule.histFileName= in the key,
+    the parameter value - the name of the STNTUPLE file - has the $idsid stub in it 
+
+Updated =scripts/submit_mu2e_job.py= to recognize fully qualified =THistModule.histFileName= FCL keys.
+When present, the script now requires an input dataset ID, checks that the value is a standard
+=nts.mu2e...stn= filename, and substitutes the input ID into its filename.
+
+Verified with =py_compile= and a test confirming both substitution and rejection when the ID is missing.
+
+*** change the meaning of the parameter defined by '--run' :
+- example: when '--run 125400' is specified, out of all input files leave only files of run 1254000
+
+
+
+#+begin_tool (Grep :regex "--run|run" :path "scripts/submit_mu2e_job.py" :context_lines 4)
+(:name "Grep" :args (:regex "--run|run" :path "scripts/submit_mu2e_job.py" :context_lines 4))
+
+error Error: File or directory scripts/submit_mu2e_job.py is not readable
+#+end_tool
+#+begin_tool (Glob :pattern "submit_mu2e_job.py" :depth 5)
+(:name "Glob" :args (:pattern "submit_mu2e_job.py" :depth 5))
+
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job
+0 directories, 0 files
+
+#+end_tool
+#+begin_tool (Bash :command "pwd && ls -la /home/murat/test_001/v001/daqana/work/submit_mu2e_job & ...)
+(:name "Bash" :args (:command "pwd && ls -la /home/murat/test_001/v001/daqana/work/submit_mu2e_job && find /home/murat/test_001/v001/daqana/work/submit_mu2e_job -maxdepth 3 -type f | head"))
+
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job
+total 44
+drwxr-x--- 2 murat mu2e   170 Nov 10 07:46 .
+drwxr-x--- 5 murat mu2e    83 Nov  8 21:57 ..
+-rw-r----- 1 murat mu2e   173 Nov  9 14:08 submit_mu2e_job.log
+-rw-r----- 1 murat mu2e 30695 Nov 10 07:50 #submit_mu2e_job.org#
+lrwxrwxrwx 1 murat mu2e    43 Nov 10 07:46 .#submit_mu2e_job.org -> murat@mu2e-dl-01.fnal.gov.193160:1793108199
+-rw-r----- 1 murat mu2e  1308 Nov 10 07:46 submit_mu2e_job.org
+-rw-r----- 1 murat mu2e  1308 Nov 10 00:04 submit_mu2e_job.org~
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job/submit_mu2e_job.org~
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job/submit_mu2e_job.log
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job/submit_mu2e_job.org
+/home/murat/test_001/v001/daqana/work/submit_mu2e_job/#submit_mu2e_job.org#
+
+#+end_tool
+#+begin_tool (Glob :pattern "*.py" :path "/home/murat/test_001/v001/daqana" :depth 8)
+(:name "Glob" :args (:pattern "*.py" :path "/home/murat/test_001/v001/daqana" :depth 8))
+
+/home/murat/test_001/v001/daqana
+/home/murat/test_001/v001/daqana/datasets
+/home/murat/test_001/v001/daqana/datasets/vst00b0
+/home/murat/test_001/v001/daqana/datasets/vst00b0/init_project.py
+/home/murat/test_001/v001/daqana/datasets/vst03s0
+/home/murat/test_001/v001/daqana/datasets/vst03s0/init_project.py
+/home/murat/test_001/v001/daqana/datasets/vst04s0
+/home/murat/test_001/v001/daqana/datasets/vst04s0/init_project.py
+/home/murat/test_001/v001/daqana/datasets/vst05s0
+/home/murat/test_001/v001/daqana/datasets/vst05s0/init_project.py
+/home/murat/test_001/v001/daqana/datasets/vst06s0
+/home/murat/test_001/v001/daqana/datasets/vst06s0/init_project.py
+/home/murat/test_001/v001/daqana/datasets/vst07s0
+/home/murat/test_001/v001/daqana/datasets/vst07s0/init_project.py
+/home/murat/test_001/v001/daqana/scripts
+/home/murat/test_001/v001/daqana/scripts/make_digi_ntuple.py
+/home/murat/test_001/v001/daqana/scripts/make_station_hist.py
+/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py
+
+8 directories, 9 files
+
+#+end_tool
+#+begin_tool (Grep :regex "--run|run" :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_ ...)
+(:name "Grep" :args (:regex "--run|run" :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :context_lines 3))
+
+Error: search failed with exit-code 129.  Tool output:
+
+error: unknown option `run|run'
+usage: git grep [<options>] [-e] <pattern> [<rev>...] [[--] <path>...]
+
+    --[no-]cached         search in index instead of in the work tree
+    --no-index            find in contents not managed by git
+    --index               opposite of --no-index
+    --[no-]untracked      search in both tracked and untracked files
+    --[no-]exclude-standard
+                          ignore files specified via '.gitignore'
+    --[no-]recurse-submodules
+                          recursively search in each submodule
+
+    -v, --[no-]invert-match
+                          show non-matching lines
+    -i, --[no-]ignore-case
+                          case insensitive matching
+    -w, --[no-]word-regexp
+                          match patterns only at word boundaries
+    -a, --[no-]text       process binary files as text
+    -I                    don't match patterns in binary files
+    --[no-]textconv       process binary files with textconv filters
+    -r, --[no-]recursive  search in subdirectories (default)
+    --max-depth <n>       descend at most <n> levels
+
+    -E, --[no-]extended-regexp
+                          use extended POSIX regular expressions
+    -G, --[no-]basic-regexp
+                          use basic POSIX regular expressions (default)
+    -F, --[no-]fixed-strings
+                          interpret patterns as fixed strings
+    -P, --[no-]perl-regexp
+                          use Perl-compatible regular expressions
+
+    -n, --[no-]line-number
+                          show line numbers
+    --[no-]column         show column number of first match
+    -h                    don't show filenames
+    -H                    show filenames
+    --[no-]full-name      show filenames relative to top directory
+    -l, --[no-]files-with-matches
+                          show only filenames instead of matching lines
+    --[no-]name-only      synonym for --files-with-matches
+    -L, --[no-]files-without-match
+                          show only the names of files without match
+    -z, --[no-]null       print NUL after filenames
+    -o, --[no-]only-matching
+                          show only matching parts of a line
+    -c, --[no-]count      show the number of matches instead of matching lines
+    --[no-]color[=<when>] highlight matches
+    --[no-]break          print empty line between matches from different files
+    --[no-]heading        show filename only once above matches from same file
+
+    -C, --[no-]context <n>
+                          show <n> context lines before and after matches
+    -B, --before-context <n>
+                          show <n> context lines before matches
+    -A, --after-context <n>
+                          show <n> context lines after matches
+    --[no-]threads <n>    use <n> worker threads
+    -NUM                  shortcut for -C NUM
+    -p, --[no-]show-function
+                          show a line with the function name before matches
+    -W, --[no-]function-context
+                          show the surrounding function
+
+    -f <file>             read patterns from file
+    -e <pattern>          match <pattern>
+    --and                 combine patterns specified with -e
+    --or
+    --not
+    (
+    )
+    -q, --[no-]quiet      indicate hit with exit status without output
+    --[no-]all-match      show only matches from files that match all patterns
+
+    -O, --[no-]open-files-in-pager[=<pager>]
+                          show matching files in the pager
+    --[no-]ext-grep       allow calling of grep(1) (ignored by this build)
+    -m, --[no-]max-count <n>
+                          maximum number of results per file
+
+
+#+end_tool
+#+begin_tool (Read :file_path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py")
+(:name "Read" :args (:file_path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py"))
+
+#!/usr/bin/env python
+# example :
+# ---------
+#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run_number=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+#
+# --run_number : use files of a given run number
+# --fcl        : template fcl file
+#------------------------------------------------------------------------------
+import subprocess, datetime, socket
+import sys, argparse, glob, os, shlex, re
+import logging
+
+#------------------------------------------------------------------------------
+# configure logger
+#------------------------------------------------------------------------------
+logger = logging.getLogger('submit_mu2e_job')
+
+logger.setLevel(logging.DEBUG)
+
+# File handler
+fh = logging.FileHandler('submit_mu2e_job.log', mode='a')
+fh.setLevel(logging.INFO)
+
+# Console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+# Formatter with timestamps
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)d:%(funcName)s]: %(message)s',
+                              datefmt='%Y-%m-%d %H:%M:%S')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+
+logger.addHandler(fh)
+logger.addHandler(ch)
+
+class SubmitJob:
+
+#------------------------------------------------------------------------------
+    def parse_parameters(self):
+        name = 'parse_parameters'
+
+        logger.info('Starting')
+        logger.info(f'sys.argv:{sys.argv}')
+
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument("-b","--book"       , default=""  ,           help="book name")
+        parser.add_argument("--calib-ver"       , default=None,           help="calibration version, defaults to v0")
+        parser.add_argument("--calib-run"       , default=None,           help="use calibrations keyed on a given run")
+        parser.add_argument("-D", "--data-dir"  , default=None,           help="input data directory")
+        parser.add_argument("--diag_level"      , type=int, default=0,    help="diagnostic level")
+        parser.add_argument("--dry-run"         , action='store_true',    help="print the job setup, create nothing")
+        parser.add_argument('-c',"--fcl"        , required=True,          help="template fcl file")
+        parser.add_argument('-e',"--first_event", default=None,           help="event ID of the first event to process")
+        parser.add_argument('--idsid'           , default=None,           help="input dataset ID")
+        parser.add_argument('-n','--nevents'    , type=int, default=None, help="N(events) to process")
+        parser.add_argument('--nfiles'          , type=int, default=None, help="N(files) to process")
+        parser.add_argument('-f','--files'      , default=None,           help="range N1-N2 of files in the input list to process (1-based, inclusive)")
+        parser.add_argument('--nskip'           , type=int, default=None, help="unused")
+        parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
+        parser.add_argument('-r','--run_number' , type=int, default=None, help="run number")
+        parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
+        parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
+
+        args = parser.parse_args()
+
+        logger.info(f'args.idsid      = {args.idsid}'        )
+        logger.info(f'args.diag_level = {args.diag_level}'   )
+        logger.info(f'args.calib_ver  = {args.calib_ver}'    )
+        logger.info(f'args.calib_run  = {args.calib_run}'    )
+        logger.info(f'args.rn         = {args.run_number}'   )
+        logger.info(f'args.fcl        = {args.fcl}'          )
+        logger.info(f'args.nfiles     = {args.nfiles}'       )
+        logger.info(f'args.data_dir   = {args.data_dir}'     )
+
+        logger.info(f'------------------------------------- Done')
+        return args
+
+#------------------------------------------------------------------------------
+# set up the job directory, the job fcl and the log file, then submit the job
+#------------------------------------------------------------------------------
+    def run(self,args):
+        q = shlex.quote
+#------------------------------------------------------------------------------
+# check the environment before anything is created
+#------------------------------------------------------------------------------
+        work_dir  = os.getenv('WORK_DIR')
+        source_me = os.path.join(work_dir or '', '.source_me')
+        if (not work_dir or not os.path.exists(source_me)):
+            # a dry run only prints the setup, so it can go ahead without the environment
+            if (not args.dry_run):
+                logger.error(f'WORK_DIR={work_dir}: .source_me not found, BAIL OUT')
+                sys.exit(1)
+            logger.warning(f'WORK_DIR={work_dir}: .source_me not found, continuing the dry run')
+
+        if (args.calib_ver == 'latest' and (not args.calib_run or not os.getenv('RUNDB_DIR'))):
+            logger.error('--calib-ver=latest needs --calib-run and $RUNDB_DIR')
+            sys.exit(1)
+
+        if (args.idsid):
+            muse_work_dir = os.getenv('MUSE_WORK_DIR')
+            if (not muse_work_dir):
+                logger.error('--idsid needs $MUSE_WORK_DIR, samdfc/ is a subdirectory of it')
+                sys.exit(1)
+            # books are subdirectories of samdfc: samdfc/$book/$idsid.files, samdfc/$idsid.files without a book
+            samdfc_dir = os.path.join(muse_work_dir, 'samdfc')
+            if (args.book):
+                samdfc_dir = os.path.join(samdfc_dir, args.book)
+            args.Source = os.path.join(samdfc_dir, f'{args.idsid}.files')
+#------------------------------------------------------------------------------
+# form the input file list, input_dsid and run number come from it
+#------------------------------------------------------------------------------
+        input_dsid, run_number, file_list = self.resolve_inputs(args)
+#------------------------------------------------------------------------------
+# output directory and job names, absolute paths: the job starts inside WORK_DIR
+#------------------------------------------------------------------------------
+        fcl_job_stub  = os.path.splitext(os.path.basename(args.fcl))[0];
+        pid           = os.getpid()
+        now           = datetime.datetime.now()
+        formatted_now = now.strftime("%Y-%m-%d-%H-%M")
+        host          = socket.gethostname()
+        # the input dataset ID, when there is one, goes between the date/time stub and the fcl stub
+        dsid_stub     = f'{input_dsid}.' if input_dsid else ''
+        output_dir    = os.path.abspath(f'results/{formatted_now}.{dsid_stub}{fcl_job_stub}.{host}.{pid}')
+        template_fcl  = os.path.abspath(args.fcl)
+        job_fcl       = os.path.join(output_dir, f'{fcl_job_stub}.{pid}.fcl')
+        # the log file carries the rrrrrr_ssssss stub of the first input file, if it has one in the standard place
+        first_file = file_list.split('\n')[0].strip() if file_list else args.source
+        stub       = self.run_subrun_stub(first_file) if first_file else None
+        if (first_file and stub is None):
+            logger.warning(f'{first_file} has no rrrrrr_ssssss stub, the log file name uses the run number')
+        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
+#------------------------------------------------------------------------------
+# calibrations and overrides, see overrides_cmd
+#------------------------------------------------------------------------------
+        overrides = self.overrides_cmd(args, template_fcl, input_dsid)
+        logger.info(f'overrides_cmd:{overrides}')
+
+        if (args.dry_run):
+            logger.info(f'output_dir: {output_dir}')
+            if (file_list is not None):
+                logger.info(f'input file list:\n{file_list}')
+            else:
+                logger.info(f'input: -s {args.source}')
+            return
+
+        os.makedirs(output_dir, exist_ok=True)
+#------------------------------------------------------------------------------
+# process redefinitions and appends
+#------------------------------------------------------------------------------
+        self.run_shell(f'{overrides} > {q(job_fcl)}')
+        with open(job_fcl, 'a', encoding="utf-8") as f:
+            f.write('#----------------------------------------------------------------------\n')
+            f.write('#  overrides by submit_mu2e_job.py\n')
+            f.write('#----------------------------------------------------------------------\n')
+#------------------------------------------------------------------------------
+# write the input file list into the output directory
+#------------------------------------------------------------------------------
+        input_list = None
+        if (file_list is not None):
+            input_list = os.path.join(output_dir, f'submit_mu2e_job_input.{run_number}.txt')
+            with open(input_list, 'w', encoding="utf-8") as f:
+                f.write(file_list)
+#------------------------------------------------------------------------------
+# form the command to execute
+#-------v----------------------------------------------------------------------
+        cmd  = f'cd {q(work_dir)}; source {q(source_me)};'
+        for name in ('.rootrc', 'rootlogon.C'):
+            src  = os.path.join(work_dir, name)
+            cmd += f' if [ -f {q(src)} ] ; then cp {q(src)} {q(output_dir)}/. ; fi ;'
+        cmd += f' cd {q(output_dir)}; mu2e -c {q(job_fcl)}'
+
+        if (input_list):
+            cmd += f' -S {q(input_list)}'
+        elif (args.source):
+            cmd += f' -s {q(args.source)}'
+
+        if (args.first_event): cmd += f' -e {q(args.first_event)}'
+        if (args.nevents    ): cmd += f' -n {args.nevents}'
+
+        cmd += f' >> {q(logfile)} 2>&1 &'
+#------------------------------------------------------------------------------
+# print the command and log it, together with the FCL file, in the log file
+#-------v----------------------------------------------------------------------
+        logger.info(f'cmd:{cmd}')
+
+        with open(os.path.join(output_dir, logfile), 'w', encoding="utf-8") as log:
+            log.write(f'cmd:{cmd}\n')
+            log.write('---------------------------------------\n')
+            with open(job_fcl, encoding="utf-8") as f:
+                log.write(f.read())
+            log.write('---------------------------------------\n')
+            if (file_list is not None):
+                log.write('input file list:\n' + file_list)
+                log.write('---------------------------------------\n')
+#------------------------------------------------------------------------------
+# execute the command, the shell returns once mu2e is backgrounded,
+# so this checks the setup steps only
+#------------------------------------------------------------------------------
+        self.run_shell(cmd)
+        logger.info(f'submitted, log in {os.path.join(output_dir, logfile)}')
+
+#------------------------------------------------------------------------------
+# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+#------------------------------------------------------------------------------
+    def resolve_inputs(self,args):
+        input_dsid = args.idsid
+        run_number = args.run_number
+
+        if (args.source):
+            # single input file: the dataset ID comes from its Mu2e standard name
+            dsid_from_file = self.dsid_from_name(args.source)
+            if (input_dsid is not None and input_dsid != dsid_from_file):
+                logger.error(f'--idsid={input_dsid} does not match the dataset ID {dsid_from_file} of {args.source}')
+                sys.exit(1)
+            input_dsid = dsid_from_file
+        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4]
+
+        if (args.files and not args.Source):
+            logger.error('--files needs an input file list (--Source or --idsid)')
+            sys.exit(1)
+
+        if (args.Source):
+            with open(args.Source, encoding="utf-8") as f:
+                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+            if (args.run_number is not None):
+                lines = [line for line in lines if self.has_run(line, args.run_number)]
+            if (args.files):
+                # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+                first, last = self.parse_file_range(args.files)
+                if (last > len(lines)):
+                    logger.error(f'--files {args.files}: only {len(lines)} files selected from {args.Source}')
+                    sys.exit(1)
+                lines = lines[first-1:last]
+            if (not lines):
+                logger.error(f'no matching files in input file list {args.Source}')
+                sys.exit(1)
+            if (input_dsid is None):
+                input_dsid = lines[0].split('.')[2]
+            if (args.nfiles):
+                lines = lines[:args.nfiles]
+            return input_dsid, run_number, ''.join(lines)
+
+        if (args.source):
+            return input_dsid, run_number, None
+
+        return input_dsid, run_number, self.raw_files(args)
+
+#------------------------------------------------------------------------------
+# --files N1-N2: returns (N1, N2), 1-based inclusive
+#------------------------------------------------------------------------------
+    def parse_file_range(self,text):
+        m = re.fullmatch(r'\s*(\d+)\s*-\s*(\d+)\s*', text)
+        if (m is None or int(m.group(1)) < 1 or int(m.group(2)) < int(m.group(1))):
+            logger.error(f'--files {text}: expected N1-N2 with 1 <= N1 <= N2')
+            sys.exit(1)
+        return int(m.group(1)), int(m.group(2))
+
+#------------------------------------------------------------------------------
+# rrrrrr_ssssss stub (field 4 of a Mu2e standard name), None if the name does not have it
+#------------------------------------------------------------------------------
+    def run_subrun_stub(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) == 6 and re.fullmatch(r'\d{6}_\d{6}', fields[4])):
+            return fields[4]
+        return None
+
+#------------------------------------------------------------------------------
+# Mu2e standard name: type.user.dsid.job.run_subrun.format, returns dsid
+#------------------------------------------------------------------------------
+    def dsid_from_name(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) != 6 or not re.fullmatch(r'\d+_\d+', fields[4])):
+            logger.error(f'{path} is not a Mu2e standard file name (type.user.dsid.job.run_subrun.format)')
+            sys.exit(1)
+        return fields[2]
+
+#------------------------------------------------------------------------------
+# field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
+# the first six characters are the run number, the rest is the subrun
+#------------------------------------------------------------------------------
+    def has_run(self,path,run_number):
+        fields = os.path.basename(path.strip()).split('.')
+        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
+
+#------------------------------------------------------------------------------
+# list the raw data files of the run
+#------------------------------------------------------------------------------
+    def raw_files(self,args):
+        data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+        if (not data_dir or args.run_number is None):
+            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')
+            sys.exit(1)
+
+        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+                       if self.has_run(f, args.run_number))
+        if (args.nfiles):
+            files = files[:args.nfiles]
+        if (not files):
+            logger.error(f'no raw files for run {args.run_number} in {data_dir}')
+            sys.exit(1)
+
+        return ''.join(f'{f}\n' for f in files)
+
+#------------------------------------------------------------------------------
+# shell pipeline that prints the template fcl with the overrides applied
+#------------------------------------------------------------------------------
+    def overrides_cmd(self,args,template_fcl,input_dsid):
+        q = shlex.quote
+
+        cmd    = f'cat {q(template_fcl)}'
+        subdir = f'{args.calib_run[0:3]}000' if args.calib_run else None
+
+        # output ntuple name nts.mu2e.<input dataset ID>.<...>.stn: put the input dataset ID in the name
+        with open(template_fcl, encoding="utf-8") as f:
+            fcl_text = f.read()
+        # Match the fully-qualified key, e.g. physics.analyzers.X.THistModule.histFileName.
+        thist_names = re.findall(
+            r'^[^#\n]*\bTHistModule\.histFileName\s*:\s*"([^"]*)"',
+            fcl_text, re.MULTILINE)
+        if (thist_names and not input_dsid):
+            logger.error('THistModule.histFileName needs an input dataset ID (--idsid or a standard input file name)')
+            sys.exit(1)
+        for hist_name in thist_names:
+            if not re.fullmatch(r'nts\.mu2e\.[^.]+\..*\.stn', hist_name):
+                logger.error(f'THistModule.histFileName is not a standard STNTUPLE name: {hist_name}')
+                sys.exit(1)
+
+        if (input_dsid):
+            # Matches the value on both simple and fully-qualified histFileName keys.
+            cmd += ' | sed -E ' + q(f's|(histFileName *: *"nts\\.mu2e\\.)[^.]+(\\.)|\\1{input_dsid}\\2|')
+        else:
+            logger.warning('no input dataset ID, histFileName is left unchanged')
+
+        # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+        if (args.run_number is not None):
+            with open(template_fcl, encoding="utf-8") as f:
+                if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
+
+        if (args.calib_ver):
+            ver = args.calib_ver
+            if (ver == 'latest'):
+                # read the latest calibration version of the run, it propagates to the file name as 'r100'
+                fn = os.path.join(os.getenv('RUNDB_DIR'), 'rundb', subdir, args.calib_run, 'aaa_latest')
+                with open(fn, encoding="utf-8") as f:
+                    ver = f.readline().strip()
+            cmd += ' | sed -E ' + q(f's|(calibration_set_).*(\\.fcl)|\\1{ver}\\2|')
+
+        if (args.calib_run):
+            cmd += ' | sed -E ' + q(f's|fcl/calibration_set|{subdir}/{args.calib_run}/calibration_set_{args.calib_run}|')
+
+        if (args.odsid):
+            cmd += ' | sed -E ' + q(f's|_odsid_|{args.odsid}|')
+
+        return cmd
+
+#------------------------------------------------------------------------------
+# run a shell command, exit if it fails
+#------------------------------------------------------------------------------
+    def run_shell(self,cmd):
+        p = subprocess.run(cmd,
+                           executable="/bin/bash",
+                           shell=True,
+                           capture_output=True,
+                           encoding="utf-8")
+        if (p.returncode != 0):
+            logger.error(f'rc={p.returncode} cmd:{cmd}\n{p.stderr}')
+            sys.exit(1)
+        return p.stdout
+
+#------------------------------------------------------------------------------
+if __name__ == "__main__":
+
+    x    = SubmitJob();
+    args = x.parse_parameters();
+
+    x.run(args)
+
+#+end_tool
+#+begin_tool (Grep :regex "run_number|has_run|--run" :path "/home/murat/test_001/v001/daqana" :glo ...)
+(:name "Grep" :args (:regex "run_number|has_run|--run" :path "/home/murat/test_001/v001/daqana" :glob "*.py" :context_lines 2))
+
+scripts/make_digi_ntuple.py-18-        self.ntid       = 'n001';
+scripts/make_digi_ntuple.py-19-        self.nsbl       = None;
+scripts/make_digi_ntuple.py:20:        self.run_number = None
+scripts/make_digi_ntuple.py-21-        self.source     = None;          # input file specified on a command line in art language
+scripts/make_digi_ntuple.py-22-        self.diag_level = 0;
+--
+scripts/make_digi_ntuple.py-56-                self.filename = val
+scripts/make_digi_ntuple.py-57-            elif (key == '--rn'):
+scripts/make_digi_ntuple.py:58:                self.run_number = int(val)
+scripts/make_digi_ntuple.py-59-            elif (key == '--idsid'):
+scripts/make_digi_ntuple.py-60-                self.idsid = val
+--
+scripts/make_digi_ntuple.py-73-        self.Print(name,0,f'self.idsid     : {self.idsid}'     )
+scripts/make_digi_ntuple.py-74-        self.Print(name,0,f'self.calib     : {self.calib}'     )
+scripts/make_digi_ntuple.py:75:        self.Print(name,0,f'self.rn        : {self.run_number}')
+scripts/make_digi_ntuple.py-76-        self.Print(name,0,f'self.ntid      : {self.ntid}'      )
+scripts/make_digi_ntuple.py-77-        self.Print(name,0,f'self.nsbl      : {self.nsbl}'      )
+--
+scripts/make_digi_ntuple.py-141-# submit the job
+scripts/make_digi_ntuple.py-142-#-------v----------------------------------------------------------------------
+scripts/make_digi_ntuple.py:143:        logfile=f'{self.idsid}.make_{self.ntid}.{self.run_number}.log' ;
+scripts/make_digi_ntuple.py-144-
+scripts/make_digi_ntuple.py-145-        main_cmd = f'mu2e -c {input_fcl}';
+--
+scripts/make_digi_ntuple.py-154-#------------------------------------------------------------------------------
+scripts/make_digi_ntuple.py-155-            input_file_list=''
+scripts/make_digi_ntuple.py:156:            input_file_list=f'/tmp/make_digi_ntuples_input.{self.run_number}.txt.{os.getpid()}'
+scripts/make_digi_ntuple.py-157-            if (self.idsid == 'vst'):
+scripts/make_digi_ntuple.py-158-                cmd  = f"ls -al $RAW_DATA_DIR/* | awk '{{print $9}}'"
+--
+scripts/make_digi_ntuple.py-160-                cmd  = f"ls -al /data/mu2e/mu2etrk/datasets/{self.idsid}/* | awk '{{print $9}}'"
+scripts/make_digi_ntuple.py-161-            
+scripts/make_digi_ntuple.py:162:            cmd += f' | grep {self.run_number} | sort';
+scripts/make_digi_ntuple.py-163-            if (self.nfiles):
+scripts/make_digi_ntuple.py-164-                cmd += f' | head -n {self.nfiles}'
+--
+scripts/make_station_hist.py-22-        self.nev        = None;
+scripts/make_station_hist.py-23-        self.min_edep   = None;
+scripts/make_station_hist.py:24:        self.run_number = None
+scripts/make_station_hist.py-25-        self.slots      = None;  ## a range : s1:s2, with all in between
+scripts/make_station_hist.py-26-        self.diag_level = 0;
+--
+scripts/make_station_hist.py-58-                self.filename = val
+scripts/make_station_hist.py-59-            elif (key == '--rn'):
+scripts/make_station_hist.py:60:                self.run_number = int(val)
+scripts/make_station_hist.py-61-            elif (key == '--idsid'):
+scripts/make_station_hist.py-62-                self.idsid = val
+--
+scripts/make_station_hist.py-74-        self.Print(name,0,'min_edep  = %s' % self.min_edep  )
+scripts/make_station_hist.py-75-        self.Print(name,0,'nfiles    = %s' % self.nfiles    )
+scripts/make_station_hist.py:76:        self.Print(name,0,'rn        = %s' % self.run_number)
+scripts/make_station_hist.py-77-        self.Print(name,0,'slots     = %s' % self.slots     )
+scripts/make_station_hist.py-78-
+--
+scripts/make_station_hist.py-133-# form the input file list
+scripts/make_station_hist.py-134-#------------------------------------------------------------------------------
+scripts/make_station_hist.py:135:        input_file_list=f'/tmp/make_station_hist_input.{self.run_number}.txt.{os.getpid()}'
+scripts/make_station_hist.py-136-        cmd  = "ls -al $RAW_DATA_DIR/* | awk '{print $9}'"
+scripts/make_station_hist.py:137:        cmd += f' | grep {self.run_number} | sort';
+scripts/make_station_hist.py-138-        if (self.nfiles):
+scripts/make_station_hist.py-139-            cmd += f' | head -n {self.nfiles}'
+--
+scripts/make_station_hist.py-155-# submit the job
+scripts/make_station_hist.py-156-#-------v----------------------------------------------------------------------
+scripts/make_station_hist.py:157:        logfile=f'{self.idsid}.make_station_hist.{self.run_number}.log' ;
+scripts/make_station_hist.py-158-        
+scripts/make_station_hist.py-159-        os.system(f'cat {input_fcl}                   >| {logfile}');
+--
+scripts/submit_mu2e_job.py-2-# example :
+scripts/submit_mu2e_job.py-3-# ---------
+scripts/submit_mu2e_job.py:4:#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run_number=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+scripts/submit_mu2e_job.py-5-#
+scripts/submit_mu2e_job.py:6:# --run_number : use files of a given run number
+scripts/submit_mu2e_job.py-7-# --fcl        : template fcl file
+scripts/submit_mu2e_job.py-8-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-60-        parser.add_argument('--nskip'           , type=int, default=None, help="unused")
+scripts/submit_mu2e_job.py-61-        parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
+scripts/submit_mu2e_job.py:62:        parser.add_argument('-r','--run_number' , type=int, default=None, help="run number")
+scripts/submit_mu2e_job.py-63-        parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
+scripts/submit_mu2e_job.py-64-        parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
+--
+scripts/submit_mu2e_job.py-70-        logger.info(f'args.calib_ver  = {args.calib_ver}'    )
+scripts/submit_mu2e_job.py-71-        logger.info(f'args.calib_run  = {args.calib_run}'    )
+scripts/submit_mu2e_job.py:72:        logger.info(f'args.rn         = {args.run_number}'   )
+scripts/submit_mu2e_job.py-73-        logger.info(f'args.fcl        = {args.fcl}'          )
+scripts/submit_mu2e_job.py-74-        logger.info(f'args.nfiles     = {args.nfiles}'       )
+--
+scripts/submit_mu2e_job.py-112-# form the input file list, input_dsid and run number come from it
+scripts/submit_mu2e_job.py-113-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:114:        input_dsid, run_number, file_list = self.resolve_inputs(args)
+scripts/submit_mu2e_job.py-115-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-116-# output directory and job names, absolute paths: the job starts inside WORK_DIR
+--
+scripts/submit_mu2e_job.py-131-        if (first_file and stub is None):
+scripts/submit_mu2e_job.py-132-            logger.warning(f'{first_file} has no rrrrrr_ssssss stub, the log file name uses the run number')
+scripts/submit_mu2e_job.py:133:        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
+scripts/submit_mu2e_job.py-134-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-135-# calibrations and overrides, see overrides_cmd
+--
+scripts/submit_mu2e_job.py-160-        input_list = None
+scripts/submit_mu2e_job.py-161-        if (file_list is not None):
+scripts/submit_mu2e_job.py:162:            input_list = os.path.join(output_dir, f'submit_mu2e_job_input.{run_number}.txt')
+scripts/submit_mu2e_job.py-163-            with open(input_list, 'w', encoding="utf-8") as f:
+scripts/submit_mu2e_job.py-164-                f.write(file_list)
+--
+scripts/submit_mu2e_job.py-203-
+scripts/submit_mu2e_job.py-204-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:205:# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+scripts/submit_mu2e_job.py-206-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-207-    def resolve_inputs(self,args):
+scripts/submit_mu2e_job.py-208-        input_dsid = args.idsid
+scripts/submit_mu2e_job.py:209:        run_number = args.run_number
+scripts/submit_mu2e_job.py-210-
+scripts/submit_mu2e_job.py-211-        if (args.source):
+--
+scripts/submit_mu2e_job.py-216-                sys.exit(1)
+scripts/submit_mu2e_job.py-217-            input_dsid = dsid_from_file
+scripts/submit_mu2e_job.py:218:        if (run_number is None and args.source):
+scripts/submit_mu2e_job.py:219:            run_number = os.path.basename(args.source).split('.')[4]
+scripts/submit_mu2e_job.py-220-
+scripts/submit_mu2e_job.py-221-        if (args.files and not args.Source):
+--
+scripts/submit_mu2e_job.py-226-            with open(args.Source, encoding="utf-8") as f:
+scripts/submit_mu2e_job.py-227-                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+scripts/submit_mu2e_job.py:228:            if (args.run_number is not None):
+scripts/submit_mu2e_job.py:229:                lines = [line for line in lines if self.has_run(line, args.run_number)]
+scripts/submit_mu2e_job.py-230-            if (args.files):
+scripts/submit_mu2e_job.py-231-                # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+--
+scripts/submit_mu2e_job.py-242-            if (args.nfiles):
+scripts/submit_mu2e_job.py-243-                lines = lines[:args.nfiles]
+scripts/submit_mu2e_job.py:244:            return input_dsid, run_number, ''.join(lines)
+scripts/submit_mu2e_job.py-245-
+scripts/submit_mu2e_job.py-246-        if (args.source):
+scripts/submit_mu2e_job.py:247:            return input_dsid, run_number, None
+scripts/submit_mu2e_job.py-248-
+scripts/submit_mu2e_job.py:249:        return input_dsid, run_number, self.raw_files(args)
+scripts/submit_mu2e_job.py-250-
+scripts/submit_mu2e_job.py-251-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-282-# the first six characters are the run number, the rest is the subrun
+scripts/submit_mu2e_job.py-283-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:284:    def has_run(self,path,run_number):
+scripts/submit_mu2e_job.py-285-        fields = os.path.basename(path.strip()).split('.')
+scripts/submit_mu2e_job.py:286:        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
+scripts/submit_mu2e_job.py-287-
+scripts/submit_mu2e_job.py-288-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-291-    def raw_files(self,args):
+scripts/submit_mu2e_job.py-292-        data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+scripts/submit_mu2e_job.py:293:        if (not data_dir or args.run_number is None):
+scripts/submit_mu2e_job.py:294:            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')
+scripts/submit_mu2e_job.py-295-            sys.exit(1)
+scripts/submit_mu2e_job.py-296-
+scripts/submit_mu2e_job.py-297-        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+scripts/submit_mu2e_job.py:298:                       if self.has_run(f, args.run_number))
+scripts/submit_mu2e_job.py-299-        if (args.nfiles):
+scripts/submit_mu2e_job.py-300-            files = files[:args.nfiles]
+scripts/submit_mu2e_job.py-301-        if (not files):
+scripts/submit_mu2e_job.py:302:            logger.error(f'no raw files for run {args.run_number} in {data_dir}')
+scripts/submit_mu2e_job.py-303-            sys.exit(1)
+scripts/submit_mu2e_job.py-304-
+--
+scripts/submit_mu2e_job.py-336-
+scripts/submit_mu2e_job.py-337-        # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+scripts/submit_mu2e_job.py:338:        if (args.run_number is not None):
+scripts/submit_mu2e_job.py-339-            with open(template_fcl, encoding="utf-8") as f:
+scripts/submit_mu2e_job.py-340-                if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+scripts/submit_mu2e_job.py-341-                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+scripts/submit_mu2e_job.py:342:            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
+scripts/submit_mu2e_job.py-343-
+scripts/submit_mu2e_job.py-344-        if (args.calib_ver):
+
+#+end_tool
+#+begin_tool (Grep :regex "1254000|--run " :path "/home/murat/test_001/v001/daqana" :context_lines 1)
+(:name "Grep" :args (:regex "1254000|--run " :path "/home/murat/test_001/v001/daqana" :context_lines 1))
+
+Error: search failed with exit-code 1.  Tool output:
+
+
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "# ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "# --run_number : use files of a given run number
+# --fcl        : template fcl file" :new_str "# --run        : use files of the corresponding Mu2e run (e.g. --run 125400 selects run 1254000)
+# --fcl        : template fcl file" :diff :json-false))
+
+Successfully replaced # --run_number : us… (truncated) with # --run        : us… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        parser.add_argument('-r','--run_number' , type=int, default=None, help=\"run number\")" :new_str "        parser.add_argument('-r','--run'        , type=int, default=None, help=\"Mu2e run selector; e.g. 125400 selects run 1254000\")"))
+
+Successfully replaced         parser.add_… (truncated) with         parser.add_… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        parser.add_argument('-r','--run'        , type=int, default=None, help=\"Mu2e run selector; e.g. 125400 selects run 1254000\")" :new_str "        parser.add_argument('-r','--run'        , type=int, default=None, help=\"run selector; e.g. 125400 selects input run 1254000\")"))
+
+Successfully replaced         parser.add_… (truncated) with         parser.add_… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "# ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run_number=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+#
+# --run        : use files of the corresponding Mu2e run (e.g. --run 125400 selects run 1254000)" :new_str "#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+#
+# --run        : run selector; e.g. --run 125400 selects input run 1254000"))
+
+Successfully replaced #  v001/daqana/scri… (truncated) with #  v001/daqana/scri… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        logger.info(f'args.rn         = {args.run_number}'   )" :new_str "        logger.info(f'args.run       = {args.run}'          )"))
+
+Successfully replaced         logger.info… (truncated) with         logger.info… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        input_dsid, run_number, file_list = self.resolve_inputs(args)" :new_str "        input_dsid, run_number, file_list = self.resolve_inputs(args)
+        selected_run = args.run * 10 if args.run is not None else None"))
+
+Successfully replaced         input_dsid,… (truncated) with         input_dsid,… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        run_number = args.run_number
+" :new_str "        # --run is a six-digit selector for the corresponding seven-digit input run.
+        run_number = args.run * 10 if args.run is not None else None
+"))
+
+Successfully replaced         run_number … (truncated) with         # --run is … (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        if (args.run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4]" :new_str "        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4].split('_')[0]"))
+
+error Error: Could not find old_str "        if (args.run" in file /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py
+#+end_tool
+#+begin_tool (Read :file_path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :start ...)
+(:name "Read" :args (:file_path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :start_line 200 :end_line 310))
+
+# so this checks the setup steps only
+#------------------------------------------------------------------------------
+        self.run_shell(cmd)
+        logger.info(f'submitted, log in {os.path.join(output_dir, logfile)}')
+
+#------------------------------------------------------------------------------
+# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+#------------------------------------------------------------------------------
+    def resolve_inputs(self,args):
+        input_dsid = args.idsid
+        # --run is a six-digit selector for the corresponding seven-digit input run.
+        run_number = args.run * 10 if args.run is not None else None
+
+        if (args.source):
+            # single input file: the dataset ID comes from its Mu2e standard name
+            dsid_from_file = self.dsid_from_name(args.source)
+            if (input_dsid is not None and input_dsid != dsid_from_file):
+                logger.error(f'--idsid={input_dsid} does not match the dataset ID {dsid_from_file} of {args.source}')
+                sys.exit(1)
+            input_dsid = dsid_from_file
+        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4]
+
+        if (args.files and not args.Source):
+            logger.error('--files needs an input file list (--Source or --idsid)')
+            sys.exit(1)
+
+        if (args.Source):
+            with open(args.Source, encoding="utf-8") as f:
+                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+            if (args.run_number is not None):
+                lines = [line for line in lines if self.has_run(line, args.run_number)]
+            if (args.files):
+                # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+                first, last = self.parse_file_range(args.files)
+                if (last > len(lines)):
+                    logger.error(f'--files {args.files}: only {len(lines)} files selected from {args.Source}')
+                    sys.exit(1)
+                lines = lines[first-1:last]
+            if (not lines):
+                logger.error(f'no matching files in input file list {args.Source}')
+                sys.exit(1)
+            if (input_dsid is None):
+                input_dsid = lines[0].split('.')[2]
+            if (args.nfiles):
+                lines = lines[:args.nfiles]
+            return input_dsid, run_number, ''.join(lines)
+
+        if (args.source):
+            return input_dsid, run_number, None
+
+        return input_dsid, run_number, self.raw_files(args)
+
+#------------------------------------------------------------------------------
+# --files N1-N2: returns (N1, N2), 1-based inclusive
+#------------------------------------------------------------------------------
+    def parse_file_range(self,text):
+        m = re.fullmatch(r'\s*(\d+)\s*-\s*(\d+)\s*', text)
+        if (m is None or int(m.group(1)) < 1 or int(m.group(2)) < int(m.group(1))):
+            logger.error(f'--files {text}: expected N1-N2 with 1 <= N1 <= N2')
+            sys.exit(1)
+        return int(m.group(1)), int(m.group(2))
+
+#------------------------------------------------------------------------------
+# rrrrrr_ssssss stub (field 4 of a Mu2e standard name), None if the name does not have it
+#------------------------------------------------------------------------------
+    def run_subrun_stub(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) == 6 and re.fullmatch(r'\d{6}_\d{6}', fields[4])):
+            return fields[4]
+        return None
+
+#------------------------------------------------------------------------------
+# Mu2e standard name: type.user.dsid.job.run_subrun.format, returns dsid
+#------------------------------------------------------------------------------
+    def dsid_from_name(self,path):
+        fields = os.path.basename(path).split('.')
+        if (len(fields) != 6 or not re.fullmatch(r'\d+_\d+', fields[4])):
+            logger.error(f'{path} is not a Mu2e standard file name (type.user.dsid.job.run_subrun.format)')
+            sys.exit(1)
+        return fields[2]
+
+#------------------------------------------------------------------------------
+# field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
+# the first six characters are the run number, the rest is the subrun
+#------------------------------------------------------------------------------
+    def has_run(self,path,run_number):
+        fields = os.path.basename(path.strip()).split('.')
+        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
+
+#------------------------------------------------------------------------------
+# list the raw data files of the run
+#------------------------------------------------------------------------------
+    def raw_files(self,args):
+        data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+        if (not data_dir or args.run_number is None):
+            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')
+            sys.exit(1)
+
+        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+                       if self.has_run(f, args.run_number))
+        if (args.nfiles):
+            files = files[:args.nfiles]
+        if (not files):
+            logger.error(f'no raw files for run {args.run_number} in {data_dir}')
+            sys.exit(1)
+
+        return ''.join(f'{f}\n' for f in files)
+
+#------------------------------------------------------------------------------
+# shell pipeline that prints the template fcl with the overrides applied
+#------------------------------------------------------------------------------
+    def overrides_cmd(self,args,template_fcl,input_dsid):
+        q = shlex.quote
+
+        cmd    = f'cat {q(template_fcl)}'
+        subdir = f'{args.calib_run[0:3]}000' if args.calib_run else None
+
+        # output ntuple name nts.mu2e.<input dataset ID>.<...>.stn: put the input dataset ID in the name
+        with open(template_fcl, encoding="utf-8") as f:
+            fcl_text = f.read()
+        # Match the fully-qualified key, e.g. physics.analyzers.X.THistModule.histFileName.
+        thist_names = re.findall(
+            r'^[^#\n]*\bTHistModule\.histFileName\s*:\s*"([^"]*)"',
+            fcl_text, re.MULTILINE)
+        if (thist_names and not input_dsid):
+            logger.error('THistModule.histFileName needs an input dataset ID (--idsid or a standard input file name)')
+            sys.exit(1)
+        for hist_name in thist_names:
+            if not re.fullmatch(r'nts\.mu2e\.[^.]+\..*\.stn', hist_name):
+                logger.error(f'THistModule.histFileName is not a standard STNTUPLE name: {hist_name}')
+                sys.exit(1)
+
+        if (input_dsid):
+            # Matches the value on both simple and fully-qualified histFileName keys.
+            cmd += ' | sed -E ' + q(f's|(histFileName *: *"nts\\.mu2e\\.)[^.]+(\\.)|\\1{input_dsid}\\2|')
+        else:
+            logger.warning('no input dataset ID, histFileName is left unchanged')
+
+        # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+        if (args.run_number is not None):
+            with open(template_fcl, encoding="utf-8") as f:
+                if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
+
+        if (args.calib_ver):
+            ver = args.calib_ver
+            if (ver == 'latest'):
+                # read the latest calibration version of the run, it propagates to the file name as 'r100'
+                fn = os.path.join(os.getenv('RUNDB_DIR'), 'rundb', subdir, args.calib_run, 'aaa_latest')
+                with open(fn, encoding="utf-8") as f:
+                    ver = f.readline().strip()
+            cmd += ' | sed -E ' + q(f's|(calibration_set_).*(\\.fcl)|\\1{ver}\\2|')
+
+        if (args.calib_run):
+            cmd += ' | sed -E ' + q(f's|fcl/calibration_set|{subdir}/{args.calib_run}/calibration_set_{args.calib_run}|')
+
+        if (args.odsid):
+            cmd += ' | sed -E ' + q(f's|_odsid_|{args.odsid}|')
+
+        return cmd
+
+#------------------------------------------------------------------------------
+# run a shell command, exit if it fails
+#------------------------------------------------------------------------------
+    def run_shell(self,cmd):
+        p = subprocess.run(cmd,
+                           executable="/bin/bash",
+                           shell=True,
+                           capture_output=True,
+                           encoding="utf-8")
+        if (p.returncode != 0):
+            logger.error(f'rc={p.returncode} cmd:{cmd}\n{p.stderr}')
+            sys.exit(1)
+        return p.stdout
+
+#------------------------------------------------------------------------------
+if __name__ == "__main__":
+
+    x    = SubmitJob();
+    args = x.parse_parameters();
+
+    x.run(args)
+
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        input_dsid, run_number, file_list = self.resolve_inputs(args)
+        selected_run = args.run * 10 if args.run is not None else None" :new_str "        input_dsid, run_number, file_list = self.resolve_inputs(args)"))
+
+Successfully replaced         input_dsid,… (truncated) with         input_dsid,… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4]" :new_str "        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4].split('_')[0]"))
+
+Successfully replaced         if (run_num… (truncated) with         if (run_num… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "            if (args.run_number is not None):
+                lines = [line for line in lines if self.has_run(line, args.run_number)]" :new_str "            if (args.run is not None):
+                lines = [line for line in lines if self.has_run(line, run_number)]"))
+
+Successfully replaced             if (arg… (truncated) with             if (arg… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        if (not data_dir or args.run_number is None):
+            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')" :new_str "        run_number = args.run * 10 if args.run is not None else None
+        if (not data_dir or run_number is None):
+            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')"))
+
+Successfully replaced         if (not dat… (truncated) with         run_number … (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+                       if self.has_run(f, args.run_number))" :new_str "        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+                       if self.has_run(f, run_number))"))
+
+Successfully replaced         files = sor… (truncated) with         files = sor… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "            logger.error(f'no raw files for run {args.run_number} in {data_dir}')" :new_str "            logger.error(f'no raw files for run {run_number} (selected by --run {args.run}) in {data_dir}')"))
+
+Successfully replaced             logger.… (truncated) with             logger.… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        if (args.run_number is not None):
+            with open(template_fcl, encoding=\"utf-8\") as f:
+                if (not re.search(r'histFileName.*\\.\\d+_\\d+\\.', f.read())):
+                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\\\.)[0-9]+_([0-9]+\\\\.)|\\\\1{args.run_number:06d}_\\\\2|')" :new_str "        if (args.run is not None):
+            with open(template_fcl, encoding=\"utf-8\") as f:
+                if (not re.search(r'histFileName.*\\.\\d+_\\d+\\.', f.read())):
+                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+            run_number = args.run * 10
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\\\.)[0-9]+_([0-9]+\\\\.)|\\\\1{run_number:07d}_\\\\2|')"))
+
+Successfully replaced         if (args.ru… (truncated) with         if (args.ru… (truncated)
+#+end_tool
+#+begin_tool (Grep :regex "run_number|args\\.run" :path "/home/murat/test_001/v001/daqana/scripts/ ...)
+(:name "Grep" :args (:regex "run_number|args\\.run" :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :context_lines 1))
+
+scripts/submit_mu2e_job.py-71-        logger.info(f'args.calib_run  = {args.calib_run}'    )
+scripts/submit_mu2e_job.py:72:        logger.info(f'args.run       = {args.run}'          )
+scripts/submit_mu2e_job.py-73-        logger.info(f'args.fcl        = {args.fcl}'          )
+--
+scripts/submit_mu2e_job.py-113-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:114:        input_dsid, run_number, file_list = self.resolve_inputs(args)
+scripts/submit_mu2e_job.py-115-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-132-            logger.warning(f'{first_file} has no rrrrrr_ssssss stub, the log file name uses the run number')
+scripts/submit_mu2e_job.py:133:        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
+scripts/submit_mu2e_job.py-134-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-161-        if (file_list is not None):
+scripts/submit_mu2e_job.py:162:            input_list = os.path.join(output_dir, f'submit_mu2e_job_input.{run_number}.txt')
+scripts/submit_mu2e_job.py-163-            with open(input_list, 'w', encoding="utf-8") as f:
+--
+scripts/submit_mu2e_job.py-204-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:205:# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+scripts/submit_mu2e_job.py-206-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-209-        # --run is a six-digit selector for the corresponding seven-digit input run.
+scripts/submit_mu2e_job.py:210:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py-211-
+--
+scripts/submit_mu2e_job.py-218-            input_dsid = dsid_from_file
+scripts/submit_mu2e_job.py:219:        if (run_number is None and args.source):
+scripts/submit_mu2e_job.py:220:            run_number = os.path.basename(args.source).split('.')[4].split('_')[0]
+scripts/submit_mu2e_job.py-221-
+--
+scripts/submit_mu2e_job.py-228-                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+scripts/submit_mu2e_job.py:229:            if (args.run is not None):
+scripts/submit_mu2e_job.py:230:                lines = [line for line in lines if self.has_run(line, run_number)]
+scripts/submit_mu2e_job.py-231-            if (args.files):
+--
+scripts/submit_mu2e_job.py-244-                lines = lines[:args.nfiles]
+scripts/submit_mu2e_job.py:245:            return input_dsid, run_number, ''.join(lines)
+scripts/submit_mu2e_job.py-246-
+scripts/submit_mu2e_job.py-247-        if (args.source):
+scripts/submit_mu2e_job.py:248:            return input_dsid, run_number, None
+scripts/submit_mu2e_job.py-249-
+scripts/submit_mu2e_job.py:250:        return input_dsid, run_number, self.raw_files(args)
+scripts/submit_mu2e_job.py-251-
+--
+scripts/submit_mu2e_job.py-284-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:285:    def has_run(self,path,run_number):
+scripts/submit_mu2e_job.py-286-        fields = os.path.basename(path.strip()).split('.')
+scripts/submit_mu2e_job.py:287:        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
+scripts/submit_mu2e_job.py-288-
+--
+scripts/submit_mu2e_job.py-293-        data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+scripts/submit_mu2e_job.py:294:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py:295:        if (not data_dir or run_number is None):
+scripts/submit_mu2e_job.py-296-            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')
+--
+scripts/submit_mu2e_job.py-299-        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+scripts/submit_mu2e_job.py:300:                       if self.has_run(f, run_number))
+scripts/submit_mu2e_job.py-301-        if (args.nfiles):
+--
+scripts/submit_mu2e_job.py-303-        if (not files):
+scripts/submit_mu2e_job.py:304:            logger.error(f'no raw files for run {run_number} (selected by --run {args.run}) in {data_dir}')
+scripts/submit_mu2e_job.py-305-            sys.exit(1)
+--
+scripts/submit_mu2e_job.py-339-        # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+scripts/submit_mu2e_job.py:340:        if (args.run is not None):
+scripts/submit_mu2e_job.py-341-            with open(template_fcl, encoding="utf-8") as f:
+--
+scripts/submit_mu2e_job.py-343-                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+scripts/submit_mu2e_job.py:344:            run_number = args.run * 10
+scripts/submit_mu2e_job.py:345:            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{run_number:07d}_\\2|')
+scripts/submit_mu2e_job.py-346-
+
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "# ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "# field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
+# the first six characters are the run number, the rest is the subrun
+#------------------------------------------------------------------------------
+    def has_run(self,path,run_number):
+        fields = os.path.basename(path.strip()).split('.')
+        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'" :new_str "# field 4 (0-based) of the dot-separated name contains run_subrun.
+# --run selects the seven-digit Mu2e run number (the selector multiplied by 10).
+#------------------------------------------------------------------------------
+    def has_run(self,path,run_number):
+        fields = os.path.basename(path.strip()).split('.')
+        if len(fields) <= 4 or '_' not in fields[4]:
+            return False
+        return fields[4].split('_', 1)[0] == str(run_number)"))
+
+Successfully replaced # field 4 (0-based)… (truncated) with # field 4 (0-based)… (truncated)
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "            input_dsid = dsid_from_file
+        if (run_number is None and args.source):
+            run_number = os.path.basename(args.source).split('.')[4].split('_')[0]" :new_str "            input_dsid = dsid_from_file
+            source_run = os.path.basename(args.source).split('.')[4].split('_')[0]
+            if (args.run is not None and source_run != str(run_number)):
+                logger.error(f'--run {args.run} selects run {run_number}, but {args.source} is run {source_run}')
+                sys.exit(1)
+            if (run_number is None):
+                run_number = source_run"))
+
+Successfully replaced             input_d… (truncated) with             input_d… (truncated)
+#+end_tool
+#+begin_tool (Grep :regex "run_number|run-number|--run" :path "/home/murat/test_001/v001/daqana/sc ...)
+(:name "Grep" :args (:regex "run_number|run-number|--run" :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :context_lines 0))
+
+scripts/submit_mu2e_job.py:4:#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+scripts/submit_mu2e_job.py:6:# --run        : run selector; e.g. --run 125400 selects input run 1254000
+scripts/submit_mu2e_job.py:62:        parser.add_argument('-r','--run'        , type=int, default=None, help="run selector; e.g. 125400 selects input run 1254000")
+scripts/submit_mu2e_job.py:114:        input_dsid, run_number, file_list = self.resolve_inputs(args)
+scripts/submit_mu2e_job.py:133:        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
+scripts/submit_mu2e_job.py:162:            input_list = os.path.join(output_dir, f'submit_mu2e_job_input.{run_number}.txt')
+scripts/submit_mu2e_job.py:205:# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+scripts/submit_mu2e_job.py:209:        # --run is a six-digit selector for the corresponding seven-digit input run.
+scripts/submit_mu2e_job.py:210:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py:220:            if (args.run is not None and source_run != str(run_number)):
+scripts/submit_mu2e_job.py:221:                logger.error(f'--run {args.run} selects run {run_number}, but {args.source} is run {source_run}')
+scripts/submit_mu2e_job.py:223:            if (run_number is None):
+scripts/submit_mu2e_job.py:224:                run_number = source_run
+scripts/submit_mu2e_job.py:234:                lines = [line for line in lines if self.has_run(line, run_number)]
+scripts/submit_mu2e_job.py:249:            return input_dsid, run_number, ''.join(lines)
+scripts/submit_mu2e_job.py:252:            return input_dsid, run_number, None
+scripts/submit_mu2e_job.py:254:        return input_dsid, run_number, self.raw_files(args)
+scripts/submit_mu2e_job.py:287:# --run selects the seven-digit Mu2e run number (the selector multiplied by 10).
+scripts/submit_mu2e_job.py:289:    def has_run(self,path,run_number):
+scripts/submit_mu2e_job.py:293:        return fields[4].split('_', 1)[0] == str(run_number)
+scripts/submit_mu2e_job.py:300:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py:301:        if (not data_dir or run_number is None):
+scripts/submit_mu2e_job.py:302:            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')
+scripts/submit_mu2e_job.py:306:                       if self.has_run(f, run_number))
+scripts/submit_mu2e_job.py:310:            logger.error(f'no raw files for run {run_number} (selected by --run {args.run}) in {data_dir}')
+scripts/submit_mu2e_job.py:350:            run_number = args.run * 10
+scripts/submit_mu2e_job.py:351:            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{run_number:07d}_\\2|')
+
+#+end_tool
+#+begin_tool (Bash :command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit ...)
+(:name "Bash" :args (:command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py"))
+
+
+#+end_tool
+#+begin_tool (Bash :command "git -C /home/murat/test_001/v001/daqana diff -- scripts/submit_mu2e_j ...)
+(:name "Bash" :args (:command "git -C /home/murat/test_001/v001/daqana diff -- scripts/submit_mu2e_job.py"))
+
+diff --git a/scripts/submit_mu2e_job.py b/scripts/submit_mu2e_job.py
+index dbc1d59..e64fe13 100755
+--- a/scripts/submit_mu2e_job.py
++++ b/scripts/submit_mu2e_job.py
+@@ -1,9 +1,9 @@
+ #!/usr/bin/env python
+ # example :
+ # ---------
+-#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run_number=105935 --idsid=vst --calib-ver=v0 --diag_level=10
++#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+ #
+-# --run_number : use files of a given run number
++# --run        : run selector; e.g. --run 125400 selects input run 1254000
+ # --fcl        : template fcl file
+ #------------------------------------------------------------------------------
+ import subprocess, datetime, socket
+@@ -59,7 +59,7 @@ class SubmitJob:
+         parser.add_argument('-f','--files'      , default=None,           help="range N1-N2 of files in the input list to process (1-based, inclusive)")
+         parser.add_argument('--nskip'           , type=int, default=None, help="unused")
+         parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
+-        parser.add_argument('-r','--run_number' , type=int, default=None, help="run number")
++        parser.add_argument('-r','--run'        , type=int, default=None, help="run selector; e.g. 125400 selects input run 1254000")
+         parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
+         parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
+ 
+@@ -69,7 +69,7 @@ class SubmitJob:
+         logger.info(f'args.diag_level = {args.diag_level}'   )
+         logger.info(f'args.calib_ver  = {args.calib_ver}'    )
+         logger.info(f'args.calib_run  = {args.calib_run}'    )
+-        logger.info(f'args.rn         = {args.run_number}'   )
++        logger.info(f'args.run       = {args.run}'          )
+         logger.info(f'args.fcl        = {args.fcl}'          )
+         logger.info(f'args.nfiles     = {args.nfiles}'       )
+         logger.info(f'args.data_dir   = {args.data_dir}'     )
+@@ -206,7 +206,8 @@ class SubmitJob:
+ #------------------------------------------------------------------------------
+     def resolve_inputs(self,args):
+         input_dsid = args.idsid
+-        run_number = args.run_number
++        # --run is a six-digit selector for the corresponding seven-digit input run.
++        run_number = args.run * 10 if args.run is not None else None
+ 
+         if (args.source):
+             # single input file: the dataset ID comes from its Mu2e standard name
+@@ -215,8 +216,12 @@ class SubmitJob:
+                 logger.error(f'--idsid={input_dsid} does not match the dataset ID {dsid_from_file} of {args.source}')
+                 sys.exit(1)
+             input_dsid = dsid_from_file
+-        if (run_number is None and args.source):
+-            run_number = os.path.basename(args.source).split('.')[4]
++            source_run = os.path.basename(args.source).split('.')[4].split('_')[0]
++            if (args.run is not None and source_run != str(run_number)):
++                logger.error(f'--run {args.run} selects run {run_number}, but {args.source} is run {source_run}')
++                sys.exit(1)
++            if (run_number is None):
++                run_number = source_run
+ 
+         if (args.files and not args.Source):
+             logger.error('--files needs an input file list (--Source or --idsid)')
+@@ -225,8 +230,8 @@ class SubmitJob:
+         if (args.Source):
+             with open(args.Source, encoding="utf-8") as f:
+                 lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+-            if (args.run_number is not None):
+-                lines = [line for line in lines if self.has_run(line, args.run_number)]
++            if (args.run is not None):
++                lines = [line for line in lines if self.has_run(line, run_number)]
+             if (args.files):
+                 # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+                 first, last = self.parse_file_range(args.files)
+@@ -278,28 +283,31 @@ class SubmitJob:
+         return fields[2]
+ 
+ #------------------------------------------------------------------------------
+-# field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
+-# the first six characters are the run number, the rest is the subrun
++# field 4 (0-based) of the dot-separated name contains run_subrun.
++# --run selects the seven-digit Mu2e run number (the selector multiplied by 10).
+ #------------------------------------------------------------------------------
+     def has_run(self,path,run_number):
+         fields = os.path.basename(path.strip()).split('.')
+-        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
++        if len(fields) <= 4 or '_' not in fields[4]:
++            return False
++        return fields[4].split('_', 1)[0] == str(run_number)
+ 
+ #------------------------------------------------------------------------------
+ # list the raw data files of the run
+ #------------------------------------------------------------------------------
+     def raw_files(self,args):
+         data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+-        if (not data_dir or args.run_number is None):
+-            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')
++        run_number = args.run * 10 if args.run is not None else None
++        if (not data_dir or run_number is None):
++            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')
+             sys.exit(1)
+ 
+         files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+-                       if self.has_run(f, args.run_number))
++                       if self.has_run(f, run_number))
+         if (args.nfiles):
+             files = files[:args.nfiles]
+         if (not files):
+-            logger.error(f'no raw files for run {args.run_number} in {data_dir}')
++            logger.error(f'no raw files for run {run_number} (selected by --run {args.run}) in {data_dir}')
+             sys.exit(1)
+ 
+         return ''.join(f'{f}\n' for f in files)
+@@ -314,17 +322,33 @@ class SubmitJob:
+         subdir = f'{args.calib_run[0:3]}000' if args.calib_run else None
+ 
+         # output ntuple name nts.mu2e.<input dataset ID>.<...>.stn: put the input dataset ID in the name
++        with open(template_fcl, encoding="utf-8") as f:
++            fcl_text = f.read()
++        # Match the fully-qualified key, e.g. physics.analyzers.X.THistModule.histFileName.
++        thist_names = re.findall(
++            r'^[^#\n]*\bTHistModule\.histFileName\s*:\s*"([^"]*)"',
++            fcl_text, re.MULTILINE)
++        if (thist_names and not input_dsid):
++            logger.error('THistModule.histFileName needs an input dataset ID (--idsid or a standard input file name)')
++            sys.exit(1)
++        for hist_name in thist_names:
++            if not re.fullmatch(r'nts\.mu2e\.[^.]+\..*\.stn', hist_name):
++                logger.error(f'THistModule.histFileName is not a standard STNTUPLE name: {hist_name}')
++                sys.exit(1)
++
+         if (input_dsid):
++            # Matches the value on both simple and fully-qualified histFileName keys.
+             cmd += ' | sed -E ' + q(f's|(histFileName *: *"nts\\.mu2e\\.)[^.]+(\\.)|\\1{input_dsid}\\2|')
+         else:
+             logger.warning('no input dataset ID, histFileName is left unchanged')
+ 
+         # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
+-        if (args.run_number is not None):
++        if (args.run is not None):
+             with open(template_fcl, encoding="utf-8") as f:
+                 if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+                     logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+-            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
++            run_number = args.run * 10
++            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{run_number:07d}_\\2|')
+ 
+         if (args.calib_ver):
+             ver = args.calib_ver
+
+#+end_tool
+#+begin_tool (Bash :command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit ...)
+(:name "Bash" :args (:command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py && python3 - <<'PY'
+import importlib.util
+p='/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py'
+spec=importlib.util.spec_from_file_location('submit_mu2e_job', p)
+m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+x=m.SubmitJob()
+assert x.has_run('nts.mu2e.vst.job.1254000_000123.root', 1254000)
+assert not x.has_run('nts.mu2e.vst.job.1254001_000123.root', 1254000)
+print('run selector matching checks passed')
+PY"))
+
+run selector matching checks passed
+
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        parser.add_argument('-r','--run'        , type=int, default=None, help=\"run selector; e.g. 125400 selects input run 1254000\")" :new_str "        parser.add_argument('-r', '--run', '--run_number', dest='run', type=int, default=None,
+                            help=\"run selector; e.g. 125400 selects input run 1254000\")"))
+
+Successfully replaced         parser.add_… (truncated) with         parser.add_… (truncated)
+#+end_tool
+#+begin_tool (Bash :command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit ...)
+(:name "Bash" :args (:command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py"))
+
+
+#+end_tool
+Updated =--run= so =--run 125400= selects input files from run =1254000=. The selection applies to both file lists and raw-data directories; for a single =--source= file, the script checks that its run matches. The FCL output filename’s run field is also set to =1254000=.
+
+Kept =--run_number= as a backward-compatible alias. Python compilation and run-matching checks pass.
+
+*** remove '--run_number' and actions related to that key
+
+
+#+begin_tool (Grep :regex "run_number|--run_number" :path "/home/murat/test_001/v001/daqana/script ...)
+(:name "Grep" :args (:regex "run_number|--run_number" :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :context_lines 2))
+
+scripts/submit_mu2e_job.py-60-        parser.add_argument('--nskip'           , type=int, default=None, help="unused")
+scripts/submit_mu2e_job.py-61-        parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
+scripts/submit_mu2e_job.py:62:        parser.add_argument('-r', '--run', '--run_number', dest='run', type=int, default=None,
+scripts/submit_mu2e_job.py-63-                            help="run selector; e.g. 125400 selects input run 1254000")
+scripts/submit_mu2e_job.py-64-        parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
+--
+scripts/submit_mu2e_job.py-113-# form the input file list, input_dsid and run number come from it
+scripts/submit_mu2e_job.py-114-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:115:        input_dsid, run_number, file_list = self.resolve_inputs(args)
+scripts/submit_mu2e_job.py-116-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-117-# output directory and job names, absolute paths: the job starts inside WORK_DIR
+--
+scripts/submit_mu2e_job.py-132-        if (first_file and stub is None):
+scripts/submit_mu2e_job.py-133-            logger.warning(f'{first_file} has no rrrrrr_ssssss stub, the log file name uses the run number')
+scripts/submit_mu2e_job.py:134:        logfile       = f'log.mu2e.{input_dsid}.{fcl_job_stub}.{stub or run_number}.log'
+scripts/submit_mu2e_job.py-135-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-136-# calibrations and overrides, see overrides_cmd
+--
+scripts/submit_mu2e_job.py-161-        input_list = None
+scripts/submit_mu2e_job.py-162-        if (file_list is not None):
+scripts/submit_mu2e_job.py:163:            input_list = os.path.join(output_dir, f'submit_mu2e_job_input.{run_number}.txt')
+scripts/submit_mu2e_job.py-164-            with open(input_list, 'w', encoding="utf-8") as f:
+scripts/submit_mu2e_job.py-165-                f.write(file_list)
+--
+scripts/submit_mu2e_job.py-204-
+scripts/submit_mu2e_job.py-205-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:206:# returns (input_dsid, run_number, file_list), file_list is None when --source is used
+scripts/submit_mu2e_job.py-207-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py-208-    def resolve_inputs(self,args):
+scripts/submit_mu2e_job.py-209-        input_dsid = args.idsid
+scripts/submit_mu2e_job.py-210-        # --run is a six-digit selector for the corresponding seven-digit input run.
+scripts/submit_mu2e_job.py:211:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py-212-
+scripts/submit_mu2e_job.py-213-        if (args.source):
+--
+scripts/submit_mu2e_job.py-219-            input_dsid = dsid_from_file
+scripts/submit_mu2e_job.py-220-            source_run = os.path.basename(args.source).split('.')[4].split('_')[0]
+scripts/submit_mu2e_job.py:221:            if (args.run is not None and source_run != str(run_number)):
+scripts/submit_mu2e_job.py:222:                logger.error(f'--run {args.run} selects run {run_number}, but {args.source} is run {source_run}')
+scripts/submit_mu2e_job.py-223-                sys.exit(1)
+scripts/submit_mu2e_job.py:224:            if (run_number is None):
+scripts/submit_mu2e_job.py:225:                run_number = source_run
+scripts/submit_mu2e_job.py-226-
+scripts/submit_mu2e_job.py-227-        if (args.files and not args.Source):
+--
+scripts/submit_mu2e_job.py-233-                lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
+scripts/submit_mu2e_job.py-234-            if (args.run is not None):
+scripts/submit_mu2e_job.py:235:                lines = [line for line in lines if self.has_run(line, run_number)]
+scripts/submit_mu2e_job.py-236-            if (args.files):
+scripts/submit_mu2e_job.py-237-                # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
+--
+scripts/submit_mu2e_job.py-248-            if (args.nfiles):
+scripts/submit_mu2e_job.py-249-                lines = lines[:args.nfiles]
+scripts/submit_mu2e_job.py:250:            return input_dsid, run_number, ''.join(lines)
+scripts/submit_mu2e_job.py-251-
+scripts/submit_mu2e_job.py-252-        if (args.source):
+scripts/submit_mu2e_job.py:253:            return input_dsid, run_number, None
+scripts/submit_mu2e_job.py-254-
+scripts/submit_mu2e_job.py:255:        return input_dsid, run_number, self.raw_files(args)
+scripts/submit_mu2e_job.py-256-
+scripts/submit_mu2e_job.py-257-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-288-# --run selects the seven-digit Mu2e run number (the selector multiplied by 10).
+scripts/submit_mu2e_job.py-289-#------------------------------------------------------------------------------
+scripts/submit_mu2e_job.py:290:    def has_run(self,path,run_number):
+scripts/submit_mu2e_job.py-291-        fields = os.path.basename(path.strip()).split('.')
+scripts/submit_mu2e_job.py-292-        if len(fields) <= 4 or '_' not in fields[4]:
+scripts/submit_mu2e_job.py-293-            return False
+scripts/submit_mu2e_job.py:294:        return fields[4].split('_', 1)[0] == str(run_number)
+scripts/submit_mu2e_job.py-295-
+scripts/submit_mu2e_job.py-296-#------------------------------------------------------------------------------
+--
+scripts/submit_mu2e_job.py-299-    def raw_files(self,args):
+scripts/submit_mu2e_job.py-300-        data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
+scripts/submit_mu2e_job.py:301:        run_number = args.run * 10 if args.run is not None else None
+scripts/submit_mu2e_job.py:302:        if (not data_dir or run_number is None):
+scripts/submit_mu2e_job.py-303-            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')
+scripts/submit_mu2e_job.py-304-            sys.exit(1)
+scripts/submit_mu2e_job.py-305-
+scripts/submit_mu2e_job.py-306-        files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
+scripts/submit_mu2e_job.py:307:                       if self.has_run(f, run_number))
+scripts/submit_mu2e_job.py-308-        if (args.nfiles):
+scripts/submit_mu2e_job.py-309-            files = files[:args.nfiles]
+scripts/submit_mu2e_job.py-310-        if (not files):
+scripts/submit_mu2e_job.py:311:            logger.error(f'no raw files for run {run_number} (selected by --run {args.run}) in {data_dir}')
+scripts/submit_mu2e_job.py-312-            sys.exit(1)
+scripts/submit_mu2e_job.py-313-
+--
+scripts/submit_mu2e_job.py-349-                if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
+scripts/submit_mu2e_job.py-350-                    logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
+scripts/submit_mu2e_job.py:351:            run_number = args.run * 10
+scripts/submit_mu2e_job.py:352:            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{run_number:07d}_\\2|')
+scripts/submit_mu2e_job.py-353-
+scripts/submit_mu2e_job.py-354-        if (args.calib_ver):
+
+#+end_tool
+#+begin_tool (Edit :path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "  ...)
+(:name "Edit" :args (:path "/home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py" :old_str "        parser.add_argument('-r', '--run', '--run_number', dest='run', type=int, default=None,
+                            help=\"run selector; e.g. 125400 selects input run 1254000\")" :new_str "        parser.add_argument('-r', '--run', type=int, default=None,
+                            help=\"run selector; e.g. 125400 selects input run 1254000\")"))
+
+Successfully replaced         parser.add_… (truncated) with         parser.add_… (truncated)
+#+end_tool
+#+begin_tool (Bash :command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit ...)
+(:name "Bash" :args (:command "python3 -m py_compile /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py && grep -n -- '--run_number' /home/murat/test_001/v001/daqana/scripts/submit_mu2e_job.py || true"))
+
+
+#+end_tool
+Removed =--run_number= as an accepted option; =-r= and =--run= remain. Python compilation passes, and no =--run_number= references remain in the script.
+
+*** the following command doesnt find its input files
+
+#+begin_src bash
+
+  v001/daqana/scripts/submit_mu2e_job.py -c v001/daqana/fcl/sr_001.fcl --idsid kpp00s003r109n000 --run 125472 --calib-ver v110 -n 10
+
+#+end_src
+
+however file:/home/murat/test_001/samdfc/kpp00s003r109n000.files does contain a file with run=125472 in the name.
+- what is the problem ?

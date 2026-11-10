@@ -106,6 +106,14 @@ cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
   ROOT::Hist ROOT::Tree ROOT::RIO ROOT::Gui ROOT::Geom ROOT::Matrix ROOT::GenVector ROOT::Core
 )
 
+cet_build_plugin(PSegFinder art::module LIBRARIES REG
+  daqana_obj
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  Offline::TrackerGeom
+  Offline::ProditionsService
+)
+
 cet_build_plugin(TCLineFilter art::module LIBRARIES REG
   daqana_obj
   Offline::Mu2eUtilities

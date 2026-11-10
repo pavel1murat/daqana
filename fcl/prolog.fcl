@@ -2,6 +2,18 @@
 BEGIN_PROLOG
 daqana : {
     producers : {
+        PSegFinder: { module_type: PSegFinder
+            comboHitTag     : "makeSH"
+            timeClusterTag  : "SimpleTimeCluster"
+            driftVelocity   : 61.3e-3  ## mm/ns
+            timeOffset      : 0.       ## ns
+            minimumHits     : 4
+            maximumStrawGap : 4
+            verbose         : false
+            # Enable one or more switches, e.g. [ "bit10:1" ]
+            debugBits       : []
+        }
+
         FragmentNormalizedEB : { module_type: FragmentNormalizedEB
             moduleLabel: "daq"
             instances: [ "DTCEVT", "CFO" ]
@@ -33,10 +45,12 @@ daqana : {
             
             maxDt         : 1000  ## ns
 
-            minNTcHits    : 10
-            minNTcPlanes  : -1     ## when <= 0, has no effect
-            maxNTcPlanes  : -1     ## when <= 0, has no effect
-            minNGoodTc    : 0
+            minNTcHits       : 10
+            minNTcPlanes     : -1     ## when <= 0, has no effect
+            maxNTcPlanes     : -1     ## when <= 0, has no effect
+            minTcPlaneNumber : 1000  ## plane ID lower bound; active with maxTcPlaneNumber when min <= max
+            maxTcPlaneNumber : -1    ## plane ID upper bound; active with minTcPlaneNumber when min <= max
+            minNGoodTc       : 0
             
             minNGoodCrvc  : 0
             minNCh        : 0

@@ -22,6 +22,8 @@
 
 #include "TH1D.h"
 
+#include <vector>
+
 #include "TRACE/trace.h"
 #define TRACE_NAME "DaqanaFilter"
 
@@ -57,6 +59,8 @@ namespace mu2e {
       fhicl::Atom<unsigned>      minNTcHits   {Name("minNTcHits"   ), Comment("Minimum number of time cluster hits")};
       fhicl::Atom<int>           minNTcPlanes {Name("minNTcPlanes" ), Comment("if > 0, minimum number of planes")};
       fhicl::Atom<int>           maxNTcPlanes {Name("maxNTcPlanes" ), Comment("if > 0, maximum number of planes")};
+      fhicl::Atom<int>           minTcPlaneNumber{Name("minTcPlaneNumber"), Comment("Minimum plane ID for time-cluster hits; used with maxTcPlaneNumber when min <= max")};
+      fhicl::Atom<int>           maxTcPlaneNumber{Name("maxTcPlaneNumber"), Comment("Maximum plane ID for time-cluster hits; used with minTcPlaneNumber when min <= max")};
       fhicl::Atom<unsigned>      minNGoodTc   {Name("minNGoodTc"   ), Comment("Minimum number of time clusters")};
       
       // track selection (not used yet)
@@ -68,6 +72,15 @@ namespace mu2e {
     };
 
     using Parameters = art::EDFilter::Table<Config>;
+//-----------------------------------------------------------------------------
+// data structures
+//-----------------------------------------------------------------------------
+    // additional time cluster parameters
+    struct TcPar_t {
+      int minTcPlaneNumber{1000};
+      int maxTcPlaneNumber{  -1};
+    };
+
     explicit DaqanaFilter(Parameters const& p);
 
     // std::string findComboHitCollTag(art::Event const& event, art::Handle<TimeClusterCollection> const& TcHandle);
@@ -109,6 +122,8 @@ namespace mu2e {
     unsigned      minNTcHits_ ;
     int           minNTcPlanes_;
     int           maxNTcPlanes_;
+    int           minTcPlaneNumber_;
+    int           maxTcPlaneNumber_;
     unsigned      minNGoodTc_ ;
 
     
@@ -118,8 +133,8 @@ namespace mu2e {
     TH1D* nTracksPassed_      = nullptr;
     TH1D* nCrvClustersAll_    = nullptr;
     TH1D* nCrvClustersPassed_ = nullptr;
+    std::vector<TcPar_t> tc_pars_;
   };
-
 //-----------------------------------------------------------------------------
   DaqanaFilter::DaqanaFilter(Parameters const& p)
     : art::EDFilter{p}
@@ -143,9 +158,11 @@ namespace mu2e {
     , minNTrk_     {p().minNTrk()}
       
     , minNTcHits_  {p().minNTcHits()  }
-    , minNTcPlanes_{p().minNTcPlanes()}
-    , maxNTcPlanes_{p().maxNTcPlanes()}
-    , minNGoodTc_  {p().minNGoodTc()  }
+    , minNTcPlanes_   {p().minNTcPlanes()}
+    , maxNTcPlanes_   {p().maxNTcPlanes()}
+    , minTcPlaneNumber_{p().minTcPlaneNumber()}
+    , maxTcPlaneNumber_{p().maxTcPlaneNumber()}
+    , minNGoodTc_     {p().minNGoodTc()  }
 
     , maxDt_{p().maxDt()}
 
@@ -244,15 +261,11 @@ namespace mu2e {
 
 //-----------------------------------------------------------------------------
   bool DaqanaFilter::tc_is_good(const TimeCluster& Tc) {
-    bool good{false};
-
     int nh_plane[36]{};                 // all elements initialized to zero
     int n_tc_planes{0};
+    TcPar_t tc_par{1000, -1};
 
     unsigned tc_nhits = Tc.nhits();
-    if (tc_nhits < minNTcHits_)    return good;
-    // count number of planes
-
     for (size_t ih=0; ih<tc_nhits; ih++) {
       StrawHitIndex hit_index   = Tc.hits().at(ih);
       const mu2e::ComboHit* hit = &ch_coll_->at(hit_index);
@@ -261,13 +274,23 @@ namespace mu2e {
       if (nh_plane[plane] == 1) {
         n_tc_planes++;
       }
+      if (plane < tc_par.minTcPlaneNumber) {
+        tc_par.minTcPlaneNumber = plane;
+      }
+      if (plane > tc_par.maxTcPlaneNumber) {
+        tc_par.maxTcPlaneNumber = plane;
+      }
     }
-    
-    if ((minNTcPlanes_ > 0) and (n_tc_planes < minNTcPlanes_)) return good;
-    if ((maxNTcPlanes_ > 0) and (n_tc_planes > maxNTcPlanes_)) return good;
+    tc_pars_.push_back(tc_par);
 
-    good = true;
-    return good;
+    if (tc_nhits < minNTcHits_) return false;
+    if ((minNTcPlanes_ > 0) and (n_tc_planes < minNTcPlanes_)) return false;
+    if ((maxNTcPlanes_ > 0) and (n_tc_planes > maxNTcPlanes_)) return false;
+    if ((minTcPlaneNumber_ <= maxTcPlaneNumber_) &&
+        (tc_par.minTcPlaneNumber < minTcPlaneNumber_ ||
+         tc_par.maxTcPlaneNumber > maxTcPlaneNumber_)) return false;
+
+    return true;
   }
 
   
@@ -275,6 +298,7 @@ namespace mu2e {
   bool DaqanaFilter::filter_tc_calc(art::Event& event) {
     bool passed  = false;
     
+    tc_pars_.clear();
     calc_coll_ = event.getValidHandle<CaloClusterCollection>(calcCollTag_);
     ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
     tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
@@ -327,6 +351,7 @@ namespace mu2e {
     bool passed  = false;
     
     ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
+    tc_pars_.clear();
     crvc_coll_ = event.getValidHandle<CrvCoincidenceClusterCollection>(crvcCollTag_);
     tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
 
@@ -360,6 +385,7 @@ namespace mu2e {
   bool DaqanaFilter::filter_tc_only(art::Event& event) {
     bool passed  = false;
     
+    tc_pars_.clear();
     ch_coll_   = event.getValidHandle<ComboHitCollection>(chCollTag_);
     tc_coll_   = event.getValidHandle<TimeClusterCollection>(tcCollTag_);
 

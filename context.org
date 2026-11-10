@@ -1,0 +1,25 @@
+#+title: Session Context
+
+* Project and working directory
+- Git repository root: =/home/murat/test_001/spack/var/spack/environments/v001/daqana=.
+- Current work area: =work/pseg_reco= (the shell working directory resolves here).
+- The user requested a separate Mu2e art producer to reconstruct panel-level =TrkSegment= objects, starting from =mod/MakeDigiNtuple_module.cc=, omitting ntuple production. The first version keeps segments event-local and does not persist them.
+
+* Module work
+- Producer source: =mod/PSegFinder_module.cc=; art module name =PSegFinder=.
+- Module parameters/defaults are in =fcl/prolog.fcl=.
+- The implementation groups ComboHits from TimeClusters by plane/panel, sorts hits by straw, marks non-largest subsegments across excessive gaps, and fits qualifying segments.
+- =debugBits= is read from FHiCL as strings in =bitN:value= form, allowing a single switch (e.g. =[ "bit10:1" ]=); unspecified bits remain zero. Current diagnostics use bit 10.
+- The module intentionally does not call =event.put()=; segments are not stored.
+- Prior session reported replacing module TODO comments with code and =git diff --check= passing. Build had not been run at that point.
+
+* Build
+- The user-provided build command is =spack install daqana=.
+- It was run during this session and succeeded, installing =daqana@main= at:
+  =/home/murat/test_001/spack/opt/spack/linux-x86_64_v3/daqana-main-meknocsyp3qhcqh3jab6wlbwzayrwbr7=
+- This confirms the Spack install completed; it is not a detailed test report for the producer.
+
+* Working tree notes
+- At time of recording, the repository had pre-existing modifications in several files and untracked =mod/PSegFinder_module.cc= and =work/=;
+  do not discard or overwrite unrelated user changes.
+- Run =git status --short= before editing and preserve existing changes.

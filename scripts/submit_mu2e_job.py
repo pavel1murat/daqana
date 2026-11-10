@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # example :
 # ---------
-#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run_number=105935 --idsid=vst --calib-ver=v0 --diag_level=10
+#  v001/daqana/scripts/submit_mu2e_job.py --fcl=a.fcl --run=105935 --idsid=vst --calib-ver=v0 --diag_level=10
 #
-# --run_number : use files of a given run number
+# --run        : run number as it appears in input file names, e.g. --run 125472 selects ...125472_<subrun>.art
 # --fcl        : template fcl file
 #------------------------------------------------------------------------------
 import subprocess, datetime, socket
@@ -59,7 +59,8 @@ class SubmitJob:
         parser.add_argument('-f','--files'      , default=None,           help="range N1-N2 of files in the input list to process (1-based, inclusive)")
         parser.add_argument('--nskip'           , type=int, default=None, help="unused")
         parser.add_argument('--odsid'           , default=None,           help="output dataset ID")
-        parser.add_argument('-r','--run_number' , type=int, default=None, help="run number")
+        parser.add_argument('-r', '--run', type=int, default=None,
+                            help="run number as in the input file names, e.g. 125472")
         parser.add_argument('-s','--source'     , default=None,           help="input file, as in art")
         parser.add_argument('-S','--Source'     , default=None,           help="input file list, as in art")
 
@@ -69,7 +70,7 @@ class SubmitJob:
         logger.info(f'args.diag_level = {args.diag_level}'   )
         logger.info(f'args.calib_ver  = {args.calib_ver}'    )
         logger.info(f'args.calib_run  = {args.calib_run}'    )
-        logger.info(f'args.rn         = {args.run_number}'   )
+        logger.info(f'args.run       = {args.run}'          )
         logger.info(f'args.fcl        = {args.fcl}'          )
         logger.info(f'args.nfiles     = {args.nfiles}'       )
         logger.info(f'args.data_dir   = {args.data_dir}'     )
@@ -206,7 +207,7 @@ class SubmitJob:
 #------------------------------------------------------------------------------
     def resolve_inputs(self,args):
         input_dsid = args.idsid
-        run_number = args.run_number
+        run_number = args.run if args.run is not None else None
 
         if (args.source):
             # single input file: the dataset ID comes from its Mu2e standard name
@@ -215,8 +216,12 @@ class SubmitJob:
                 logger.error(f'--idsid={input_dsid} does not match the dataset ID {dsid_from_file} of {args.source}')
                 sys.exit(1)
             input_dsid = dsid_from_file
-        if (run_number is None and args.source):
-            run_number = os.path.basename(args.source).split('.')[4]
+            source_run = os.path.basename(args.source).split('.')[4].split('_')[0]
+            if (args.run is not None and source_run != str(run_number)):
+                logger.error(f'--run {args.run} does not match the run {source_run} of {args.source} is run {source_run}')
+                sys.exit(1)
+            if (run_number is None):
+                run_number = source_run
 
         if (args.files and not args.Source):
             logger.error('--files needs an input file list (--Source or --idsid)')
@@ -225,8 +230,8 @@ class SubmitJob:
         if (args.Source):
             with open(args.Source, encoding="utf-8") as f:
                 lines = [line for line in f.readlines() if not line.startswith('#')]   # '#' lines are comments
-            if (args.run_number is not None):
-                lines = [line for line in lines if self.has_run(line, args.run_number)]
+            if (args.run is not None):
+                lines = [line for line in lines if self.has_run(line, run_number)]
             if (args.files):
                 # --files N1-N2: the files numbered N1..N2 among the selected files, counting from 1
                 first, last = self.parse_file_range(args.files)
@@ -278,28 +283,31 @@ class SubmitJob:
         return fields[2]
 
 #------------------------------------------------------------------------------
-# field 4 (0-based) of the dot-separated name is formatted as %6r_%6s:
-# the first six characters are the run number, the rest is the subrun
+# field 4 (0-based) of the dot-separated name contains run_subrun.
+# --run is compared to the run field of the name as is.
 #------------------------------------------------------------------------------
     def has_run(self,path,run_number):
         fields = os.path.basename(path.strip()).split('.')
-        return len(fields) > 4 and fields[4][:6] == f'{run_number:06d}'
+        if len(fields) <= 4 or '_' not in fields[4]:
+            return False
+        return fields[4].split('_', 1)[0] == str(run_number)
 
 #------------------------------------------------------------------------------
 # list the raw data files of the run
 #------------------------------------------------------------------------------
     def raw_files(self,args):
         data_dir = args.data_dir or os.getenv('RAW_DATA_DIR')
-        if (not data_dir or args.run_number is None):
-            logger.error('listing raw files needs --run_number and --data-dir (or $RAW_DATA_DIR)')
+        run_number = args.run if args.run is not None else None
+        if (not data_dir or run_number is None):
+            logger.error('listing raw files needs --run and --data-dir (or $RAW_DATA_DIR)')
             sys.exit(1)
 
         files = sorted(f for f in glob.glob(os.path.join(data_dir, '*'))
-                       if self.has_run(f, args.run_number))
+                       if self.has_run(f, run_number))
         if (args.nfiles):
             files = files[:args.nfiles]
         if (not files):
-            logger.error(f'no raw files for run {args.run_number} in {data_dir}')
+            logger.error(f'no raw files for run {run_number} in {data_dir}')
             sys.exit(1)
 
         return ''.join(f'{f}\n' for f in files)
@@ -314,17 +322,33 @@ class SubmitJob:
         subdir = f'{args.calib_run[0:3]}000' if args.calib_run else None
 
         # output ntuple name nts.mu2e.<input dataset ID>.<...>.stn: put the input dataset ID in the name
+        with open(template_fcl, encoding="utf-8") as f:
+            fcl_text = f.read()
+        # Match the fully-qualified key, e.g. physics.analyzers.X.THistModule.histFileName.
+        thist_names = re.findall(
+            r'^[^#\n]*\bTHistModule\.histFileName\s*:\s*"([^"]*)"',
+            fcl_text, re.MULTILINE)
+        if (thist_names and not input_dsid):
+            logger.error('THistModule.histFileName needs an input dataset ID (--idsid or a standard input file name)')
+            sys.exit(1)
+        for hist_name in thist_names:
+            if not re.fullmatch(r'nts\.mu2e\.[^.]+\..*\.stn', hist_name):
+                logger.error(f'THistModule.histFileName is not a standard STNTUPLE name: {hist_name}')
+                sys.exit(1)
+
         if (input_dsid):
+            # Matches the value on both simple and fully-qualified histFileName keys.
             cmd += ' | sed -E ' + q(f's|(histFileName *: *"nts\\.mu2e\\.)[^.]+(\\.)|\\1{input_dsid}\\2|')
         else:
             logger.warning('no input dataset ID, histFileName is left unchanged')
 
         # output ntuple name nts.mu2e.<dataset>.<...>.<run>_<subrun>.stn: put the run number in the name, keep the subrun
-        if (args.run_number is not None):
+        if (args.run is not None):
             with open(template_fcl, encoding="utf-8") as f:
                 if (not re.search(r'histFileName.*\.\d+_\d+\.', f.read())):
                     logger.warning('histFileName has no <run>_<subrun> field, the run number is not set in its name')
-            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{args.run_number:06d}_\\2|')
+            run_number = args.run
+            cmd += ' | sed -E ' + q(f's|(histFileName.*\\.)[0-9]+_([0-9]+\\.)|\\1{run_number:06d}_\\2|')
 
         if (args.calib_ver):
             ver = args.calib_ver
