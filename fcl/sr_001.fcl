@@ -55,11 +55,12 @@ physics : {
         }
 
         PSegFinder : { @table::daqana.producers.PSegFinder
-            timeClusterTag  : "TimeCluster"
-            debugBits : [
-                         "bit9:1",
-                         "bit10:1"
-                        ]
+            tcCollTag       : "TimeCluster"
+            interactiveMode : 1
+            debugBits       : [
+                               "bit_09:1",
+                               "bit_10:1"
+                              ]
         }
         
         CaloDigiMaker : { module_type:  CaloDigisFromDTCEvents

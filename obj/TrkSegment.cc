@@ -1,6 +1,9 @@
 //
 #include <format>
 #include <ostream>
+
+#include "TROOT.h"
+
 #include "daqana/obj/TrkSegment.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 
@@ -21,15 +24,15 @@ TrkSegment::TrkSegment(int Plane, int Panel) {
 
 //-----------------------------------------------------------------------------
 void TrkSegment::Clear(){
-  fMask       = 0;
-  fIhit[0]    = -1;
-  fIhit[1]    = -1;
+  fIndex     = -1;
+  fMask      =  0;
+  fIhit[0]   = -1;
+  fIhit[1]   = -1;
   fListOfHits.clear();
-  // points.clear();
-  fNghl[0]    = 0;
-  fNghl[1]    = 0;
-  fNmhl [0]   = 0;
-  fNmhl [1]   = 0;
+  fNghl[0]   =  0;
+  fNghl[1]   =  0;
+  fNmhl[0]   =  0;
+  fNmhl[1]   =  0;
 }
 
 //-----------------------------------------------------------------------------
@@ -393,7 +396,7 @@ void TrkSegment::print(const char* Message, std::ostream& Stream) {
 
   Stream << "-----------------------------------------------------------------------------------------------";
   Stream << std::endl
-         << "Segment parameters:";
+         << std::format("Segment {:3d} parameters:",fIndex);
   if (Message) Stream << " " << Message;
   Stream << std::endl;
                                         // no points, if N(hits) < 4...

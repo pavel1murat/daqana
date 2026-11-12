@@ -13,12 +13,42 @@ include_directories(
 # link_directories($ENV{ROOTSYS}/lib)
 
 set (include_files
-#  CalFragmentAna_module.hh
+  PSegFinder_module.hh
+  PSegFinderHolder.hh
 #  TrkFragmentAna_module.hh
 )
 
-# ROOT_GENERATE_DICTIONARY(${dict} ${include_files} LINKDEF ${subpkg}/Linkdef.h)
-# set_property(SOURCE ${dict}.cxx PROPERTY generated)
+ROOT_GENERATE_DICTIONARY(${dict}
+  ${include_files}
+  MODULE ${dict}
+  LINKDEF ${subpkg}/Linkdef.h)
+
+set_property(SOURCE ${dict}.cxx PROPERTY generated)
+
+# dictionary of the modules listed in Linkdef.h
+add_library(${lib} SHARED
+  ${dict}.cxx
+)
+set_target_properties(${lib} PROPERTIES OUTPUT_NAME ${dict})
+install(TARGETS ${lib})
+
+# the PSegFinder plugin is a MODULE library: link it by name, so the dependency is recorded
+# as libmod_PSegFinder_module.so and found through the RPATH
+add_dependencies(${lib} mod_PSegFinder_module)
+set_target_properties(${lib} PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+target_link_libraries(${lib}
+  -L$<TARGET_FILE_DIR:mod_PSegFinder_module>
+  -lmod_PSegFinder_module
+  daqana_obj
+  Stntuple_mod
+  Stntuple_print
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  Offline::TrackerGeom
+  Offline::ProditionsService
+  art::Framework_Core
+  ROOT::Core
+)
 
 # cet_make_library(LIBRARY_NAME daqana_mod
 #   SOURCE
@@ -108,6 +138,8 @@ cet_build_plugin(MakeDigiNtuple art::module LIBRARIES REG
 
 cet_build_plugin(PSegFinder art::module LIBRARIES REG
   daqana_obj
+  Stntuple_mod
+  Stntuple_print
   Offline::Mu2eUtilities
   Offline::RecoDataProducts
   Offline::TrackerGeom

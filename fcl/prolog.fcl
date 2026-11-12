@@ -4,14 +4,18 @@ daqana : {
     producers : {
         PSegFinder: { module_type: PSegFinder
             comboHitTag     : "makeSH"
-            timeClusterTag  : "SimpleTimeCluster"
+            tcCollTag       : "SimpleTimeCluster"       # time cluster coll tag
             driftVelocity   : 61.3e-3  ## mm/ns
             timeOffset      : 0.       ## ns
             minimumHits     : 4
             maximumStrawGap : 4
             verbose         : false
-            # Enable one or more switches, e.g. [ "bit10:1" ]
-            debugBits       : []
+            # Enable one or more switches, e.g. [ "bit_10:1" ]
+            debugBits       : [
+                               "bit_09:0"
+                              ]
+            interactiveMode : 0
+            TAnaDump        : {}
         }
 
         FragmentNormalizedEB : { module_type: FragmentNormalizedEB

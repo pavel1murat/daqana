@@ -30,6 +30,8 @@
 #pragma link C++  class  simres;
 
 #pragma link C++  class  TrkSegment;
+#pragma link C++  class  SegmentHit;
+
 #pragma link C++  class  TrkPanelMap_t;
 #pragma link C++  class  RunDb;
 #pragma link C++  class  DaqFragment;

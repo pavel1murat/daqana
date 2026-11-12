@@ -8,6 +8,8 @@
 
 #pragma link C++  class  mu2e::TrkFragmentAna;
 #pragma link C++  class  mu2e::CalFragmentAna;
+#pragma link C++  class  mu2e::PSegFinder;
+#pragma link C++  class  PSegFinderHolder;
 
 #endif
 

@@ -97,7 +97,8 @@ public:
   static double const     fgRStraw;        // straw radius
 
   mu2e::Panel*            fTrkPanel;
-  int                     fMask;           // 0: OK
+  int                     fIndex;                  // segment number in the list
+  int                     fMask;                   // 0: OK
   int                     fPlane;
   int                     fPanel;
   int                     fNTransitions;
@@ -219,6 +220,8 @@ public:
   int      DefineTangentLine();
                                         // recalculate chi2 - don't have a formula for that 
   double   Chi2();
+
+  void     SetIndex(int I) { fIndex = I; }
                                         // if Chi2Dof=-1, recalculate chi2
   void     UpdateParameters(double DyDx, double Y0, double T0, double Chi2Dof = -1);
 
