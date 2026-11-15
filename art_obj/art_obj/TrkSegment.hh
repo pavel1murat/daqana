@@ -1,68 +1,15 @@
 //-----------------------------------------------------------------------------
 // TrkSegment: a track segment reconstructed in a single panel
 //-----------------------------------------------------------------------------
-#ifndef __daqana_mod_TrkSegment_hh_
-#define __daqana_mod_TrkSegment_hh_
+#ifndef __daqana_art_obj_TrkSegment_hh_
+#define __daqana_art_obj_TrkSegment_hh_
 #include <format>
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
-#include "Offline/TrackerGeom/inc/Panel.hh"
-//-----------------------------------------------------------------------------
-// representation of a 2D hit used in the segment fit
-//-----------------------------------------------------------------------------
-struct SegmentHit {
-  const mu2e::ComboHit* fComboHit;
-  int                   fMask;                         // 0: ok , 0x1: bad
-  double                x;
-  double                y;
-  double                t;                             // time-tprop (-fTMean)
-  int                   drs;
-  int                   sign_fixed;                    // if 1, the drift sign is not updated any more
-                        
-  double                fR;                            // updated
-  double                fSigmaR;                       // hit coordinate resolution
-  double                fChi2;                         // hit contribution to the segment chi^2
-
-  static double         fgVDrift;
-  static double         fgTOffset;
-
-  SegmentHit(const mu2e::ComboHit* CmbHit) {
-    fComboHit  = CmbHit;
-    fMask      = 0;
-    x          = 0;
-    y          = 0;
-    t          = 0;
-    fSigmaR    = 0.2;                   // 200 um, for simplicity
-    drs        = -999;
-    sign_fixed = 0;
-  }
-
-  // double        r() { return fR; } // ## TODO 
-
-  int IsGood() { return (fMask == 0); }
-
-  mu2e::StrawId         strawId () const { return fComboHit->strawId(); }
-  const mu2e::ComboHit* ComboHit() const { return fComboHit; }
-
-  void print(std::ostream& Stream = std::cout) {
-    // double rdrift = this->r();
-    Stream << std::format("Point2D: sid:0x{:04x} mask:0x{:04x}",fComboHit->strawId().asUint16(),fMask) 
-           << std::format(" x,y,time,tprop,tcorr, drs,fixed: {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:2d} {}",
-                          x,y,fComboHit->time(),fComboHit->propTime(),fComboHit->correctedTime(),drs,sign_fixed)
-           << std::endl;
-  }
-
-  static void SetTOffset(double T) { fgTOffset = T; }
-  static void SetVDrift (double V) { fgVDrift  = V; }
-//-----------------------------------------------------------------------------
-// R in mm, t in ns ; implement simplest non-linearity
-//-----------------------------------------------------------------------------
-  static double T2D(double T) {
-    double r = (T+fgTOffset)*fgVDrift;
-    return r;
-  }
-
-};
+#include "daqana/art_obj/SegmentHit.hh"
 
 //-----------------------------------------------------------------------------
 class TrkSegment {
@@ -91,6 +38,7 @@ public:
     kNHitsBit          = 0x0002,
     kLargeDrhoBit      = 0x0004,
     kSubsegmentBit     = 0x0008,
+    kNoComboHitBit     = 0x0010,        // a straw of the segment without a ComboHit
   };
 
   static int              fgDebugMode;
@@ -121,23 +69,37 @@ public:
 
   void Clear();
 
-  SegmentHit*  Hit(int I) { return &fListOfHits[I]; }
+  SegmentHit*  Hit(int I) const { return (SegmentHit*) &fListOfHits[I]; }
+
+  // this is a list of all straws in between the first and the last hits, some straws could be empty
+  int          NStraws()    const { return fListOfHits.size(); }
+
+                                        // set the ComboHit of each hit from its index in the collection;
+                                        // a null collection clears the pointers
+  void setComboHits(mu2e::ComboHitCollection const* Hits);
+  int  NHitsWithComboHit() const;
+                                        // one hit per straw between the first and the last hit (hits sorted by straw);
+                                        // a straw without a ComboHit gets a hit with fIndex=-1
+  void fillMissingStraws();
+                                        // distance between the segment and the wire of each hit, after the final fit
+  void updateDoca();
 
                                         // rotate by default (DoTransform=1)
 
-  int InitHits(std::vector<const mu2e::ComboHit*>* Hits = nullptr, int UniquePlane = -1, int Panel = -1, int DoTransform = 1);
+  int InitHits(int DoTransform = 1);
 
                                         // any set bit marks the hit as bad, so far use 'dead'
 
-  int      GoodHit(const mu2e::ComboHit* Ch) {
+  int      GoodHit(const mu2e::ComboHit* Ch) const {
     int x  = std::stoi(Ch->_flag.hex(),nullptr,0);
     int good = (x == 0);
     return good;
   }
+                                        // returns next straw with combohit after I
+  SegmentHit* NextHit(int I) const;
 
-  int      nHits() { return (int) fListOfHits.size(); }
-  int      Plane() { return fPlane; }
-  int      Panel() { return fPanel; }
+  int      Plane() const { return fPlane; }
+  int      Panel() const { return fPanel; }
 //-----------------------------------------------------------------------------
 // the segment parameters need always to be redefined consistently
 //-----------------------------------------------------------------------------
@@ -178,7 +140,7 @@ public:
     if (r < 0) {
       nerr++;
       if (nerr-last_printed >= step) {
-        std::cout << ">>> ERROR: nerr:" << std::setw(14) << nerr <<" negative radius: point:" << " r:" << r << std::endl;
+        // std::cout << ">>> ERROR: nerr:" << std::setw(14) << nerr <<" negative radius: point:" << " r:" << r << std::endl;
         nprinted++;
       }
       if (nprinted > 10) {
@@ -191,8 +153,8 @@ public:
   }
 
 //-----------------------------------------------------------------------------
-// (R_seg-R_wire).vdot.Nu_seg (Nu_seg - normal to the segment,
-// 90 deg counterclockwise from the segment direction)
+// (R_seg-R_wire).vdot.Nu_seg
+// Nu_seg - normal to the segment, 90 deg counterclockwise from the segment direction)
 //-----------------------------------------------------------------------------
   double Doca(const SegmentHit* Pt, const Par_t* Par = nullptr) const {
     const Par_t* par(Par);
@@ -229,5 +191,6 @@ public:
 
 };
 
+using TrkSegmentCollection = std::vector<TrkSegment>;
 
 #endif

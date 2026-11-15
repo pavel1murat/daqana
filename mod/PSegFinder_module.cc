@@ -19,6 +19,9 @@
 #include <algorithm>
 #include "CLHEP/Vector/ThreeVector.h"
 
+#include "TRACE/trace.h"
+#define TRACE_NAME "PSegFinder"
+
 namespace mu2e {
 
 namespace {
@@ -73,7 +76,7 @@ public:
 //-----------------------------------------------------------------------------
  PSegFinder::PSegFinder(Parameters const& config)
     : art::EDProducer(config)
-    , comboHitTag_(config().comboHitTag())
+    , chCollTag_(config().chCollTag())
     , tcCollTag_(config().tcCollTag())
     , minimumHits_(config().minimumHits())
     , maximumStrawGap_(config().maximumStrawGap())
@@ -93,8 +96,9 @@ public:
       debugBit_[index] = value;
     }
 
-    consumes<ComboHitCollection>(comboHitTag_);
+    consumes<ComboHitCollection>(chCollTag_);
     consumes<TimeClusterCollection>(tcCollTag_);
+    produces<TrkSegmentCollection>();
     SegmentHit::SetVDrift (config().driftVelocity());
     SegmentHit::SetTOffset(config().timeOffset());
 
@@ -150,8 +154,10 @@ public:
 
 //-----------------------------------------------------------------------------
  void PSegFinder::produce(art::Event& event) {
-   chColl_       = event.getValidHandle<ComboHitCollection>(comboHitTag_).product();
-   tcColl_ = event.getValidHandle<TimeClusterCollection>(tcCollTag_).product();
+   trackerStatus_      = trackerStatus_h_.getPtr(event.id());
+   auto const chHandle = event.getValidHandle<ComboHitCollection>(chCollTag_);
+   chColl_             = chHandle.product();
+   tcColl_             = event.getValidHandle<TimeClusterCollection>(tcCollTag_).product();
 
     // print the input time clusters with all their ComboHits
     if (debugBit_[9] > 0) {
@@ -167,8 +173,6 @@ public:
     // now ready for the next event
     segments_.clear();
 
-    std::cout << std::format("PSegFinder::produce 001: segment.size:{}\n",segments_.size());
-
     // fill list of segments with hits
     for (auto const& timeCluster : *tcColl_) {
       for (auto hitIndex : timeCluster.hits()) {
@@ -176,20 +180,21 @@ public:
         StrawId sid = ch.strawId();
         int plane   = sid.plane();
         int panel   = sid.panel();
-        if (plane < 0 || plane >= 36 || panel < 0 || panel >= 6) continue;
 
         auto& segment = panelSegments_[plane * 6 + panel];
-        if (segment.nHits() == 0) {
+        if (segment.NHitsWithComboHit() == 0) {
           int ns = segments_.size();
           segment.SetIndex(ns);
-          std::cout << std::format("PSegFinder::produce 002: segment.size:{}\n",segments_.size());
           segments_.push_back(&segment);
         }
-        segment.fListOfHits.emplace_back(&ch);
+        // a segment hit gets its straw ID assigned on construction
+        segment.fListOfHits.emplace_back(SegmentHit(hitIndex,sid));
       }
     }
 
-    // Sort hits by straw and retain only the largest contiguous subsegment in each panel.
+    // the hits now have their indices in the ComboHitCollection, set the ComboHits
+    for (auto* seg : segments_) seg->setComboHits(chColl_);
+
     struct SubSegment {
       int first;
       int last;
@@ -198,30 +203,44 @@ public:
       }
     };
 
+    // a segment includes all hits in a panel
+    // for each segment mark hits to be not used with kSubsegmentBit
     for (auto* seg : segments_) {
       auto& hits = seg->fListOfHits;
-      std::sort(hits.begin(), hits.end(), [](SegmentHit const& a, SegmentHit const& b) {
-        return a.ComboHit()->strawId().straw() < b.ComboHit()->strawId().straw();
-      });
-      if (static_cast<int>(hits.size()) < minimumHits_) {
+      int nh     = seg->NHitsWithComboHit();
+
+      if (nh < minimumHits_) {
         seg->fMask |= TrkSegment::kNHitsBit;
         continue;
       }
 
+      // Sort hits by straw and retain only the largest contiguous subsegment in each panel.
+      std::sort(hits.begin(), hits.end(), [seg](SegmentHit const& a, SegmentHit const& b) {
+        return a.Straw() < b.Straw();
+      });
+
+//-----------------------------------------------------------------------------
+// a panel has enough hits
+//-----------------------------------------------------------------------------
       std::vector<SubSegment> subsegments;
       int first = 0;
-      for (int i = 1; i < static_cast<int>(hits.size()); ++i) {
-        int const gap = (hits[i].ComboHit()->strawId().straw()
-                         - hits[i - 1].ComboHit()->strawId().straw() - 2) / 2;
+      for (int i = 1; i < nh; ++i) {
+        int ism1 = seg->Hit(i-1)->Sid().straw();
+        int is1  = seg->Hit(i  )->Sid().straw();
+
+        int gap = (is1-ism1-2) / 2;
         if (gap > maximumStrawGap_) {
-          subsegments.push_back({first, i - 1});
+          subsegments.push_back({first,i-1});
           first = i;
         }
       }
       subsegments.push_back({first, static_cast<int>(hits.size()) - 1});
 
+      // find the one with the largest number of hits
       auto const best = std::max_element(subsegments.begin(), subsegments.end(),
         [](SubSegment const& a, SubSegment const& b) { return a.size() < b.size(); });
+
+      // set a subsegment = "not good enough" bit to all subsegments in a 
       for (auto const& subsegment : subsegments) {
         if (&subsegment == &*best) continue;
         for (int i = subsegment.first; i <= subsegment.last; ++i) {
@@ -230,25 +249,23 @@ public:
       }
     }
 
-    if (debugBit_[10] > 0) {
-      for (TrkSegment* s : segments_) {
-        std::cout << "Panel candidate plane=" << s->Plane()
-                  << " panel=" << s->Panel()
-                  << " nhits=" << s->nHits() << std::endl;
-        for (auto const& hit : s->fListOfHits) {
-          std::cout << std::format("  straw:{:2} mask: 0x:{:x}\n",
-                                   hit.ComboHit()->strawId().straw(),hit.fMask);
-        }
-      }
+    // one hit per straw between the first and the last hit of each segment;
+    // the straws without a ComboHit get a hit with fIndex=-1, they are not used
+    // in the fit
+    for (auto* seg : segments_) {
+      if (seg->fMask & TrkSegment::kNHitsBit) continue;
+      seg->fillMissingStraws();
     }
 //-----------------------------------------------------------------------------
 // here the fit starts
 //-----------------------------------------------------------------------------
     TrkSegment::Par_t fitParameters{};
     std::vector<TrkSegment*> fittedSegments;
-    for (auto* segment : segments_) {
-      if (static_cast<int>(segment->nHits()) < minimumHits_) continue;
-      if (segment->InitHits(nullptr) != 0) continue;
+    int nseg = segments_.size();
+    for (int i=0; i<nseg; i++) {
+      TrkSegment* segment = segments_[i];
+      if (segment->NHitsWithComboHit() < minimumHits_) continue;
+      if (segment->InitHits() != 0) continue;
 
       SegmentFit fitter(segment);
       fitter.DefineDriftDirections();
@@ -257,6 +274,8 @@ public:
       fittedSegments.push_back(segment);
     }
 
+    for (auto* segment : fittedSegments) segment->updateDoca();
+
     if (debugBit_[10] > 0) {
       for (auto* segment : fittedSegments) segment->print("final fit result");
     }
@@ -264,7 +283,14 @@ public:
     if (verbose_) {
       std::cout << std::format("Reconstructed {} segment candidates in event ",segments_.size()) << event.id() << std::endl;
     }
-    // Intentionally no event.put(): segment persistence is deferred to a later version.
+    // the segments with the final fit, copies of the module's segments: the segment hits refer to the ComboHits
+    auto segments = std::make_unique<TrkSegmentCollection>();
+    for (auto* segment : fittedSegments) {
+      TrkSegment copy = *segment;
+      copy.setComboHits(nullptr);      // the pointer is valid only while the event is processed
+      segments->push_back(copy);
+    }
+    event.put(std::move(segments));
 
     if (interactiveMode_ == 1) {
       anaDump_->SetEvent(&event);
@@ -321,10 +347,23 @@ public:
   }
 
 //-----------------------------------------------------------------------------
+// segment should always have non-zero number of hits
+//-----------------------------------------------------------------------------
   void PSegFinder::plot_segment(int I) {
 
     TArc* arc;
     
+    TrkSegment* seg = segments()->at(I);
+    int pln   = seg->Plane();
+    int pnl   = seg->Panel();
+    int n_hits = seg->NHitsWithComboHit();
+    int nstraws = seg->NStraws();
+
+    if (n_hits <= 0) {
+      TLOG(TLVL_ERROR) << std::format("segment:{} plane:{} pln:{} nstraws:{} n_hits:{}. BAIL OUT",I,pln,pnl,nstraws,n_hits);
+      return;
+    }
+
     // one canvas per plot, closed at the end of the event
     static int nCanvases(0);
     std::string cname = std::format("seg_plot_{}",nCanvases++);
@@ -337,18 +376,14 @@ public:
     gPad->SetFixedAspectRatio(kTRUE);
     gPad->SetMargin(0.,0.,0.,0.);     // the range maps to the whole pad
 
-    TrkSegment* seg = segments()->at(I);
-    int pln = seg->Plane();
-    int pnl = seg->Panel();
-
     const mu2e::Panel* panel = &tracker_->getPlane(pln).getPanel(pnl);
     CLHEP::Hep3Vector udir = panel->uDirection();
     CLHEP::Hep3Vector vdir = panel->vDirection();
     CLHEP::Hep3Vector wdir = panel->wDirection(); 
     
-    std::cout << std::format("udir: {:10.4f} {:10.4f} {:10.4f}\n",udir.x(),udir.y(),udir.z());
-    std::cout << std::format("vdir: {:10.4f} {:10.4f} {:10.4f}\n",vdir.x(),vdir.y(),vdir.z());
-    std::cout << std::format("wdir: {:10.4f} {:10.4f} {:10.4f}\n",wdir.x(),wdir.y(),wdir.z());
+    // std::cout << std::format("udir: {:10.4f} {:10.4f} {:10.4f}\n",udir.x(),udir.y(),udir.z());
+    // std::cout << std::format("vdir: {:10.4f} {:10.4f} {:10.4f}\n",vdir.x(),vdir.y(),vdir.z());
+    // std::cout << std::format("wdir: {:10.4f} {:10.4f} {:10.4f}\n",wdir.x(),wdir.y(),wdir.z());
 
     const mu2e::Straw& s0 = panel->getStraw(0);
     const mu2e::Straw& s1 = panel->getStraw(1);
@@ -381,7 +416,7 @@ public:
       const mu2e::Straw& str = panel->getStraw(i);
       const CLHEP::Hep3Vector& pos = str.getMidPoint();
       double x = pos.x()*vdir.x()+pos.y()*vdir.y();
-      double y = pos.x()*udir.x()+pos.y()*udir.y();
+      // double y = pos.x()*udir.x()+pos.y()*udir.y();
       //      std::cout << std::format("i,pos.x,pos.y,pos.z,x,y:{:2d} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:8.3f}\n",
       // i,pos.x(),pos.y(),pos.z()-zmean,x,y,r);
 
@@ -389,16 +424,24 @@ public:
       arc = new TArc(pos.z()-zmean,x,r);
       arc->SetLineColor(1);
       arc->SetLineWidth(1);
-      arc->SetFillStyle(0);
+      // a straw with a long-term or short-term status flag is filled with light gray
+      bool flagged = (trackerStatus_ != nullptr) and not trackerStatus_->strawStatus(StrawId(pln,pnl,i)).empty();
+      if (flagged) {
+        arc->SetFillStyle(1001);
+        arc->SetFillColor(kGray);
+      }
+      else {
+        arc->SetFillStyle(0);
+      }
       arc->Draw();
     }
 
     // hits: a circle of the drift radius around the wire of each hit, all hits of the segment;
     // red for good hits, blue for bad ones; the radius is R(hit) with the fitted T0, as in SegmentFit::DisplaySegment
     int nDrawn(0);
-    for (int ih=0; ih<seg->nHits(); ih++) {
+    for (int ih=0; ih<nstraws; ih++) {
       SegmentHit* sgh = seg->Hit(ih);
-      const mu2e::ComboHit* ch = sgh->ComboHit();
+      const mu2e::ComboHit* ch = sgh->fComboHit;
       if (ch == nullptr) continue;
 
       const mu2e::Straw& str = panel->getStraw(ch->strawId().straw());
@@ -423,27 +466,33 @@ public:
       }
       nDrawn++;
     }
-    std::cout << std::format("plot_segment {}: drawn {} of {} hits\n",I,nDrawn,seg->nHits());
+
+    std::cout << std::format("plot_segment {}: drawn {} of {} hits\n",I,nDrawn,n_hits);
 
     // the fitted segment: y = DyDx*x + Y0 in the panel frame (x radial, y along z); the plot frame
     // (horizontal = z - zmean, vertical = radial position) differs from it by a constant offset,
     // measured from the hits of the segment
-    if (seg->nHits() > 0) {
+
+    if (n_hits > 0) {
       // the local z axis of the panel is wDirection(): it points along -z for the panels of the
       // other z-side, which inverts the slope of the local fit; the local y is along vdir
       double sz = (panel->wDirection().z() < 0.) ? -1. : 1.;
 
       double xmin(1.e9), xmax(-1.e9), dh(0.), dv(0.);
-      for (int ih=0; ih<seg->nHits(); ih++) {
+      int nCombo(0);
+      for (int ih=0; ih<nstraws; ih++) {
         const SegmentHit* sgh = seg->Hit(ih);
-        CLHEP::Hep3Vector ds = sgh->ComboHit()->posCLHEP();
-        dh += (ds.z()-zmean) - sz*sgh->y;
-        dv += (ds.x()*vdir.x()+ds.y()*vdir.y()) - sgh->x;
+        if (sgh->fComboHit != nullptr) {
+          CLHEP::Hep3Vector ds = sgh->fComboHit->posCLHEP();
+          dh += (ds.z()-zmean) - sz*sgh->y;
+          dv += (ds.x()*vdir.x()+ds.y()*vdir.y()) - sgh->x;
+          nCombo += 1;
+        }
         xmin = std::min(xmin,sgh->x);
         xmax = std::max(xmax,sgh->x);
       }
-      dh /= seg->nHits();
-      dv /= seg->nHits();
+      dh /= nCombo;
+      dv /= nCombo;
 
       double a = seg->DyDx();
       double b = seg->Y0();
@@ -457,6 +506,19 @@ public:
     canvas->Update();
   }
 
+//-----------------------------------------------------------------------------
+  void PSegFinder::print_segment(int I) {
+    int i1{I}, i2{I+1};
+    if (I < 0) {
+      i1 = 0;
+      i2 = segments_.size();
+    }
+
+    for (int i=i1; i<i2; i++) {
+      TrkSegment* seg = segments_[i];
+      seg->print();
+    }
+  }
 } // namespace mu2e
 
 DEFINE_ART_MODULE(mu2e::PSegFinder)

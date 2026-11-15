@@ -1,0 +1,24 @@
+<!--  -->
+<!--  Selection of the classes written to art files.                                  -->
+<!--  Pointers to objects owned elsewhere are transient: they are not written out,     -->
+<!--  the object they point to is not part of the art file. The hits of a segment keep  -->
+<!--  the index of their ComboHit in the ComboHitCollection, set with setComboHits.     -->
+<!--  -->
+
+<lcgdict>
+
+<class name="SegmentHit">
+  <field name="fComboHit" transient="true"/>
+</class>
+
+<class name="TrkSegment">
+  <field name="fTrkPanel" transient="true"/>
+</class>
+
+<class name="TrkSegment::Par_t"/>
+<class name="std::vector<SegmentHit>"/>
+
+<class name="std::vector<TrkSegment>"/>
+<class name="art::Wrapper<std::vector<TrkSegment> >"/>
+
+</lcgdict>

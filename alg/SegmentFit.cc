@@ -6,7 +6,7 @@
 #include "TLine.h"
 #include "TEllipse.h"
 
-#include "daqana/obj/SegmentFit.hh"
+#include "daqana/alg/SegmentFit.hh"
 #include <memory>
 
 
@@ -35,7 +35,7 @@ int SegmentFit::Init() {
 double SegmentFit::F(double A) {
   double vd  = SegmentHit::fgVDrift;
 
-  int npt = fSegment->nHits();
+  int npt = fSegment->NStraws();
 
   double sum = 0;
 
@@ -65,7 +65,7 @@ double SegmentFit::DfDa(double A) {
   double tau     = Tau(A);
   double dtau_da = DbDa(A);
 
-  int npt = fSegment->nHits();
+  int npt = fSegment->NStraws();
   for (int i=0; i<npt; i++) {
     SegmentHit* pt = fSegment->Hit(i);
     if (pt->IsGood() != 1) continue;
@@ -91,7 +91,7 @@ int SegmentFit::CalculateLsqSums() {
   fSys.clear();
   fSts.clear();
 
-  int nhits = fSegment->nHits();
+  int nhits = fSegment->NStraws();
   for (int i=0; i<nhits; i++) {
     SegmentHit* pt = fSegment->Hit(i);
     if (pt->IsGood() != 1)                      continue;
@@ -117,7 +117,7 @@ int SegmentFit::DefineDriftDirections(const TrkSegment::Par_t* Pin) {
     std::cout << std::format("-- SegmentFit::{}:{} START\n",__func__,__LINE__);
   }
 
-  int nhits = fSegment->nHits();
+  int nhits = fSegment->NStraws();
   for (int i=0; i<nhits; ++i) {
     SegmentHit* pt  = fSegment->Hit(i);
     if (pt->IsGood() == 0) continue;
@@ -222,7 +222,7 @@ int SegmentFit::DisplaySegment() {
 //-----------------------------------------------------------------------------
   if (fgDebugMode) std::cout << std::format("-- SegmentFit::{}:{} START\n",__func__,__LINE__);
       
-  int nhits = fSegment->nHits();
+  int nhits = fSegment->NStraws();
 
   double xm = (fSegment->Hit(nhits-1)->x+fSegment->Hit(0)->x)/2;
   double dx = (fSegment->Hit(nhits-1)->x-fSegment->Hit(0)->x);
@@ -242,7 +242,9 @@ int SegmentFit::DisplaySegment() {
   double t0 = fSegment->T0();
   for (int i=0; i<nhits; i++) {
     SegmentHit* pt = fSegment->Hit(i);
-    if (fgDebugMode and fgDebugBits[0]) pt->print();
+    if (fgDebugMode and fgDebugBits[0] and (pt->fComboHit != nullptr)) {
+      pt->print(pt->ComboHit());
+    }
     // straw
     TEllipse* e = new TEllipse(pt->x,pt->y,2.5,0,0,360);
     e->SetLineColor(kRed);
@@ -401,8 +403,8 @@ int SegmentFit::Fit(int NItMax, int DoCleanup, const TrkSegment::Par_t* Pin, Trk
 //-----------------------------------------------------------------------------
 double SegmentFit::DChi2Db  (double A, double B, double Tau) {
   double sum = 0;
-  int nhits = fSegment->nHits();
-  for (int i=0; i<nhits; ++i) {
+  int nstraws = fSegment->NStraws();
+  for (int i=0; i<nstraws; ++i) {
     SegmentHit* p  = fSegment->Hit(i);
     if (not p->IsGood())                                    continue;
                                         // do we need to skip bad hits ? - I think, we do! 
@@ -417,7 +419,7 @@ double SegmentFit::DChi2Db  (double A, double B, double Tau) {
 //-----------------------------------------------------------------------------
 double SegmentFit::DChi2Dtau  (double A, double B, double Tau) {
   double sum = 0;
-  int nhits = fSegment->nHits();
+  int nhits = fSegment->NStraws();
   for (int i=0; i<nhits; ++i) {
     SegmentHit* p = fSegment->Hit(i);
     if (not p->IsGood())                                    continue; 
@@ -432,7 +434,7 @@ double SegmentFit::DChi2Dtau  (double A, double B, double Tau) {
 //-----------------------------------------------------------------------------
 double SegmentFit::DChi2Da  (double A, double B, double Tau) {
   double sum = 0;
-  int nhits = fSegment->nHits();
+  int nhits = fSegment->NStraws();
   for (int i=0; i<nhits; ++i) {
     SegmentHit* p = fSegment->Hit(i);
     if (not p->IsGood())                                    continue; 

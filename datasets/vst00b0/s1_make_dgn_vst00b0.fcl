@@ -76,13 +76,11 @@ physics : {
             makeSH    : 1
             makeCH    : 1
             makeTC    : 1
-            makeSeg   : 1
             makeTrk   : 1
             tcCollTag : "SimpleTimeCluster"
             ksCollTag : "KKLine"
             # debugMode : 1
             # debugBits      : [ "bit0:0", "bit3:1" ]
-            minNSegments : 1
         }
     }
 

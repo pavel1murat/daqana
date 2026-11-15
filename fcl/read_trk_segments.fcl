@@ -1,0 +1,28 @@
+# read the TrkSegments back from a file written by the SimHits/SimRes job (fcl/sim_res.fcl)
+# usage: art -c fcl/read_trk_segments.fcl -s sim_res_out.root
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+
+#include "rundb/latest/calibration_set_v110.fcl"
+
+process_name : ReadSegs
+
+services.TFileService.fileName : "read_trk_segments_hist.root" 
+
+source : {
+  module_type : RootInput
+}
+
+physics : {
+  analyzers : {
+    ReadTrkSegments : {
+      module_type : ReadTrkSegments
+      tsCollTag   : "PSegFinder"
+    }
+  }
+
+  p1 : [ ReadTrkSegments ]
+  end_paths : [ p1 ]
+}

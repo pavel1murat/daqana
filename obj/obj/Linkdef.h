@@ -27,10 +27,6 @@
 #pragma link C++  class  DaqTrkStrawHit;
 
 #pragma link C++  class  digis;
-#pragma link C++  class  simres;
-
-#pragma link C++  class  TrkSegment;
-#pragma link C++  class  SegmentHit;
 
 #pragma link C++  class  TrkPanelMap_t;
 #pragma link C++  class  RunDb;

@@ -99,7 +99,6 @@ physics : {
             makeSD        : 1
             makeSH        : 1
             makeTC        : 1
-            makeSeg       : 1
             saveWaveforms : 1
             
             tcCollTag     : "TimeCluster"   ## "TZClusterFinder"  ##

@@ -4,14 +4,15 @@
 
 #include "TROOT.h"
 
-#include "daqana/obj/TrkSegment.hh"
-#include "Offline/RecoDataProducts/inc/ComboHit.hh"
+#include "cetlib_except/exception.h"
+#include "daqana/art_obj/TrkSegment.hh"
 
 int TrkSegment::fgDebugMode(0);
 
 //
 double       SegmentHit::fgTOffset =  0.0;      // 1.6;       // ns
 double       SegmentHit::fgVDrift  = 61.3e-3;   // mm/ns
+
 double const TrkSegment::fgRStraw  =  2.5;      // mm
 
 //-----------------------------------------------------------------------------
@@ -20,6 +21,94 @@ TrkSegment::TrkSegment(int Plane, int Panel) {
   fPlane      = Plane;
   fPanel      = Panel;
   fTrkPanel    = nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// the hits keep the index of their ComboHit; the pointers are set here, once the
+// collection is known (after reading the segments from a file, or after making them)
+//-----------------------------------------------------------------------------
+void TrkSegment::setComboHits(mu2e::ComboHitCollection const* Hits) {
+  for (auto& sgh : fListOfHits) {
+    if ((Hits == nullptr) or (sgh.fIndex < 0)) {
+      sgh.fComboHit = nullptr;
+      continue;
+    }
+    sgh.fComboHit = &Hits->at(sgh.fIndex);
+    sgh.fStraw    = sgh.fComboHit->strawId().straw();
+  }
+}
+
+//-----------------------------------------------------------------------------
+int TrkSegment::NHitsWithComboHit() const {
+  int n(0);
+  for (auto const& sgh : fListOfHits) {
+    if (sgh.fIndex >= 0) n += 1;
+  }
+  return n;
+}
+
+//-----------------------------------------------------------------------------
+SegmentHit* TrkSegment::NextHit(int I) const {
+  SegmentHit* next{nullptr};
+
+  int ns = NStraws();
+  for (int i=I+1; i<ns; i++) {
+    SegmentHit* hit = Hit(i);
+    if (hit->ComboHit() != nullptr) {
+      next = hit;
+      break;
+    }
+  }
+  return next;
+}
+
+//-----------------------------------------------------------------------------
+// the hits are expected to be sorted by straw, and to have their ComboHits set
+// TrkSegments have a well defined pattern with just one transition between the
+// layers
+//-----------------------------------------------------------------------------
+void TrkSegment::fillMissingStraws() {
+
+  int nstraws = NStraws();
+
+  std::vector<SegmentHit> filled;
+  filled.push_back(*Hit(0));
+
+  for (int i=1; i<nstraws; i++) {
+    SegmentHit* sh_im1 = Hit(i-1);
+    SegmentHit*  sh_i   = Hit(i);
+    int is_im1 = Hit(i-1)->Straw();
+    int is_i   = Hit(i)->Straw();
+    if (sh_i->Layer() == sh_im1->Layer()) {
+      // hits in the same layer, add potentially missing straws in that layer
+      for (int is=is_im1+2; is<is_i; is+=2) {
+        SegmentHit gap;
+        gap.fIndex = -1;
+        gap.fStraw = is;
+        gap.fMask  = kNoComboHitBit;
+        filled.push_back(gap);
+      }
+    }
+    else {
+      // dont' know where the transition had occured, add all straws in the gap
+      for (int is=is_im1+1; is<is_i; is++) {
+        mu2e::StrawId sid(fPlane,fPanel,is);
+        SegmentHit gap(-1,sid);
+        gap.fMask  = kNoComboHitBit;
+        filled.push_back(gap);
+      }
+    }
+    filled.push_back(*sh_i);
+  }
+
+  fListOfHits = filled;
+}
+
+//-----------------------------------------------------------------------------
+void TrkSegment::updateDoca() {
+  for (auto& sgh : fListOfHits) {
+    sgh.fDoca = Doca(&sgh);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -36,32 +125,16 @@ void TrkSegment::Clear(){
 }
 
 //-----------------------------------------------------------------------------
-// expect 'ListOfHits' to be already ordered in the ascending straw order
+// the hits are expected to be already ordered in the ascending straw order
+// when InitHits is called, empty straws are already added
 //-----------------------------------------------------------------------------
-int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int UniquePlane, int Panel, int DoTransform) {
+int TrkSegment::InitHits(int DoTransform) {
   int rc(0);
-  
-  int nhits(-1);
-  if (ListOfHits) {
-                                        // standalone test
-    nhits = ListOfHits->size();
-    std::cout << std::format("TrkSegment::{}:START UniquePlane:{} Panel:{} plane:{} panel:{} nhits:{}\n",
-                           __func__,UniquePlane,Panel,fPlane,fPanel,nhits);
 
-                                        // copy pointers to hits and dont worry about the memory management
-                                        // hits are owned by the caller
-    for (int i=0; i<nhits; i++) {
-      const mu2e::ComboHit* ch = ListOfHits->at(i);
-      SegmentHit sgs(ch);
-      fListOfHits.emplace_back(sgs);
-    }
-  }
-  else {
-                                        // MakeDigiNtuple
-    nhits = nHits();
-  }
+  int nstraws = NStraws();
+  //  int n_hits  = NHitsWithComboHit();
 
-  std::vector<int> drs (nhits);
+  std::vector<int> drs (nstraws);         // drift signs
 //-----------------------------------------------------------------------------
 // find seed hits, ignore the very first and the very last pairs
 // in the beginning, set all hit flag bits to zero
@@ -71,26 +144,31 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   const mu2e::ComboHit* last_hit = nullptr;
   int                   last_i(-1);
 
-  for (int i=0; i<nhits; i++) {
+  for (int i=0; i<nstraws; i++) {
     SegmentHit* sgh = Hit(i);
     if (not sgh->IsGood())                                  continue;
+
+    // figure out the drift signs
     const mu2e::ComboHit* hit = sgh->ComboHit();
-                                        // figure out the drift signs
     int layer = hit->strawId().getLayer();
     if (last_hit != nullptr) {
       int last_hit_layer = last_hit->strawId().getLayer();
-                                        // layer is either 0 or 1
+
+      // layer is either 0 or 1
       if (last_hit_layer != layer) {
 //-----------------------------------------------------------------------------
 // transition between the layers found.
 // ignore back-and-forth transitions - instead, mark hit as bad
 //-----------------------------------------------------------------------------
-        if (i < nhits-1) {
-          const mu2e::ComboHit* next_hit = Hit(i+1)->ComboHit();
+        if (i < nstraws-1) {
+          SegmentHit* next = NextHit(i);
+          // figure next hit
+          
+          const mu2e::ComboHit* next_hit = next->ComboHit();
           int next_hit_layer = next_hit->strawId().getLayer();
           if (next_hit_layer == last_hit_layer) {
             sgh->fMask |= TrkSegment::kNTransitionsBit;
-                                        // start from scratch
+            // start from scratch
             last_hit  = nullptr;
             continue;
           }
@@ -98,7 +176,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
 // also ignore transitions involving the first and the last hits
 //-----------------------------------------------------------------------------
-        if ((i == 1) or (i == nhits-1)) {
+        if ((i == 1) or (i == nstraws-1)) {
           last_hit = hit;
           continue;
         }
@@ -120,7 +198,8 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
           drs[last_i]      =  1;
           drs[i]           = -1;
         }
-        fIhit[0] = i-1;
+        // 
+        fIhit[0] = last_i; // this doesnt look right: i-1;
         fIhit[1] = i;
       }
     }
@@ -130,7 +209,7 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 
   int last_straw[2] = {-1, -1};
   if (fNTransitions != 1) fMask |= kNTransitionsBit;
-  for (int i=0; i<nhits; i++) {
+  for (int i=0; i<nstraws; i++) {
     SegmentHit* sgh = Hit(i);
     if (not sgh->IsGood())                                  continue;
 
@@ -160,9 +239,25 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
   }
 
   fNGoodHits = 0;
-  for (int i=0; i<nhits; i++) {
-    SegmentHit*           sgh  = Hit(i);
-    const mu2e::ComboHit* ch   = sgh->ComboHit();
+  for (int i=0; i<nstraws; i++) {
+    SegmentHit*           sgh = Hit(i);
+    const mu2e::ComboHit* ch  = sgh->ComboHit();
+    if (ch == nullptr) {
+//-----------------------------------------------------------------------------
+// a straw without a ComboHit: its wire position, the hit is not used in the fit
+//-----------------------------------------------------------------------------
+      if (fTrkPanel == nullptr) {
+        throw cet::exception("TrkSegment") << "TrkSegment::InitHits: the panel is needed for the straws without a ComboHit\n";
+      }
+      CLHEP::Hep3Vector wire = fTrkPanel->getStraw(sgh->fStraw).getMidPoint();
+      if (DoTransform) wire  = fTrkPanel->dsToPanel()*wire;
+      sgh->x          = wire.y();
+      sgh->y          = wire.z();
+      sgh->drs        = 0;
+      sgh->sign_fixed = 0;
+      sgh->fChi2      = -1.;
+      continue;
+    }
 //-----------------------------------------------------------------------------
 // points have coordinates in the local coordinate system of the panel
 // add all hits, including flagged ones - those will not be used in the fit
@@ -211,19 +306,20 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
   if (fgDebugMode != 0) {
     std::cout << " --- after subtracting mean values\n";
-    std::cout << std::format("  i       Xloc       Yloc        T\n");
-    std::cout << std::format("------------------------------------\n");
+    std::cout << std::format("  i ChIndex      Xloc        Yloc         T\n");
+    std::cout << std::format("-------------------------------------------\n");
   }
 
-  for (int i=0; i<nhits; i++) {
-    // Point2D* p  = &points[i];
-    SegmentHit* p  = &fListOfHits[i];
-    p->x          -= fXMean;
-    p->y          -= fYMean;
-    p->t           = p->ComboHit()->time()-p->ComboHit()->propTime()-fTMean;
+  for (int i=0; i<nstraws; i++) {
+    SegmentHit* sgh  = Hit(i);
+    sgh->x -= fXMean;
+    sgh->y -= fYMean;
+    const mu2e::ComboHit* ch = sgh->ComboHit();
+    sgh->t  = (ch == nullptr) ? 0. : ch->time()-ch->propTime()-fTMean;
 
     if (fgDebugMode != 0) {
-      std::cout << std::format(" {:2d} {:10.3f} {:10.3f} {:10.3f}\n",i,p->x,p->y,p->t);
+      std::cout << std::format(" {:2d} {:5d} {:10.3f} {:10.3f} {:10.3f}\n",
+                               i,sgh->fIndex,sgh->x,sgh->y,sgh->t);
     }
   }
 //-----------------------------------------------------------------------------
@@ -244,20 +340,20 @@ int TrkSegment::InitHits(std::vector<const mu2e::ComboHit*>* ListOfHits, int Uni
 //-----------------------------------------------------------------------------
 double TrkSegment::Chi2() {
 
-  double chi2  = 0;
-  int    nhits = nHits();
+  int    n_good_hits{0};              // total number of good hits
+  int    nghl[2] {};                  // number of good hits per layer
+  double chi2{0};
 
-  int    n_good_hits(0);
+  double t0    = T0();
+  double a     = DyDx();
+  double b     = Y0();
 
-  int    nghl[2] = {};
-  double t0      = T0();
-  double a       = DyDx();
-  double b       = Y0();
-
-  for (int i=0; i<nhits; ++i) {
+  int    nstraws = NStraws();
+  for (int i=0; i<nstraws; ++i) {
     SegmentHit* sgh = Hit(i);
     sgh->fChi2 = -1;
     if (sgh->IsGood() == 0)                                 continue;
+    const mu2e::ComboHit* ch = sgh->ComboHit();
     double rd   = R(sgh,t0);
     if (rd < 0) rd = 0;
     if (rd > fgRStraw) rd = fgRStraw;
@@ -266,7 +362,7 @@ double TrkSegment::Chi2() {
     sgh->fChi2   = dist*dist/sigr2; 
     chi2        += sgh->fChi2;
     n_good_hits += 1;
-    nghl[sgh->fComboHit->strawId().layer()] += 1;
+    nghl[ch->strawId().layer()] += 1;
   }
 
   fNGoodHits = n_good_hits;
@@ -326,11 +422,11 @@ int TrkSegment::DefineTangentLine() {
   double t0(0);
   int    n_good_hits(0);
 
-  int nhits = nHits();
-  for (int i=0; i<nhits; i++) {
-    SegmentHit* pt = Hit(i);
-    if (pt->IsGood() != 1)              continue;
-    t0          += pt->fComboHit->correctedTime();
+  int nstraws = NStraws();
+  for (int i=0; i<nstraws; i++) {
+    SegmentHit* sgh = Hit(i);
+    if (sgh->IsGood() != 1)              continue;
+    t0          += sgh->ComboHit()->correctedTime();
     n_good_hits += 1;
   }
                                          // in principle, this approximation for T0 should be good enough
@@ -338,10 +434,10 @@ int TrkSegment::DefineTangentLine() {
 //-----------------------------------------------------------------------------
 // make sure t0 is not larger than the smallest measured time
 //-----------------------------------------------------------------------------
-  for (int i=0; i<nhits; i++) {
-    SegmentHit* pt = Hit(i);
-    if (pt->IsGood() != 1)              continue;
-    if (t0 > pt->t) t0 = pt->t;
+  for (int i=0; i<nstraws; i++) {
+    SegmentHit* sgh = Hit(i);
+    if (sgh->IsGood() != 1)              continue;
+    if (t0 > sgh->t) t0 = sgh->t;
   }
 
 
@@ -400,25 +496,34 @@ void TrkSegment::print(const char* Message, std::ostream& Stream) {
   if (Message) Stream << " " << Message;
   Stream << std::endl;
                                         // no points, if N(hits) < 4...
-  int nhits = nHits();
+  int nstraws = NStraws();
+  int n_hits  = NHitsWithComboHit();
 
-  Stream << std::format(" panel:{:02}:{} nhits:{} ngood:{} n_transitions:{} seed hits: {}:{} ngood/layer: {:2}:{:2} misses/layer: {:2}{:2}\n",
-                        fPlane,fPanel,nhits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1])
+  Stream << std::format(" panel:{:02}:{} nstraws:{:2} nhits:{} ngood:{} n_transitions:{} seed hits: {}:{} ngood/layer: {:2}:{:2} misses/layer: {:2}{:2}\n",
+                        fPlane,fPanel,nstraws,n_hits,fNGoodHits,fNTransitions,fIhit[0],fIhit[1],fNghl[0],fNghl[1],fNmhl[0],fNmhl[1])
          << std::format("DyDx:{:10.5f} Y0:{:10.5f} Nx:{:10.5f} Ny:{:10.5f} T0:{:10.3f} chi2/DOF:{:8.3f}\n",
                         fPar.a,fPar.b,fPar.nx,fPar.ny,fPar.tau+fTMean,fPar.chi2dof);
 
-  Stream << std::format(" i   sid  pnl:str  mask   ch_mask       x      y        t      time      tprop  tdrift  radius drs      rho     sigr    chi2   fixed\n");
+  Stream << std::format(" i   sid  pnl:str  mask   ch_mask       x      y        t      time      tprop  tdrift  radius drs      dR       doca        sigr    chi2   fixed\n");
   Stream <<             "------------------------------------------------------------------------------------------------------------------------------------\n" ;
   double t0 = fPar.T0();
-  for (int i=0; i<nhits; i++) {
+  for (int i=0; i<nstraws; i++) {
     SegmentHit* sgh = Hit(i);
-    mu2e::StrawId sid = sgh->ComboHit()->strawId();
-    int ch_flag = std::stoi(sgh->ComboHit()->flag().hex());
-    Stream << std::format("{:2d} 0x{:04x} {:2}:{}:{:2} 0x{:04x} 0x{:08x} {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d} {:10.4f} {:7.3f} {:8.2f} {:5d}",
-                          i,sid.asUint16(),sid.plane(),sid.panel(),sid.straw(),sgh->fMask, ch_flag,
-                          sgh->x,sgh->y,sgh->t,sgh->fComboHit->time(),sgh->fComboHit->propTime(),
-                          DriftTime(sgh,t0),R(sgh,t0),sgh->drs,
-                          Dr(sgh,&fPar),sgh->fSigmaR,sgh->fChi2,sgh->sign_fixed)
+    const mu2e::ComboHit* ch = sgh->ComboHit();
+    if (ch == nullptr) {
+      Stream << std::format("{:2d}        {:2}:{}:{:2} 0x{:04x}            {:8.3f} {:6.3f}                                                        {:12.4f}\n",
+                            i,fPlane,fPanel,sgh->fStraw,sgh->fMask,sgh->x,sgh->y,sgh->fDoca);
+      continue;
+    }
+    mu2e::StrawId sid = ch->strawId();
+    int ch_flag = std::stoi(ch->flag().hex());
+    Stream << std::format("{:2d} 0x{:04x} {:2}:{}:{:2} 0x{:04x} 0x{:08x}",
+                          i,sid.asUint16(),sid.plane(),sid.panel(),sid.straw(),sgh->fMask, ch_flag);
+    Stream << std::format(" {:8.3f} {:6.3f} {:7.3f} {:10.3f} {:7.3f} {:7.3f} {:7.3f} {:2d}",
+                          sgh->x,sgh->y,sgh->t,ch->time(),ch->propTime(),
+                          DriftTime(sgh,t0),R(sgh,t0),sgh->drs);
+    Stream << std::format(" {:10.4f} {:10.4f} {:7.3f} {:8.2f} {:5d}",
+                          Dr(sgh,&fPar),Doca(sgh,&fPar),sgh->fSigmaR,sgh->fChi2,sgh->sign_fixed)
            << std::endl;
   }
 }

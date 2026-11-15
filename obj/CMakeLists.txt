@@ -18,12 +18,12 @@ include_directories(
 
 ROOT_GENERATE_DICTIONARY(${dict}
   DaqEvent.hh DaqTrack.hh DaqSegment.hh DaqStrawDigi.hh DaqStrawHit.hh DaqComboHit.hh DaqTimeCluster.hh
-  TrkSegment.hh SegmentFit.hh DaqTrkStrawHit.hh
+  DaqTrkStrawHit.hh
   DaqCrvRecoPulse.hh DaqCrvDigi.hh DaqCrvCoincidenceCluster.hh
   DaqCaloDigi.hh DaqCaloRecoDigi.hh DaqCaloHit.hh DaqCaloCluster.hh
   RunDb.hh
   DaqFragment.hh
-  digis.hh simres.hh TrkPanelMap_t.hh
+  digis.hh TrkPanelMap_t.hh
   fit_functions.hh
   CrvChannelMap_t.hh
   CalChannelMap_t.hh
@@ -33,12 +33,12 @@ set_property(SOURCE ${dict}.cxx PROPERTY generated)
 
 add_library(${lib} SHARED
   DaqEvent.cc DaqTrack.cc DaqSegment.cc DaqStrawDigi.cc DaqStrawHit.cc DaqComboHit.cc DaqTimeCluster.cc
-  TrkSegment.cc SegmentFit.cc DaqTrkStrawHit.cc TrkPanelMap_t.cc
+  DaqTrkStrawHit.cc TrkPanelMap_t.cc
   DaqCrvRecoPulse.cc DaqCrvDigi.cc DaqCrvCoincidenceCluster.cc
   RunDb.cc
   DaqFragment.cc
   DaqCaloDigi.cc DaqCaloRecoDigi.cc DaqCaloHit.cc DaqCaloCluster.cc
-  digis.cc simres.cc
+  digis.cc
   fit_dt01_msh.cc
   CrvChannelMap_t.cc
   CalChannelMap_t.cc
@@ -47,7 +47,7 @@ add_library(${lib} SHARED
 )
 add_library(daqana::obj ALIAS ${lib})
 
-target_link_libraries(${lib}   Offline::Mu2eUtilities ROOT::Core tomlplusplus::tomlplusplus)
+target_link_libraries(${lib}   daqana_art_obj daqana_alg Offline::Mu2eUtilities ROOT::Core tomlplusplus::tomlplusplus)
 target_include_directories(${lib} PRIVATE ${tomlplusplus_INCLUDE_DIR})
 
 cet_add_compiler_flags(-g -O0)

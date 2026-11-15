@@ -215,3 +215,28 @@ cet_add_compiler_flags(-g -O0)
 # install(TARGETS ${lib})
 # install_headers()
 # install_source()
+
+cet_build_plugin(SimHits art::module LIBRARIES REG
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+)
+
+cet_build_plugin(SimRes art::module LIBRARIES REG
+  daqana_art_obj
+  daqana_alg
+  Offline::Mu2eUtilities
+  Offline::RecoDataProducts
+  art_root_io::TFileService_service
+  ROOT::Hist
+  ROOT::Core
+  ROOT::Gpad
+  ROOT::Graf
+  ROOT::RIO
+)
+
+cet_build_plugin(ReadTrkSegments art::module LIBRARIES REG
+  daqana_art_obj
+  Offline::RecoDataProducts
+  art_root_io::TFileService_service
+  ROOT::Hist
+)

@@ -58,7 +58,7 @@ physics : {
             tcCollTag       : "TimeCluster"
             interactiveMode : 1
             debugBits       : [
-                               "bit_09:1",
+                               # "bit_09:1",
                                "bit_10:1"
                               ]
         }

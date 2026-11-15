@@ -16,14 +16,15 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "Offline/ProditionsService/inc/ProditionsHandle.hh"
+#include "Offline/TrackerConditions/inc/TrackerStatus.hh"
 #include "Offline/RecoDataProducts/inc/ComboHit.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 #include "Offline/TrackerGeom/inc/Panel.hh"
 #include "Offline/TrackerGeom/inc/Plane.hh"
 #include "Offline/TrackerGeom/inc/Tracker.hh"
 
-#include "daqana/obj/SegmentFit.hh"
-#include "daqana/obj/TrkSegment.hh"
+#include "daqana/alg/SegmentFit.hh"
+#include "daqana/art_obj/TrkSegment.hh"
 
 #include <algorithm>
 #include <cstdio>
@@ -47,8 +48,8 @@ public:
     using Name    = fhicl::Name;
     using Comment = fhicl::Comment;
 
-    fhicl::Atom<art::InputTag>   comboHitTag    {Name("comboHitTag"    ), Comment("ComboHit collection")};
-    fhicl::Atom<art::InputTag>   tcCollTag      {Name("tcCollTag"      ), Comment("TimeCluster collection tag")};
+    fhicl::Atom<art::InputTag>   chCollTag      {Name("chCollTag"      ), Comment("ComboHit (CH) collection tag")};
+    fhicl::Atom<art::InputTag>   tcCollTag      {Name("tcCollTag"      ), Comment("TimeCluster (TC) collection tag")};
     fhicl::Atom<double>          driftVelocity  {Name("driftVelocity"  ), Comment("Straw drift velocity in mm/ns")};
     fhicl::Atom<double>          timeOffset     {Name("timeOffset"     ), Comment("Drift-time offset in ns")};
     fhicl::Atom<int>             minimumHits    {Name("minimumHits"    ), Comment("Minimum hits required to fit a segment")};
@@ -64,14 +65,19 @@ private:
 //-----------------------------------------------------------------------------
 // FCL parameters
 //-----------------------------------------------------------------------------
-  art::InputTag             comboHitTag_;
+  art::InputTag             chCollTag_;
   art::InputTag             tcCollTag_;
   int                       minimumHits_;
   int                       maximumStrawGap_;
   int                       interactiveMode_;
   bool                      verbose_;
-  ProditionsHandle<Tracker> alignedTracker_;
-  int                       debugBit_[100]{};
+//-----------------------------------------------------------------------------
+// other parameters
+//-----------------------------------------------------------------------------
+  ProditionsHandle<Tracker>            alignedTracker_;
+  ProditionsHandle<TrackerStatus>      trackerStatus_h_;
+  std::shared_ptr<const TrackerStatus> trackerStatus_;
+  int                                  debugBit_[100]{};
 //-----------------------------------------------------------------------1------
 // the rest
 //-----------------------------------------------------------------------------
@@ -98,13 +104,19 @@ public:
   virtual void  beginRun(art::Run&   ArtRun  ) override;
   virtual void  produce (art::Event& ArtEvent) override;
 
+  TAnaDump*     anaDump() { return anaDump_ ;} 
+
   void           print(int DebugBit);
 
   TrkSegment*    segment(int I) { return segments_[I]; }
 
   std::vector<TrkSegment*>* segments() { return &segments_; }
 
+  int            nsegments() { return segments_.size(); }
+
   void           plot_segment(int I);
+
+  void           print_segment(int I = -1);
   void           closeCanvases();
 
   const Tracker* tracker() { return tracker_; }

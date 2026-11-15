@@ -66,10 +66,20 @@ add_custom_target(create_links
 )
 
 
+# headers are included as daqana/<subpkg>/<header>.hh, as after installation;
+# link the build tree to the sources, so the build does not depend on an installed copy
+set(_daqana_inc ${CMAKE_BINARY_DIR}/include/daqana)
+file(MAKE_DIRECTORY ${_daqana_inc})
+foreach (_subpkg IN ITEMS art_obj alg obj)
+  file(CREATE_LINK ${CMAKE_SOURCE_DIR}/${_subpkg}/${_subpkg} ${_daqana_inc}/${_subpkg} RESULT _rc SYMBOLIC)
+endforeach()
+include_directories(${CMAKE_BINARY_DIR}/include)
+
 # Code
 add_subdirectory(mod)
+add_subdirectory(art_obj)
+add_subdirectory(alg)
 add_subdirectory(obj)
-add_subdirectory(test)
 add_subdirectory(ana)
 
 cet_cmake_config()

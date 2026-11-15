@@ -2,7 +2,7 @@
 #define __SegmentFit_hh__
 
 #include "Offline/Mu2eUtilities/inc/LsqSums2.hh"
-#include "daqana/obj/TrkSegment.hh"
+#include "daqana/art_obj/TrkSegment.hh"
 
 class SegmentFit {
 public:
