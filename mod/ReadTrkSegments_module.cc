@@ -315,15 +315,19 @@ void ReadTrkSegments::fill_histograms() {
   EffPar_t effp;
   for (int is=0; is<fNTs; ++is) {
     TrkSegment const* seg = &clone_[is];
-    if (seg->NHitsWithComboHit() < 10) continue;
+    if (seg->NHitsWithComboHit() <  8) continue;
     if (seg->Chi2Dof()           > 10) continue;
 
     int plane = seg->Plane();
     int panel = seg->Panel();
     effp.ip216 = 6*plane+panel;
 
+//-----------------------------------------------------------------------------
+// the first and the last hits are always present, therefore they should not be used
+// for the efficiency determination
+//-----------------------------------------------------------------------------
     int nstraws = seg->NStraws();
-    for (int is=0; is<nstraws; ++is) {
+    for (int is=1; is<nstraws-1; ++is) {
       SegmentHit* hit = seg->Hit(is);
       // a straw with a long-term or short-term status flag is filled with light gray
       bool good_straw = fTrackerStatus->strawStatus(StrawId(plane,panel,hit->Straw())).empty();
