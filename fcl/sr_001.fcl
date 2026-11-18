@@ -1,14 +1,7 @@
 # -*- mode:tcl -*-
 #------------------------------------------------------------------------------
-# sr_n001: segment reconstruction, v001
+# sr_n001: segment reconstruction, v001 - INTERACTIVE WORK
 #
-# p0 : ntupling only, assumes input being the reconstruction output
-# p1 : default reconstruction path
-# p2 : read and ntuple (use with RootInput to ntuple MDC'2018 files)
-# p3 : path to debug the TPR and CPR reconstruction paths separately
-# p4 : read, reconstruct, run event display : MuHitDisplayDeMHDar
-#
-# 2026-10-05 PM: data and MC geometries for the moment are different
 #------------------------------------------------------------------------------
 BEGIN_PROLOG
   bgHitFiles                  : @nil

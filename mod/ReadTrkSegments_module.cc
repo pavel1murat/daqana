@@ -350,10 +350,10 @@ void ReadTrkSegments::analyze(art::Event const& event) {
                                         // read the ComboHits explicitly, the segment hits refer to them
   art::InputTag const chCollTag = comboHitTagOf(segH,event);
   auto const chH  = event.getValidHandle<mu2e::ComboHitCollection>(chCollTag);
-  std::cout << std::format("ReadTrkSegments: ComboHits {} nComboHits {}\n",chCollTag.encode(),chH->size());
+  // std::cout << std::format("ReadTrkSegments: ComboHits {} nComboHits {}\n",chCollTag.encode(),chH->size());
 
-  std::cout << std::format("ReadTrkSegments: event {} run {} subrun {} nsegments {}\n",
-                           event.event(),event.run(),event.subRun(),segH->size());
+  // std::cout << std::format("ReadTrkSegments: event {} run {} subrun {} nsegments {}\n",
+  //                          event.event(),event.run(),event.subRun(),segH->size());
 
   clone_.clear();
   for (size_t i=0; i<segH->size(); ++i) {

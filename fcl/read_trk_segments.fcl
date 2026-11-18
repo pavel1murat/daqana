@@ -9,7 +9,7 @@
 
 process_name : ReadSegs
 
-services.TFileService.fileName : "read_trk_segments_hist.root" 
+services.TFileService.fileName : "hst.mu2e.kpp00s000r201n000.read_trk_segments_hist.125692_000001.root" 
 
 source : {
   module_type : RootInput
