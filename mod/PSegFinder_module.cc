@@ -267,6 +267,7 @@ public:
     }
 //-----------------------------------------------------------------------------
 // here the fit starts
+// fittedSegments only include those for which the fit has succeeded
 //-----------------------------------------------------------------------------
     TrkSegment::Par_t fitParameters{};
     std::vector<TrkSegment*> fittedSegments;
@@ -283,12 +284,14 @@ public:
       fittedSegments.push_back(segment);
     }
 
-    for (auto* segment : fittedSegments) {
-      segment->UpdateHitParameters();
+    int nfs = fittedSegments.size();
+    for (int i=0; i<nfs; i++) {
+      TrkSegment* seg = fittedSegments[i];
+      seg->UpdateHitParameters();
     }
 
      if (debugMode_ and (debugBit_[10] > 0)) {
-      for (auto* segment : fittedSegments) segment->print("final fit result");
+      for (auto* seg : fittedSegments) seg->print("final fit result");
     }
 
     if (debugMode_) {

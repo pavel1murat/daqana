@@ -19,7 +19,7 @@ struct SegmentHit {
   int                     fMask;                         // 0: ok , 0x1: bad
   double                  x;
   double                  y;
-  double                  t;                             // time-tprop (-fTMean)
+  double                  t;                             // not the drift time, but t=time-tprop (-fTMean)
   int                     drs;                           // drift sign (direction)
   int                     sign_fixed;                    // if 1, the drift sign is not updated any more
 

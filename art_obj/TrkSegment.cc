@@ -104,7 +104,7 @@ void TrkSegment::fillMissingStraws() {
 void TrkSegment::UpdateHitParameters() {
   for (auto& sgh : fListOfHits) {
     sgh.fR    = R        (&sgh);
-    sgh.t     = DriftTime(&sgh);
+    // sgh.t     = DriftTime(&sgh);
     sgh.fDoca = Doca     (&sgh);
   }
 }
