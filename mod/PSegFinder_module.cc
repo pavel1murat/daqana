@@ -1,9 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 // debug bit assignment :
 // ----------------------
-// bit_08: print segment parameters after the drift sign assignment
+// bit_08: debug, print segment parameters after the drift sign assignment
 // bit_09: print time clusters with hits
-// bit_10: print segment parameters after the final fit
+// bit_10: debug, print segment parameters after the final fit
+// bit_11: debug, turn on SegmentFit printouts 
 ///////////////////////////////////////////////////////////////////////////////
 #include "TROOT.h"
 #include "daqana/mod/PSegFinder_module.hh"
@@ -72,16 +73,18 @@ public:
   }
 };
 }
-/// /// 
+
 //-----------------------------------------------------------------------------
  PSegFinder::PSegFinder(Parameters const& config)
     : art::EDProducer(config)
-    , chCollTag_(config().chCollTag())
-    , tcCollTag_(config().tcCollTag())
-    , minimumHits_(config().minimumHits())
+    , chCollTag_      (config().chCollTag())
+    , tcCollTag_      (config().tcCollTag())
+    , t2d_vDrift_     (config().t2d_vDrift())
+    , t2d_timeOffset_ (config().t2d_timeOffset())
+    , minimumHits_    (config().minimumHits())
     , maximumStrawGap_(config().maximumStrawGap())
     , interactiveMode_(config().interactiveMode())
-    , verbose_(config().verbose())
+    , debugMode_      (config().debugMode())
   {
     for (auto const& setting : config().debugBits()) {
       int index = -1;
@@ -99,8 +102,9 @@ public:
     consumes<ComboHitCollection>(chCollTag_);
     consumes<TimeClusterCollection>(tcCollTag_);
     produces<TrkSegmentCollection>();
-    SegmentHit::SetVDrift (config().driftVelocity());
-    SegmentHit::SetTOffset(config().timeOffset());
+    
+    SegmentHit::SetVDrift (config().t2d_vDrift());
+    SegmentHit::SetTOffset(config().t2d_timeOffset());
 
     static char* dummy[100];
     fAnaRint = TAnaRint::Instance(0,dummy);
@@ -160,9 +164,14 @@ public:
    tcColl_             = event.getValidHandle<TimeClusterCollection>(tcCollTag_).product();
 
     // print the input time clusters with all their ComboHits
-    if (debugBit_[9] > 0) {
-      print(9);
-    }
+   if (debugMode_ and (debugBit_[11] > 0)) {
+     TrkSegment::fgDebugMode = 1;
+     SegmentFit::fgDebugMode = 1;
+   }
+    // print the input time clusters with all their ComboHits
+   if (debugMode_ and (debugBit_[9] > 0)) {
+     print(9);
+   }
 
     // clear segments which had hits in the previous event
     for (auto seg : segments_) {
@@ -269,18 +278,20 @@ public:
 
       SegmentFit fitter(segment);
       fitter.DefineDriftDirections();
-      if (debugBit_[8] > 0) segment->print("after drift-sign assignment");
+      if (debugMode_ and (debugBit_[8] > 0)) segment->print("after drift-sign assignment");
       fitter.Fit(4, 0, nullptr, &fitParameters);
       fittedSegments.push_back(segment);
     }
 
-    for (auto* segment : fittedSegments) segment->updateDoca();
+    for (auto* segment : fittedSegments) {
+      segment->UpdateHitParameters();
+    }
 
-    if (debugBit_[10] > 0) {
+     if (debugMode_ and (debugBit_[10] > 0)) {
       for (auto* segment : fittedSegments) segment->print("final fit result");
     }
 
-    if (verbose_) {
+    if (debugMode_) {
       std::cout << std::format("Reconstructed {} segment candidates in event ",segments_.size()) << event.id() << std::endl;
     }
     // the segments with the final fit, copies of the module's segments: the segment hits refer to the ComboHits
@@ -306,6 +317,9 @@ public:
 
 //-----------------------------------------------------------------------------
   void PSegFinder::print(int DebugBit) {
+
+    if (not debugMode_) return;
+    
     std::cout << std::format("---- PSegFinder:: bit:{}\n",DebugBit);
 
     if (DebugBit == 9) {

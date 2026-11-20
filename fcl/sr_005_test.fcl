@@ -1,0 +1,89 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+# sr_002: segment reconstruction and analysis modules running chained
+# output : a histogram file
+#------------------------------------------------------------------------------
+BEGIN_PROLOG
+  bgHitFiles                  : @nil
+  INPUT_MODULE @protect_ignore: RootInput
+  TRIGGER_PATH @protect_ignore: ""                  ## ntupling only
+  PROCESS_NAME @protect_ignore: SR002
+END_PROLOG
+
+#include "Stntuple/fcl/stntuple_prologs.fcl"
+#include "daqana/fcl/prolog.fcl"
+#include "Stntuple/fcl/stntuple_templates.fcl"
+#------------------------------------------------------------------------------
+# services.DbService and services.ProditionsService
+#------------------------------------------------------------------------------
+#include "rundb/latest/calibration_set_v113.fcl"
+
+process_name : @local::PROCESS_NAME
+
+#include "Stntuple/fcl/physics_table.fcl"
+
+physics.producers.PSegFinder : { @table::daqana.producers.PSegFinder
+    tcCollTag       : "TimeCluster"
+    interactiveMode : 0
+    debugMode       : false ## true ##
+    debugBits       : [
+                       "bit_09:1",
+                       "bit_10:1",
+                       "bit_11:1"
+                      ]
+#------------------------------------------------------------------------------
+# default : 66 un/ns
+#------------------------------------------------------------------------------
+    t2d_vDrift      : 66.e-3 ## 58.e-3
+    t2d_timeOffset  : 1.    ## 
+}
+
+physics.analyzers.ReadTrkSegments : {
+    module_type : ReadTrkSegments
+    tsCollTag   : "PSegFinder"
+    minPanel    : 180
+    maxPanel    : 191
+    debugMode   : false ## true ##
+    debugBits   : [
+                   # "bit_03:1"
+                   # "bit_04:1", 
+                   "bit_05:1"
+                  ]
+}
+
+#------------------------------------------------------------------------------
+physics.path_t0 : [ # EventIDFilter,
+                   EWMProducer
+                   , makeSD, makeSH, TimeCluster                           ## tracker
+                   , PSegFinder
+                   # , CaloDigiMaker, CaloRecoDigiMaker, CaloHitMaker        ## calorimeter
+                   # , CaloProtoClusterMaker, CaloClusterMaker
+                   # , CrvDigi, CrvRecoPulses, CrvCoincidenceClusterFinder   ## CRV
+                   # , LineFinder, KKLine                                    ## track reco
+                  ]
+
+physics.path_e0 : [ ReadTrkSegments ]                  ## [defaultOutput]/[]
+#------------------------------------------------------------------------------
+services.TFileService.fileName         : "hst.mu2e.kpp00s003r109n000.sr_002.125470_000001.root"   ## "/dev/null" ##
+
+services.message.destinations.log.categories.ArtReport.reportEvery : 1
+services.message.destinations.log.categories.ArtReport.limit       : 1000
+services.message.destinations.log.categories.ArtReport.timespan    : 300
+
+services.GeometryService.bFieldFile: "Offline/Mu2eG4/geom/bfgeom_no_field.txt"
+services.GeometryService.inputFile : "Offline/Mu2eG4/geom/geom_common_extracted_v06.txt"
+
+#------------------------------------------------------------------------------
+# tracking fcl-level mods
+#------------------------------------------------------------------------------
+#include "PassN/Tracker/TrkReco_epilog.fcl"
+physics.producers.LineFinder.TimeClusterCollection    : "TimeCluster"
+physics.producers.KKLine.KKFitSettings.SaveMaterialXings : true
+physics.producers.KKLine.ModuleSettings.PrintLevel       : 0 ## 10
+physics.producers.KKLine.KKFitSettings.UseCaloCluster    : false  ## for now, don't use calo clusters in the fit
+
+#------------------------------------------------------------------------------
+# CRV fcl-level mods
+#------------------------------------------------------------------------------
+#include "Offline/CRVReco/fcl/epilog_extracted.fcl"
+#----------------------------------------------------------------------

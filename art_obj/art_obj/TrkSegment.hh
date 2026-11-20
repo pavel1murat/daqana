@@ -82,7 +82,7 @@ public:
                                         // a straw without a ComboHit gets a hit with fIndex=-1
   void fillMissingStraws();
                                         // distance between the segment and the wire of each hit, after the final fit
-  void updateDoca();
+  void UpdateHitParameters();
 
                                         // rotate by default (DoTransform=1)
 

@@ -5,11 +5,11 @@ daqana : {
         PSegFinder: { module_type: PSegFinder
             chCollTag       : "makeSH"
             tcCollTag       : "SimpleTimeCluster"       # time cluster coll tag
-            driftVelocity   : 61.3e-3  ## mm/ns
-            timeOffset      : 0.       ## ns
+            t2d_vDrift      : 61.3e-3  ## mm/ns
+            t2d_timeOffset  : 0.       ## ns
             minimumHits     : 4
             maximumStrawGap : 4
-            verbose         : false
+            debugMode       : false
             # Enable one or more switches, e.g. [ "bit_10:1" ]
             debugBits       : [
                                "bit_09:0"
@@ -170,6 +170,12 @@ daqana : {
         ReadTrkSegments : {
             module_type : ReadTrkSegments
             tsCollTag   : "PSegFinder"
+            minPanel    : 10
+            maxPanel    : 9
+            debugMode   : false
+            debugBits       : [
+                               "bit_09:0"
+                              ]
         }
         
         TrackerDQM : { module_type:TrackerDQM

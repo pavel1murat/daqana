@@ -50,12 +50,12 @@ public:
 
     fhicl::Atom<art::InputTag>   chCollTag      {Name("chCollTag"      ), Comment("ComboHit (CH) collection tag")};
     fhicl::Atom<art::InputTag>   tcCollTag      {Name("tcCollTag"      ), Comment("TimeCluster (TC) collection tag")};
-    fhicl::Atom<double>          driftVelocity  {Name("driftVelocity"  ), Comment("Straw drift velocity in mm/ns")};
-    fhicl::Atom<double>          timeOffset     {Name("timeOffset"     ), Comment("Drift-time offset in ns")};
+    fhicl::Atom<double>          t2d_vDrift     {Name("t2d_vDrift"     ), Comment("Straw drift velocity in mm/ns")};
+    fhicl::Atom<double>          t2d_timeOffset {Name("t2d_timeOffset" ), Comment("Drift-time offset in ns")};
     fhicl::Atom<int>             minimumHits    {Name("minimumHits"    ), Comment("Minimum hits required to fit a segment")};
     fhicl::Atom<int>             maximumStrawGap{Name("maximumStrawGap"), Comment("Largest gap between hits in one subsegment")};
     fhicl::Atom<int>             interactiveMode{Name("interactiveMode"), Comment("0: none, 1: stop after each event; 2: stop at endJob")};
-    fhicl::Atom<bool>            verbose        {Name("verbose"        ), Comment("Print the number of reconstructed panel segments")};
+    fhicl::Atom<bool>            debugMode      {Name("debugMode"      ), Comment("ON/OFF switch for all debug printouts")};
     fhicl::Sequence<std::string> debugBits      {Name("debugBits"      ), Comment("Debug switches in bitN:value form")};
     fhicl::DelegatedParameter    anaDump        {Name("TAnaDump"       ), Comment("TAnaDump parameters"  ) };
   };
@@ -67,9 +67,12 @@ private:
 //-----------------------------------------------------------------------------
   art::InputTag             chCollTag_;
   art::InputTag             tcCollTag_;
+  float                     t2d_vDrift_;          // parameters of T2D : R(T) = V0(T-T0), keep it linear
+  float                     t2d_timeOffset_;
   int                       minimumHits_;
   int                       maximumStrawGap_;
   int                       interactiveMode_;
+  bool                      debugMode_;
   bool                      verbose_;
 //-----------------------------------------------------------------------------
 // other parameters

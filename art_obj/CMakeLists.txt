@@ -15,6 +15,7 @@ include_directories(
 )
 
 add_library(${lib} SHARED
+  SegmentHit.cc
   TrkSegment.cc
 )
 add_library(daqana::art_obj ALIAS ${lib})

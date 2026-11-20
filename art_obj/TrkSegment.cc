@@ -9,10 +9,6 @@
 
 int TrkSegment::fgDebugMode(0);
 
-//
-double       SegmentHit::fgTOffset =  0.0;      // 1.6;       // ns
-double       SegmentHit::fgVDrift  = 61.3e-3;   // mm/ns
-
 double const TrkSegment::fgRStraw  =  2.5;      // mm
 
 //-----------------------------------------------------------------------------
@@ -105,9 +101,11 @@ void TrkSegment::fillMissingStraws() {
 }
 
 //-----------------------------------------------------------------------------
-void TrkSegment::updateDoca() {
+void TrkSegment::UpdateHitParameters() {
   for (auto& sgh : fListOfHits) {
-    sgh.fDoca = Doca(&sgh);
+    sgh.fR    = R        (&sgh);
+    sgh.t     = DriftTime(&sgh);
+    sgh.fDoca = Doca     (&sgh);
   }
 }
 

@@ -20,7 +20,7 @@ struct SegmentHit {
   double                  x;
   double                  y;
   double                  t;                             // time-tprop (-fTMean)
-  int                     drs;
+  int                     drs;                           // drift sign (direction)
   int                     sign_fixed;                    // if 1, the drift sign is not updated any more
 
   double                  fR;                            // updated
@@ -28,44 +28,23 @@ struct SegmentHit {
   double                  fChi2;                         // hit contribution to the segment chi^2
 
                                                          // drift velocity parameterization : R = A*(T-T0)
-  static double           fgVDrift;                      // mm/ns, defined in TrkSegment.cc
+  static double           fgVDrift;                      // um/ns, defined in TrkSegment.cc
   static double           fgTOffset;
 
-  SegmentHit() {                        // default constructor needed by the I/O
-    fIndex     = -1;
-    fStraw     = -1;
-    fComboHit  = nullptr;
-    fDoca      = 0;
-    fMask      = 0;
-    x          = 0;
-    y          = 0;
-    t          = 0;
-    fSigmaR    = 0.2;                   // 200 um, for simplicity
-    drs        = -999;
-    sign_fixed = 0;
-  }
+  SegmentHit(); // default constructor needed by the I/O
 
-  explicit SegmentHit(int Index, mu2e::StrawId Sid) : SegmentHit() {
-    fIndex = Index;
-    fSid   = Sid.asUint16();
-    fStraw = Sid.straw();
-  }
+  explicit SegmentHit(int Index, mu2e::StrawId Sid);
 
-  // double        r() { return fR; } // ## TODO
-
-  const mu2e::ComboHit* ComboHit() const { return fComboHit; }
-  double                Doca    () const { return fDoca;     }
+  const mu2e::ComboHit* ComboHit() const { return fComboHit;    }
+  double                Doca    () const { return fDoca;        }
+  double                Drs     () const { return drs;          }
   int                   IsGood  () const { return (fMask == 0); }
-  int                   Straw   () const { return fStraw; }
-  int                   Layer   () const { return fStraw % 2 ; }
+  double                R       () const { return fR;           }
+  int                   Straw   () const { return fStraw;       }
+  int                   Layer   () const { return fStraw % 2 ;  }
   mu2e::StrawId         Sid     () const { return mu2e::StrawId(fSid); }
 
-  void print(const mu2e::ComboHit* Ch, std::ostream& Stream = std::cout) {
-    Stream << std::format("Point2D: sid:0x{:04x} mask:0x{:04x}",Ch->strawId().asUint16(),fMask)
-           << std::format(" x,y,time,tprop,tcorr, drs,fixed: {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:10.3f} {:2d} {}",
-                          x,y,Ch->time(),Ch->propTime(),Ch->correctedTime(),drs,sign_fixed)
-           << std::endl;
-  }
+  void print(const mu2e::ComboHit* Ch, std::ostream& Stream = std::cout);
 
   static void SetTOffset(double T) { fgTOffset = T; }
   static void SetVDrift (double V) { fgVDrift  = V; }
